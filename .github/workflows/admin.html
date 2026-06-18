@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VidiPay Boshqaruv Paneli</title>
+  <script src="./config.js"></script>
+  <style>
+    :root {
+      --bg: #080d10;
+      --panel: #10181d;
+      --line: rgba(0, 255, 204, 0.18);
+      --text: #f4f7f8;
+      --muted: #92a0a8;
+      --accent: #00ffcc;
+      --danger: #ef4444;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Segoe UI, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(8, 13, 16, 0.94);
+      border-bottom: 1px solid var(--line);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    h1 { margin: 0; font-size: 20px; color: var(--accent); }
+    main { padding: 18px; max-width: 1180px; margin: 0 auto; }
+    .login-row, .toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    input, select {
+      background: #05070a;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      min-height: 40px;
+      font-size: 15px;
+      width: 100%;
+    }
+    button {
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 12px;
+      background: rgba(0, 255, 204, 0.08);
+      color: var(--accent);
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform .12s ease, background .12s ease, opacity .12s ease;
+    }
+    button:hover { background: rgba(0, 255, 204, 0.16); transform: translateY(-1px); }
+    button:disabled { cursor: wait; opacity: .55; transform: none; }
+    button.primary { color: #03110f; background: var(--accent); border-color: var(--accent); }
+    button.warning { color: #0f0900; background: var(--warn); border-color: var(--warn); }
+    button.danger { color: var(--danger); border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.08); }
+    button.ok { color: var(--ok); border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.08); }
+    section {
+      border-top: 1px solid var(--line);
+      padding-top: 16px;
+      margin-top: 20px;
+    }
+    h2 { font-size: 16px; margin: 0 0 12px; color: var(--text); }
+    .grid { overflow-x: auto; border: 1px solid rgba(255,255,255,.08); border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; min-width: 760px; }
+    th, td { text-align: left; border-bottom: 1px solid rgba(255,255,255,.07); padding: 10px; font-size: 13px; }
+    th { color: var(--muted); background: rgba(255,255,255,.03); }
+    tr:last-child td { border-bottom: 0; }
+    .status { font-weight: 900; }
+    .pending { color: var(--warn); }
+    .approved, .verified { color: var(--ok); }
+    .rejected { color: var(--danger); }
+    .user-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      padding: 6px 9px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .user-status-pill.active {
+      color: var(--ok);
+      background: rgba(34,197,94,.08);
+      border-color: rgba(34,197,94,.28);
+    }
+    .user-status-pill.blocked {
+      color: #fecaca;
+      background: rgba(239,68,68,.12);
+      border-color: rgba(239,68,68,.38);
+    }
+    .lock-anim {
+      width: 14px;
+      height: 12px;
+      display: inline-block;
+      position: relative;
+      border: 2px solid currentColor;
+      border-radius: 3px;
+      animation: lockPulse 1s ease-in-out infinite;
+    }
+    .lock-anim:before {
+      content: "";
+      position: absolute;
+      left: 2px;
+      top: -9px;
+      width: 6px;
+      height: 8px;
+      border: 2px solid currentColor;
+      border-bottom: 0;
+      border-radius: 8px 8px 0 0;
+    }
+    .unlock-anim:before {
+      left: 7px;
+      transform: rotate(28deg);
+      transform-origin: bottom left;
+    }
+    @keyframes lockPulse {
+      0%, 100% { transform: translateY(0) scale(1); opacity: .86; }
+      50% { transform: translateY(-1px) scale(1.08); opacity: 1; }
+    }
+    tr.user-changing {
+      background: rgba(0,255,204,.05);
+    }
+    button.user-action {
+      min-width: 132px;
+    }
+    .notice { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+    .notice-box {
+      border: 1px solid rgba(0,255,204,.22);
+      background: rgba(0,255,204,.06);
+      border-radius: 8px;
+      padding: 12px;
+      margin: 10px 0 14px;
+      font-weight: 700;
+    }
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+    }
+    .setting-field label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+    .setting-field input { width: 100%; }
+    .timer-panel {
+      border: 1px solid rgba(255,255,255,.1);
+      background: #10181d;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .timer-panel h3 { margin: 0 0 10px; font-size: 15px; color: var(--accent); }
+    .timer-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .timer-field label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+    .timer-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .timer-actions button { min-width: 180px; }
+    .window-status {
+      margin-top: 10px;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>VidiPay Boshqaruv Paneli</h1>
+    <button onclick="refreshAll()">Yangilash</button>
+  </header>
+  <main>
+    <div class="login-row">
+      <input id="admin-token" type="password" placeholder="Admin token">
+      <button onclick="saveToken()">Tokenni saqlash</button>
+      <span class="notice" id="status-line">Admin tokenni kiriting.</span>
+    </div>
+
+    <section>
+      <h2>Sozlamalar</h2>
+      <div class="timer-panel">
+        <h3>Pul yechish taymeri</h3>
+        <div class="notice-box" id="window-status-box">Token saqlangandan keyin taymer holati chiqadi.</div>
+        <div class="timer-row">
+          <div class="timer-field">
+            <label>Ochish sanasi</label>
+            <input id="withdraw-open-date" type="date">
+          </div>
+          <div class="timer-field">
+            <label>Ochish vaqti</label>
+            <input id="withdraw-open-time" type="time">
+          </div>
+          <div class="timer-field">
+            <label>Necha soat ochiq tursin</label>
+            <input id="withdraw-window-hours" type="number" min="1" step="1" value="36">
+          </div>
+        </div>
+        <div class="timer-actions">
+          <button class="primary" id="btn-schedule-withdraw" onclick="scheduleWithdrawWindow()">Taymerni belgilash</button>
+          <button class="warning" id="btn-open-withdraw-now" onclick="openWithdrawNow()">Hozir belgilangan soatga ochish</button>
+          <button class="danger" id="btn-close-withdraw-now" onclick="closeWithdrawNow()">Qulfga yopish</button>
+          <button id="btn-refresh-settings" onclick="refreshAll()">Holatni yangilash</button>
+        </div>
+      </div>
+      <div class="settings-grid" id="settings-form"></div>
+      <div class="toolbar">
+        <button onclick="saveSettings()">Sozlamalarni saqlash</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Foydalanuvchilar</h2>
+      <div class="grid"><table id="users-table"></table></div>
+    </section>
+
+    <section>
+      <h2>User balansiga qo'lda daromad qo'shish</h2>
+      <div class="timer-panel">
+        <div class="timer-row">
+          <div class="timer-field">
+            <label>Telegram ID</label>
+            <input id="earning-telegram-id" placeholder="Masalan: 77777">
+          </div>
+          <div class="timer-field">
+            <label>Qo'shiladigan summa ($)</label>
+            <input id="earning-amount" type="number" min="0.01" step="0.01" placeholder="Masalan: 100">
+          </div>
+          <div class="timer-field">
+            <label>Necha daqiqada topildi</label>
+            <input id="earning-minutes" type="number" min="0" step="0.01" placeholder="Masalan: 10">
+          </div>
+        </div>
+        <div class="timer-actions">
+          <button class="primary" id="btn-add-earning" onclick="addManualEarning()">Balans va vaqtga qo'shish</button>
+        </div>
+        <div class="notice" id="manual-earning-status">Bu user oynasida balans, umumiy vaqt, kunlik vaqt va kunlik daromad kabi ko'rinadi.</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>User historysiga qo'lda yozuv qo'shish</h2>
+      <div class="timer-panel">
+        <div class="timer-row">
+          <div class="timer-field">
+            <label>Telegram ID</label>
+            <input id="history-telegram-id" placeholder="Masalan: 77777">
+          </div>
+          <div class="timer-field">
+            <label>Summa ($)</label>
+            <input id="history-amount" type="number" min="0.01" step="0.01" placeholder="Masalan: 1000">
+          </div>
+          <div class="timer-field">
+            <label>Sana</label>
+            <input id="history-date" type="date">
+          </div>
+          <div class="timer-field">
+            <label>Vaqt</label>
+            <input id="history-time" type="time">
+          </div>
+          <div class="timer-field">
+            <label>Wallet turi</label>
+            <input id="history-wallet-type" placeholder="USDT yoki TON" value="USDT">
+          </div>
+          <div class="timer-field">
+            <label>Wallet manzili</label>
+            <input id="history-wallet-address" placeholder="Masalan: admin wallet yoki user wallet">
+          </div>
+          <div class="timer-field">
+            <label>Status</label>
+            <select id="history-status">
+              <option value="approved">Tasdiqlangan</option>
+              <option value="pending">Kutilmoqda</option>
+              <option value="rejected">Rad etilgan</option>
+            </select>
+          </div>
+          <div class="timer-field">
+            <label>Izoh</label>
+            <input id="history-note" placeholder="Masalan: Admin qo'shgan history">
+          </div>
+        </div>
+        <div class="timer-actions">
+          <button class="primary" id="btn-add-history" onclick="addManualHistory()">Historyga qo'shish</button>
+        </div>
+        <div class="notice" id="manual-history-status">Yozuv user ilovasidagi History bo'limida chek ko'rinishida chiqadi.</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Bildirishnoma / Yangilik yuborish</h2>
+      <div class="timer-panel">
+        <div class="timer-row">
+          <div class="timer-field">
+            <label>Sarlavha</label>
+            <input id="notify-title" placeholder="Masalan: Yangi yangilik">
+          </div>
+          <div class="timer-field">
+            <label>Telegram ID, bo'sh qolsa hammaga</label>
+            <input id="notify-telegram-id" placeholder="77777 yoki bo'sh">
+          </div>
+        </div>
+        <div class="timer-field">
+          <label>Xabar matni</label>
+          <input id="notify-message" placeholder="Foydalanuvchilarga ko'rinadigan xabar">
+        </div>
+        <div class="timer-actions" style="margin-top:10px;">
+          <button class="primary" id="btn-send-notify" onclick="sendNotification()">Xabar yuborish</button>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="toolbar">
+        <h2 style="margin-right:auto;">Pul yechish so'rovlari</h2>
+        <select id="withdraw-status" onchange="loadWithdraws()">
+          <option value="pending">Kutilmoqda</option>
+          <option value="approved">Tasdiqlangan</option>
+          <option value="rejected">Rad etilgan</option>
+        </select>
+      </div>
+      <div class="grid"><table id="withdraws-table"></table></div>
+    </section>
+
+    <section>
+      <div class="toolbar">
+        <h2 style="margin-right:auto;">To'lov buyurtmalari</h2>
+        <select id="payment-status" onchange="loadPaymentOrders()">
+          <option value="pending">Kutilmoqda</option>
+          <option value="verified">Tasdiqlangan</option>
+        </select>
+      </div>
+      <div class="grid"><table id="payments-table"></table></div>
+    </section>
+  </main>
+
+  <script>
+    const API_BASE_URL = window.VIDIPAY_API_BASE || 'https://vidipay-backend.onrender.com';
+    const settingKeys = [
+      'view_seconds_required',
+      'view_reward_per_second',
+      'tier1_reward_per_second',
+      'tier2_reward_per_second',
+      'tier3_reward_per_second',
+      'tier1_countries',
+      'tier2_countries',
+      'daily_bonus',
+      'daily_view_limit',
+      'withdraw_min_amount',
+      'withdraw_commission_percent',
+      'referral_bonus',
+      'withdraw_requires_payment',
+      'withdraw_opens_at',
+      'withdraw_window_hours'
+    ];
+
+    function token() {
+      return localStorage.getItem('vidipay_admin_token') || document.getElementById('admin-token').value.trim();
+    }
+
+    let adminCommandBusy = false;
+    let settingsFormRendered = false;
+
+    function setText(id, text) {
+      const el = document.getElementById(id);
+      if (el && el.innerText !== text) el.innerText = text;
+    }
+
+    function setStatus(text) {
+      setText('status-line', text);
+    }
+
+    function setBusy(buttonId, busy, text) {
+      const btn = document.getElementById(buttonId);
+      if (!btn) return;
+      if (!btn.dataset.label) btn.dataset.label = btn.innerText;
+      btn.disabled = busy;
+      btn.innerText = busy ? text : btn.dataset.label;
+    }
+
+    function formatDateTime(value) {
+      if (!value) return '-';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value);
+      return date.toLocaleString();
+    }
+
+    function renderWindowStatus(settings) {
+      const box = document.getElementById('window-status-box');
+      if (!box) return;
+      const info = settings.withdraw_window || {};
+      const status = info.status || 'unknown';
+
+      let line = 'Pul yechish taymeri hali belgilanmagan.';
+      if (status === 'open') {
+        line = `OCHIQ. Tugash vaqti: ${formatDateTime(info.closes_at)}.`;
+        box.style.borderColor = 'rgba(34,197,94,.4)';
+        box.style.background = 'rgba(34,197,94,.08)';
+      } else if (status === 'locked') {
+        line = `YOPIQ. Ochilish vaqti: ${formatDateTime(info.opens_at)}.`;
+        box.style.borderColor = 'rgba(239,68,68,.4)';
+        box.style.background = 'rgba(239,68,68,.08)';
+      } else if (status === 'closed') {
+        line = `TUGAGAN. Oxirgi tugash vaqti: ${formatDateTime(info.closes_at)}.`;
+        box.style.borderColor = 'rgba(245,158,11,.4)';
+        box.style.background = 'rgba(245,158,11,.08)';
+      } else {
+        box.style.borderColor = 'rgba(0,255,204,.22)';
+        box.style.background = 'rgba(0,255,204,.06)';
+      }
+
+      const nextText = `${line} Ochiq turish muddati: ${settings.withdraw_window_hours || 36} soat.`;
+      if (box.innerText !== nextText) box.innerText = nextText;
+    }
+
+    function fillTimerInputs(settings) {
+      const dateInput = document.getElementById('withdraw-open-date');
+      const timeInput = document.getElementById('withdraw-open-time');
+      const hoursInput = document.getElementById('withdraw-window-hours');
+      if (hoursInput) hoursInput.value = settings.withdraw_window_hours || 36;
+
+      if (!settings.withdraw_opens_at) return;
+      const date = new Date(settings.withdraw_opens_at);
+      if (Number.isNaN(date.getTime())) return;
+
+      const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+      const iso = local.toISOString();
+      if (dateInput) dateInput.value = iso.slice(0, 10);
+      if (timeInput) timeInput.value = iso.slice(11, 16);
+    }
+
+    function applySettings(settings) {
+      renderWindowStatus(settings);
+      fillTimerInputs(settings);
+      return settings;
+    }
+
+    function saveToken() {
+      localStorage.setItem('vidipay_admin_token', document.getElementById('admin-token').value.trim());
+      refreshAll();
+    }
+
+    async function api(path, options = {}) {
+      const res = await fetch(`${API_BASE_URL}${path}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-token': token(),
+          ...(options.headers || {})
+        },
+        ...options
+      });
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : null;
+      if (!res.ok) throw new Error(data?.error || data?.message || 'So‘rov bajarilmadi');
+      return data;
+    }
+
+    function renderTable(id, headers, rows) {
+      const table = document.getElementById(id);
+      table.innerHTML = `<thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>` +
+        `<tbody>${rows.join('') || `<tr><td colspan="${headers.length}">Ma'lumot yo'q</td></tr>`}</tbody>`;
+    }
+
+    async function loadPublicSettings() {
+      return fetch(`${API_BASE_URL}/settings`).then(async (res) => {
+        const text = await res.text();
+        const data = text ? JSON.parse(text) : null;
+        if (!res.ok) throw new Error(data?.error || data?.message || 'Ochiq sozlamalarni olishda xatolik');
+        return data;
+      });
+    }
+
+    async function loadSettings(options = {}) {
+      const renderForm = options.renderForm !== false;
+      const settings = applySettings(await api('/admin/settings'));
+      if (!renderForm) return settings;
+      if (settingsFormRendered) {
+        for (const key of settingKeys) {
+          const input = document.getElementById(`setting-${key}`);
+          if (input) input.value = settings[key] ?? '';
+        }
+        return settings;
+      }
+      const box = document.getElementById('settings-form');
+      box.innerHTML = settingKeys.map(key => `
+        <div class="setting-field">
+          <label>${key}</label>
+          <input id="setting-${key}" value="${settings[key] ?? ''}">
+        </div>
+      `).join('');
+      settingsFormRendered = true;
+      return settings;
+    }
+
+    async function saveSettings() {
+      try {
+        setStatus('Sozlamalar saqlanyapti...');
+        const body = {};
+        for (const key of settingKeys) {
+          const value = document.getElementById(`setting-${key}`).value;
+          body[key] = key === 'withdraw_requires_payment' ? value === 'true' : value;
+        }
+        await api('/admin/settings', { method: 'POST', body: JSON.stringify(body) });
+        setStatus('Sozlamalar saqlandi.');
+        await loadSettings();
+      } catch (err) {
+        setStatus(`Sozlama xatosi: ${err.message}`);
+      }
+    }
+
+    async function scheduleWithdrawWindow() {
+      if (adminCommandBusy) return;
+      const dateValue = document.getElementById('withdraw-open-date').value;
+      const timeValue = document.getElementById('withdraw-open-time').value || '00:00';
+      const hours = Number(document.getElementById('withdraw-window-hours').value || 36);
+
+      if (!dateValue) {
+        setStatus('Avval ochilish sanasini tanlang.');
+        return;
+      }
+
+      if (!Number.isFinite(hours) || hours < 1) {
+        setStatus("Muddat kamida 1 soat bo'lishi kerak.");
+        return;
+      }
+
+      try {
+        adminCommandBusy = true;
+        setBusy('btn-schedule-withdraw', true, 'Belgilanmoqda...');
+        setStatus('Pul yechish taymeri belgilanmoqda...');
+        const opensAt = new Date(`${dateValue}T${timeValue}:00`);
+        const result = await api('/admin/settings', {
+          method: 'POST',
+          body: JSON.stringify({
+            withdraw_opens_at: opensAt.toISOString(),
+            withdraw_window_hours: hours
+          })
+        });
+
+        const settings = applySettings(result.settings || await loadPublicSettings());
+        setStatus(settings.withdraw_window?.status === 'locked' || settings.withdraw_window?.status === 'open'
+          ? 'Buyruq bajarildi va backend tasdiqladi.'
+          : 'Buyruq yuborildi, lekin holatni yana tekshiring.');
+      } catch (err) {
+        setStatus(`Taymer xatosi: ${err.message}`);
+      } finally {
+        adminCommandBusy = false;
+        setBusy('btn-schedule-withdraw', false);
+      }
+    }
+
+    async function openWithdrawNow() {
+      if (adminCommandBusy) return;
+      const hours = Number(document.getElementById('withdraw-window-hours').value || 36);
+
+      if (!Number.isFinite(hours) || hours < 1) {
+        setStatus("Muddat kamida 1 soat bo'lishi kerak.");
+        return;
+      }
+
+      try {
+        adminCommandBusy = true;
+        setBusy('btn-open-withdraw-now', true, 'Ochilyapti...');
+        setStatus(`Pul yechish oynasi ${hours} soatga ochilyapti...`);
+        const result = await api('/admin/settings', {
+          method: 'POST',
+          body: JSON.stringify({
+            withdraw_opens_at: new Date().toISOString(),
+            withdraw_window_hours: hours
+          })
+        });
+
+        const settings = applySettings(result.settings || await loadPublicSettings());
+        setStatus(settings.withdraw_window?.status === 'open'
+          ? 'Pul yechish oynasi ochildi. Backend tasdiqladi.'
+          : 'Buyruq yuborildi, lekin backend hali open qaytarmadi.');
+      } catch (err) {
+        setStatus(`Ochish xatosi: ${err.message}`);
+      } finally {
+        adminCommandBusy = false;
+        setBusy('btn-open-withdraw-now', false);
+      }
+    }
+
+    async function closeWithdrawNow() {
+      if (adminCommandBusy) return;
+      try {
+        adminCommandBusy = true;
+        setBusy('btn-close-withdraw-now', true, 'Yopilyapti...');
+        setStatus('Pul yechish oynasi yopilyapti...');
+        const result = await api('/admin/settings', {
+          method: 'POST',
+          body: JSON.stringify({
+            withdraw_opens_at: '',
+            withdraw_window_hours: Number(document.getElementById('withdraw-window-hours').value || 36)
+          })
+        });
+
+        const settings = applySettings(result.settings || await loadPublicSettings());
+        setStatus(settings.withdraw_window?.is_open
+          ? 'Yopish buyrug‘i yuborildi, lekin backend hali ochiq qaytardi.'
+          : 'Pul yechish oynasi yopildi. Wallet qulfga tushadi.');
+      } catch (err) {
+        setStatus(`Yopish xatosi: ${err.message}`);
+      } finally {
+        adminCommandBusy = false;
+        setBusy('btn-close-withdraw-now', false);
+      }
+    }
+
+    async function loadUsers() {
+      const users = await api('/admin/users');
+      renderTable('users-table', ['Baza ID', 'Telegram ID', 'Balans', 'Umumiy vaqt', 'Kunlik daromad', 'Qulf', 'Holat', 'Amal'], users.map(u => `
+        <tr id="user-row-${u.telegram_id}">
+          <td>${u.id}</td><td>${u.telegram_id}</td>
+          <td>${u.balance}</td><td>${u.total_watch_seconds || 0}s</td>
+          <td>${u.daily_income}</td><td>${u.withdraw_unlocked ? 'ha' : 'yoq'}</td>
+          ${renderUserControlCells(u)}
+        </tr>
+      `));
+    }
+
+    function renderUserControlCells(user) {
+      const blocked = Boolean(user.is_blocked || user.deleted_at);
+      const label = user.deleted_at ? 'account ochirilgan' : (blocked ? 'bloklangan' : 'aktiv');
+      const pillClass = blocked ? 'blocked' : 'active';
+      const lockClass = blocked ? 'lock-anim' : 'lock-anim unlock-anim';
+      const buttonClass = blocked ? 'ok user-action' : 'danger user-action';
+      const nextAction = blocked ? false : true;
+      const buttonText = blocked ? 'Blokdan chiqarish' : 'Bloklash';
+
+      return `
+        <td id="user-status-${user.telegram_id}">
+          <span class="user-status-pill ${pillClass}">
+            <span class="${lockClass}"></span>
+            ${label}
+          </span>
+        </td>
+        <td id="user-action-${user.telegram_id}">
+          <button class="${buttonClass}" onclick="setUserBlock('${user.telegram_id}', ${nextAction})">${buttonText}</button>
+        </td>
+      `;
+    }
+
+    function paintUserBlockState(telegramId, blocked, busy = false) {
+      const row = document.getElementById(`user-row-${telegramId}`);
+      const statusCell = document.getElementById(`user-status-${telegramId}`);
+      const actionCell = document.getElementById(`user-action-${telegramId}`);
+      if (row) row.classList.toggle('user-changing', busy);
+
+      if (statusCell) {
+        statusCell.innerHTML = `
+          <span class="user-status-pill ${blocked ? 'blocked' : 'active'}">
+            <span class="lock-anim ${blocked ? '' : 'unlock-anim'}"></span>
+            ${busy ? 'bajarilmoqda...' : (blocked ? 'bloklangan' : 'aktiv')}
+          </span>
+        `;
+      }
+
+      if (actionCell) {
+        actionCell.innerHTML = blocked
+          ? `<button class="ok user-action" ${busy ? 'disabled' : ''} onclick="setUserBlock('${telegramId}', false)">Blokdan chiqarish</button>`
+          : `<button class="danger user-action" ${busy ? 'disabled' : ''} onclick="setUserBlock('${telegramId}', true)">Bloklash</button>`;
+      }
+    }
+
+    async function setUserBlock(telegramId, shouldBlock) {
+      try {
+        paintUserBlockState(telegramId, shouldBlock, true);
+        setStatus(shouldBlock ? 'User bloklanyapti...' : 'User blokdan chiqarilyapti...');
+        await api(`/admin/users/${encodeURIComponent(telegramId)}/${shouldBlock ? 'block' : 'unblock'}`, {
+          method: 'POST',
+          body: '{}'
+        });
+        paintUserBlockState(telegramId, shouldBlock, false);
+        setStatus(shouldBlock ? 'User bloklandi.' : 'User blokdan chiqarildi.');
+        await loadUsers();
+      } catch (err) {
+        setStatus(`User amali xatosi: ${err.message}`);
+        await loadUsers();
+      }
+    }
+
+    async function addManualEarning() {
+      const telegramId = document.getElementById('earning-telegram-id').value.trim();
+      const amount = Number(document.getElementById('earning-amount').value);
+      const minutes = Number(document.getElementById('earning-minutes').value || 0);
+      const status = document.getElementById('manual-earning-status');
+
+      if (!telegramId || !Number.isFinite(amount) || amount <= 0) {
+        status.innerText = "Telegram ID va musbat summa kiriting.";
+        return;
+      }
+
+      try {
+        setBusy('btn-add-earning', true, "Qo'shilyapti...");
+        status.innerText = "Balans va vaqt yangilanyapti...";
+        const result = await api(`/admin/users/${encodeURIComponent(telegramId)}/add-earning`, {
+          method: 'POST',
+          body: JSON.stringify({ amount, minutes })
+        });
+        status.innerText = `$${Number(result.amount).toFixed(2)} qo'shildi. Vaqt: ${result.seconds}s.`;
+        await loadUsers();
+      } catch (err) {
+        status.innerText = `Xato: ${err.message}`;
+      } finally {
+        setBusy('btn-add-earning', false);
+      }
+    }
+
+    async function addManualHistory() {
+      const telegramId = document.getElementById('history-telegram-id').value.trim();
+      const amount = Number(document.getElementById('history-amount').value);
+      const dateValue = document.getElementById('history-date').value;
+      const timeValue = document.getElementById('history-time').value || '00:00';
+      const walletType = document.getElementById('history-wallet-type').value.trim() || 'USDT';
+      const walletAddress = document.getElementById('history-wallet-address').value.trim() || 'Admin wallet';
+      const historyStatus = document.getElementById('history-status').value;
+      const note = document.getElementById('history-note').value.trim() || "Admin qo'shgan history";
+      const status = document.getElementById('manual-history-status');
+
+      if (!telegramId || !Number.isFinite(amount) || amount <= 0 || !dateValue) {
+        status.innerText = "Telegram ID, summa va sanani to'g'ri kiriting.";
+        return;
+      }
+
+      try {
+        setBusy('btn-add-history', true, "Qo'shilyapti...");
+        status.innerText = "History yozuvi qo'shilyapti...";
+        const createdAt = new Date(`${dateValue}T${timeValue}:00`);
+        const result = await api(`/admin/users/${encodeURIComponent(telegramId)}/history/withdraw`, {
+          method: 'POST',
+          body: JSON.stringify({
+            amount,
+            wallet_type: walletType,
+            wallet_address: walletAddress,
+            status: historyStatus,
+            admin_note: note,
+            created_at: createdAt.toISOString(),
+            processed_at: createdAt.toISOString()
+          })
+        });
+        status.innerText = `History qo'shildi. ID: ${result.withdraw.id}`;
+        await loadWithdraws();
+      } catch (err) {
+        status.innerText = `Xato: ${err.message}`;
+      } finally {
+        setBusy('btn-add-history', false);
+      }
+    }
+
+    async function sendNotification() {
+      try {
+        setBusy('btn-send-notify', true, 'Yuborilyapti...');
+        const title = document.getElementById('notify-title').value.trim();
+        const message = document.getElementById('notify-message').value.trim();
+        const telegram_id = document.getElementById('notify-telegram-id').value.trim();
+
+        await api('/admin/notification/send', {
+          method: 'POST',
+          body: JSON.stringify({ title, message, telegram_id: telegram_id || null })
+        });
+
+        setStatus('Bildirishnoma yuborildi.');
+        document.getElementById('notify-title').value = '';
+        document.getElementById('notify-message').value = '';
+      } catch (err) {
+        setStatus(`Bildirishnoma xatosi: ${err.message}`);
+      } finally {
+        setBusy('btn-send-notify', false);
+      }
+    }
+
+    async function loadWithdraws() {
+      const status = document.getElementById('withdraw-status').value;
+      const items = await api(`/admin/withdraws?status=${encodeURIComponent(status)}`);
+      renderTable('withdraws-table', ['ID', 'Telegram', 'Summa', 'Hamyon', 'Holat', 'Amallar'], items.map(w => `
+        <tr>
+          <td>${w.id}</td><td>${w.telegram_id}</td><td>${w.amount}</td>
+          <td>${w.wallet_type}<br>${w.wallet_address}</td>
+          <td class="status ${w.status}">${w.status}</td>
+          <td>
+            ${w.status === 'pending' ? `<button class="ok" onclick="approveWithdraw(${w.id})">To'landi deb belgilash</button>
+            <button class="danger" onclick="rejectWithdraw(${w.id})">Rad etish</button>` : ''}
+          </td>
+        </tr>
+      `));
+    }
+
+    async function approveWithdraw(id) {
+      await api(`/admin/withdraw/${id}/approve`, { method: 'POST', body: '{}' });
+      await loadWithdraws();
+    }
+
+    async function rejectWithdraw(id) {
+      const reason = prompt('Rad etish sababi') || 'Admin tomonidan rad etildi';
+      await api(`/admin/withdraw/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) });
+      await loadWithdraws();
+    }
+
+    async function loadPaymentOrders() {
+      const status = document.getElementById('payment-status').value;
+      const items = await api(`/admin/payment-orders?status=${encodeURIComponent(status)}`);
+      renderTable('payments-table', ['ID', 'Telegram ID', 'Summa', 'To\'lov turi', 'Holat', 'Amallar'], items.map(p => `
+        <tr>
+          <td>${p.id}</td><td>${p.telegram_id}</td><td>${p.amount} USDT (Ekv. Karta)</td>
+          <td>Avtomat Karta (Gateway)</td>
+          <td class="status ${p.status}">${p.status === 'pending' ? 'Kutilmoqda' : 'Tasdiqlangan'}</td>
+          <td>
+            ${p.status === 'pending' ? `<button class="ok" onclick="approvePaymentOrder(${p.id})">Tasdiqlash</button>` : '<span style="color:var(--ok);">✅ Bajarilgan</span>'}
+          </td>
+        </tr>
+      `));
+    }
+
+    async function approvePaymentOrder(id) {
+      if(!confirm("Ushbu to'lovni tasdiqlaysizmi? (Foydalanuvchi hisobi darhol ochiladi)")) return;
+      try {
+        await api(`/admin/payment-orders/${id}/approve`, { method: 'POST', body: '{}' });
+        await loadPaymentOrders();
+        alert("To'lov muvaffaqiyatli tasdiqlandi!");
+      } catch(err) {
+        alert("Xatolik: " + err.message);
+      }
+    }
+
+    async function refreshAll() {
+      const errors = [];
+      try { await loadSettings({ renderForm: !settingsFormRendered }); } catch (err) { errors.push(err.message); }
+      try { await loadUsers(); } catch (err) { errors.push(`Foydalanuvchilar: ${err.message}`); }
+      try { await loadWithdraws(); } catch (err) { errors.push(`Pul yechish: ${err.message}`); }
+      try { await loadPaymentOrders(); } catch (err) { errors.push(`To‘lovlar: ${err.message}`); }
+      setStatus(errors.length ? errors.join(' | ') : 'Ma\'lumotlar yuklandi.');
+    }
+
+    document.getElementById('admin-token').value = localStorage.getItem('vidipay_admin_token') || '';
+    if (token()) refreshAll();
+  </script>
+</body>
+</html>
