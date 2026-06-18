@@ -802,7 +802,7 @@
           <td>${w.wallet_type}<br>${w.wallet_address}</td>
           <td class="status ${w.status}">${w.status}</td>
           <td>
-            ${w.status === 'pending' ? `<button class="ok" onclick="approveWithdraw(${w.id})">Tasdiqlash</button>
+            ${w.status === 'pending' ? `<button class="ok" onclick="approveWithdraw(${w.id})">To'landi deb belgilash</button>
             <button class="danger" onclick="rejectWithdraw(${w.id})">Rad etish</button>` : ''}
           </td>
         </tr>

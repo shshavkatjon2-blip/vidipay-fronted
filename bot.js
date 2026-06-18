@@ -3,7 +3,7 @@ require('dotenv').config();
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const GAME_URL = process.env.GAME_URL;
-const APP_VERSION = 'ton-wallet-only-20260618-phone';
+const APP_VERSION = 'wallet-ui-clean-20260619';
 
 if (!BOT_TOKEN) {
     throw new Error('BOT_TOKEN .env ichida yoq');
