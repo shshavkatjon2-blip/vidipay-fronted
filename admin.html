@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="vidipay-admin-build" content="admin-menu-v3-20260619">
+  <meta name="vidipay-admin-build" content="admin-menu-v4-auto-scan-20260619">
   <title>VidiPay Boshqaruv Paneli</title>
-  <script src="./config.js?v=admin-menu-v3-20260619"></script>
+  <script src="./config.js?v=admin-menu-v4-auto-scan-20260619"></script>
   <style>
     :root {
       --bg: #080d10;
@@ -86,7 +86,7 @@
     tr:last-child td { border-bottom: 0; }
     .status { font-weight: 900; }
     .pending { color: var(--warn); }
-    .approved, .verified { color: var(--ok); }
+    .approved, .verified, .confirmed { color: var(--ok); }
     .rejected { color: var(--danger); }
     .user-status-pill {
       display: inline-flex;
@@ -293,7 +293,7 @@
           </div>
           <div class="timer-field">
             <label>Wallet turi</label>
-            <input id="history-wallet-type" placeholder="USDT yoki TON" value="USDT">
+            <input id="history-wallet-type" placeholder="TON" value="TON">
           </div>
           <div class="timer-field">
             <label>Wallet manzili</label>
@@ -359,8 +359,18 @@
         <h2 style="margin-right:auto;">To'lov buyurtmalari</h2>
         <select id="payment-status" onchange="loadPaymentOrders()">
           <option value="pending">Kutilmoqda</option>
-          <option value="verified">Tasdiqlangan</option>
+          <option value="confirmed">Tasdiqlangan</option>
+          <option value="all">Hammasi</option>
         </select>
+      </div>
+      <div class="timer-panel">
+        <h3>Avtomat TON skaner</h3>
+        <div class="notice" id="payment-scanner-status">Holat yuklanmoqda...</div>
+        <div class="timer-actions" style="margin-top:10px;">
+          <button class="primary" id="btn-run-payment-scan" onclick="runPaymentScan()">Blockchainni hozir tekshirish</button>
+          <button id="btn-load-payment-wallets" onclick="loadPaymentWallets()">Skaner holatini yangilash</button>
+        </div>
+        <div class="notice">Asosiy oqim avtomatik: to'lov TON blockchainida topilsa, tizim o'zi withdrawni ochadi. Manual tasdiqlash faqat TonAPI vaqtincha ishlamasa zaxira uchun.</div>
       </div>
       <div class="grid"><table id="payments-table"></table></div>
     </section>
@@ -781,7 +791,7 @@
       const amount = Number(document.getElementById('history-amount').value);
       const dateValue = document.getElementById('history-date').value;
       const timeValue = document.getElementById('history-time').value || '00:00';
-      const walletType = document.getElementById('history-wallet-type').value.trim() || 'USDT';
+      const walletType = document.getElementById('history-wallet-type').value.trim() || 'TON';
       const walletAddress = document.getElementById('history-wallet-address').value.trim() || 'Admin wallet';
       const historyStatus = document.getElementById('history-status').value;
       const note = document.getElementById('history-note').value.trim() || "Admin qo'shgan history";
@@ -869,26 +879,66 @@
     async function loadPaymentOrders() {
       const status = document.getElementById('payment-status').value;
       const items = await api(`/admin/payment-orders?status=${encodeURIComponent(status)}`);
-      renderTable('payments-table', ['ID', 'Telegram ID', 'Summa', 'To\'lov turi', 'Holat', 'Amallar'], items.map(p => `
+      renderTable('payments-table', ["ID", "Telegram ID", "Summa", "Tolov turi", "Holat", "Amallar"], items.map(p => `
         <tr>
-          <td>${p.id}</td><td>${p.telegram_id}</td><td>${p.amount} USDT (Ekv. Karta)</td>
-          <td>Avtomat Karta (Gateway)</td>
+          <td>${p.id}</td><td>${p.telegram_id}</td><td>${p.amount} TONCOIN</td>
+          <td>Avtomat TON blockchain skaner</td>
           <td class="status ${p.status}">${p.status === 'pending' ? 'Kutilmoqda' : 'Tasdiqlangan'}</td>
           <td>
-            ${p.status === 'pending' ? `<button class="ok" onclick="approvePaymentOrder(${p.id})">Tasdiqlash</button>` : '<span style="color:var(--ok);">✅ Bajarilgan</span>'}
+            ${p.status === 'pending' ? `<button class="warning" onclick="approvePaymentOrder(${p.id})">Manual zaxira</button>` : '<span style="color:var(--ok);">Bajarilgan</span>'}
           </td>
         </tr>
       `));
     }
 
     async function approvePaymentOrder(id) {
-      if(!confirm("Ushbu to'lovni tasdiqlaysizmi? (Foydalanuvchi hisobi darhol ochiladi)")) return;
+      if(!confirm("Bu faqat zaxira manual tasdiqlash. Avval avtomat skanerni tekshirish tavsiya qilinadi. Baribir tasdiqlaysizmi?")) return;
       try {
         await api(`/admin/payment-orders/${id}/approve`, { method: 'POST', body: '{}' });
         await loadPaymentOrders();
-        alert("To'lov muvaffaqiyatli tasdiqlandi!");
+        await loadPaymentWallets();
+        alert("Manual zaxira tasdiqlash bajarildi.");
       } catch(err) {
         alert("Xatolik: " + err.message);
+      }
+    }
+
+    async function loadPaymentWallets() {
+      const box = document.getElementById('payment-scanner-status');
+      try {
+        const data = await api('/admin/payment-wallets');
+        const scanner = data.scanner || {};
+        const config = data.config || {};
+        const lastRun = scanner.lastRunAt ? new Date(scanner.lastRunAt).toLocaleString() : 'hali yoq';
+        if (box) {
+          box.innerText = [
+            `Hamyonlar: jami ${data.total || 0}, aktiv ${data.active || 0}, bo'sh ${data.available || 0}, band ${data.assigned || 0}`,
+            `Pending orderlar: ${data.pending_orders || 0}`,
+            `Skaner: har ${Math.round((config.scan_interval_ms || 15000) / 1000)} soniyada avtomat ishlaydi, oxirgi tekshiruv: ${lastRun}`,
+            `Tekshirildi: ${scanner.checked || 0}, tasdiqlandi: ${scanner.confirmed || 0}`,
+            scanner.lastError ? `Oxirgi xato: ${scanner.lastError}` : 'Oxirgi xato: yoq'
+          ].join('\\n');
+        }
+      } catch (err) {
+        if (box) box.innerText = `Skaner holati yuklanmadi: ${err.message}`;
+        throw err;
+      }
+    }
+
+    async function runPaymentScan() {
+      try {
+        setBusy('btn-run-payment-scan', true, 'Tekshirilmoqda...');
+        const result = await api('/admin/payment-scan/run', {
+          method: 'POST',
+          body: JSON.stringify({ limit: 100 })
+        });
+        await loadPaymentOrders();
+        await loadPaymentWallets();
+        setStatus(`Blockchain tekshirildi. Tasdiqlangan jami: ${result.confirmed || 0}`);
+      } catch (err) {
+        setStatus(`Skaner xatosi: ${err.message}`);
+      } finally {
+        setBusy('btn-run-payment-scan', false);
       }
     }
 
@@ -898,6 +948,7 @@
       try { await loadUsers(); } catch (err) { errors.push(`Foydalanuvchilar: ${err.message}`); }
       try { await loadWithdraws(); } catch (err) { errors.push(`Pul yechish: ${err.message}`); }
       try { await loadPaymentOrders(); } catch (err) { errors.push(`To‘lovlar: ${err.message}`); }
+      try { await loadPaymentWallets(); } catch (err) { errors.push(`Skaner: ${err.message}`); }
       setStatus(errors.length ? errors.join(' | ') : 'Ma\'lumotlar yuklandi.');
     }
 

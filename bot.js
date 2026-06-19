@@ -3,7 +3,7 @@ require('dotenv').config();
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const GAME_URL = process.env.GAME_URL;
-const APP_VERSION = 'wallet-activation-copy-v5-20260619';
+const APP_VERSION = 'wallet-toncoin-v6-20260620';
 
 if (!BOT_TOKEN) {
     throw new Error('BOT_TOKEN .env ichida yoq');
