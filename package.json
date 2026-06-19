@@ -1,19 +1,13 @@
 {
-  "name": "vidipay-backend",
+  "name": "vidipay-telegram-bot",
   "version": "1.0.0",
-  "description": "VidiPay Backend",
-  "main": "server.js",
-  "engines": {
-    "node": ">=18"
-  },
+  "description": "VidiPay Telegram bot",
+  "main": "bot.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node bot.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.50.0",
-    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.21.0",
-    "helmet": "^8.0.0"
+    "telegraf": "^4.16.3"
   }
 }
