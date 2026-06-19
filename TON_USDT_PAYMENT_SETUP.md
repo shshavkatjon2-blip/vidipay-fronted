@@ -49,7 +49,7 @@ ADMIN_TOKEN=
 BOT_TOKEN=
 TELEGRAM_WEBHOOK_SECRET=
 PUBLIC_BACKEND_URL=https://vidipay-backend.onrender.com
-GAME_URL=https://shshavkatjon2-blip.github.io/vidipay-fronted/app-v3.html?v=wallet-ui-clean-v3-20260619
+GAME_URL=https://shshavkatjon2-blip.github.io/vidipay-fronted/app-v4.html?v=wallet-ui-force-v4-20260619
 PUBLIC_APP_URL=https://shshavkatjon2-blip.github.io/vidipay-fronted
 ALLOWED_ORIGINS=https://shshavkatjon2-blip.github.io
 TONAPI_KEY=

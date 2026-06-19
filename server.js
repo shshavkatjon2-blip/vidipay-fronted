@@ -23,10 +23,12 @@ if (missingEnvs.length > 0) {
 
 const app = express();
 
-const BACKEND_VERSION = "v1.5.2-telegram-cache-bust";
-const WEBAPP_VERSION = "wallet-ui-clean-v3-20260619";
-const PUBLIC_APP_URL = process.env.PUBLIC_APP_URL || "https://shshavkatjon2-blip.github.io/vidipay-fronted";
-const GAME_URL = process.env.GAME_URL || `${PUBLIC_APP_URL}/app-v3.html?v=${WEBAPP_VERSION}`;
+const BACKEND_VERSION = "v1.5.3-force-github-app-v4";
+const WEBAPP_VERSION = "wallet-ui-force-v4-20260619";
+const CANONICAL_PUBLIC_APP_URL = "https://shshavkatjon2-blip.github.io/vidipay-fronted";
+const CANONICAL_GAME_URL = `${CANONICAL_PUBLIC_APP_URL}/app-v4.html?v=${WEBAPP_VERSION}`;
+const PUBLIC_APP_URL = normalizeWebAppUrl(process.env.PUBLIC_APP_URL, CANONICAL_PUBLIC_APP_URL);
+const GAME_URL = normalizeWebAppUrl(process.env.GAME_URL, CANONICAL_GAME_URL);
 const BOT_TOKEN = process.env.BOT_TOKEN || "";
 const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || "";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
@@ -45,6 +47,20 @@ const PAYMENT_WALLET_COOLDOWN_MINUTES = Math.max(PAYMENT_LATE_GRACE_MINUTES, Num
 const PAYMENT_SCAN_INTERVAL_MS = Math.max(5000, Number(process.env.PAYMENT_SCAN_INTERVAL_MS || 15000));
 const PAYMENT_SCAN_BATCH_SIZE = Math.max(1, Math.min(250, Number(process.env.PAYMENT_SCAN_BATCH_SIZE || 50)));
 const PAYMENT_SCANNER_ENABLED = process.env.PAYMENT_SCANNER_ENABLED !== "false";
+
+function normalizeWebAppUrl(value, fallback) {
+  const raw = String(value || "").trim();
+  if (!raw) return fallback;
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== "https:") return fallback;
+    if (parsed.hostname !== "shshavkatjon2-blip.github.io") return fallback;
+    if (!parsed.pathname.startsWith("/vidipay-fronted")) return fallback;
+    return raw;
+  } catch {
+    return fallback;
+  }
+}
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || PUBLIC_APP_URL)
   .split(",")
   .map((origin) => origin.trim())
