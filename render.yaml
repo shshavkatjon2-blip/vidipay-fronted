@@ -1,0 +1,59 @@
+services:
+  - type: web
+    name: vidipay-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: ADMIN_TOKEN
+        sync: false
+      - key: BOT_TOKEN
+        sync: false
+      - key: GAME_URL
+        sync: false
+      - key: PUBLIC_BACKEND_URL
+        value: https://vidipay-backend.onrender.com
+      - key: PUBLIC_APP_URL
+        value: https://shshavkatjon2-blip.github.io/vidipay-fronted
+      - key: ALLOWED_ORIGINS
+        value: https://shshavkatjon2-blip.github.io
+      - key: TELEGRAM_WEBHOOK_SECRET
+        sync: false
+      - key: TONAPI_KEY
+        sync: false
+      - key: TONAPI_BASE_URL
+        value: https://tonapi.io
+      - key: TON_USDT_JETTON_MASTER
+        sync: false
+      - key: ACTIVATION_DEPOSIT_USDT
+        value: 10
+      - key: ACTIVATION_FEE_USDT
+        value: 1
+      - key: ACTIVATION_REFUND_USDT
+        value: 9
+      - key: USDT_PAYMENT_AMOUNT
+        value: 10
+      - key: PAYMENT_ORDER_TTL_MINUTES
+        value: 5
+      - key: PAYMENT_LATE_GRACE_MINUTES
+        value: 30
+      - key: PAYMENT_WALLET_COOLDOWN_MINUTES
+        value: 30
+      - key: PAYMENT_SCAN_INTERVAL_MS
+        value: 15000
+      - key: PAYMENT_SCAN_BATCH_SIZE
+        value: 50
+      - key: PAYMENT_SCANNER_ENABLED
+        value: true
