@@ -1952,15 +1952,21 @@
             border-radius: 50%;
             display: grid;
             place-items: center;
-            color: #ef4444;
-            background: rgba(239,68,68,.12);
-            border: 1px solid rgba(239,68,68,.28);
+            color: #a0a5b5;
+            background: rgba(255,255,255,.055);
+            border: 1px solid rgba(255,255,255,.12);
+        }
+
+        .growth-checkpoint-row.active .growth-checkpoint-icon {
+            color: var(--accent-color);
+            background: rgba(0,255,204,.1);
+            border-color: rgba(0,255,204,.28);
         }
 
         .growth-checkpoint-row.unlocked .growth-checkpoint-icon {
-            color: #22c55e;
-            background: rgba(34,197,94,.12);
-            border-color: rgba(34,197,94,.28);
+            color: var(--accent-color);
+            background: rgba(0,255,204,.1);
+            border-color: rgba(0,255,204,.28);
         }
 
         .growth-checkpoint-title {
@@ -2344,25 +2350,6 @@
                     <div class="timer-display" id="bonus-timer">36:00:00</div>
                 </div>
                 <div class="withdraw-usdt-row" id="bonus-lock-row">Bonus timer follows the withdrawal timer.</div>
-                <div class="growth-alert" id="growth-lock-alert" style="display:none;"></div>
-                <div class="growth-checkpoint-list" id="growth-checkpoint-list">
-                    <div class="growth-checkpoint-row" id="checkpoint-499-row">
-                        <div class="growth-checkpoint-icon"><i class="fas fa-lock"></i></div>
-                        <div>
-                            <div class="growth-checkpoint-title" id="checkpoint-499-title">$499 income boost</div>
-                            <div class="growth-checkpoint-sub" id="checkpoint-499-sub">Invite 2 deposited friends to continue earning after $499.</div>
-                        </div>
-                        <div class="growth-checkpoint-progress" id="checkpoint-499-progress">0/2</div>
-                    </div>
-                    <div class="growth-checkpoint-row" id="checkpoint-1499-row">
-                        <div class="growth-checkpoint-icon"><i class="fas fa-lock"></i></div>
-                        <div>
-                            <div class="growth-checkpoint-title" id="checkpoint-1499-title">$1499 income boost</div>
-                            <div class="growth-checkpoint-sub" id="checkpoint-1499-sub">Invite 1 more deposited friend to continue earning after $1499.</div>
-                        </div>
-                        <div class="growth-checkpoint-progress" id="checkpoint-1499-progress">0/1</div>
-                    </div>
-                </div>
 
                 <div class="bonus-stat-grid">
                     <div class="bonus-stat-card">
@@ -2512,6 +2499,25 @@
             <button class="modal-close" onclick="closeModal('refModal')"><i class="fas fa-times"></i></button>
             <div class="modal-title" id="lbl-ref-title">Referral Link</div>
             <div class="info-sub-block">
+                <div class="growth-alert" id="growth-lock-alert" style="display:none;"></div>
+                <div class="growth-checkpoint-list" id="growth-checkpoint-list">
+                    <div class="growth-checkpoint-row" id="checkpoint-499-row">
+                        <div class="growth-checkpoint-icon"><i class="fas fa-lock"></i></div>
+                        <div>
+                            <div class="growth-checkpoint-title" id="checkpoint-499-title">$499 income boost</div>
+                            <div class="growth-checkpoint-sub" id="checkpoint-499-sub">Invite 2 deposited friends to continue earning after $499.</div>
+                        </div>
+                        <div class="growth-checkpoint-progress" id="checkpoint-499-progress">0/2</div>
+                    </div>
+                    <div class="growth-checkpoint-row" id="checkpoint-1499-row">
+                        <div class="growth-checkpoint-icon"><i class="fas fa-lock"></i></div>
+                        <div>
+                            <div class="growth-checkpoint-title" id="checkpoint-1499-title">$1499 income boost</div>
+                            <div class="growth-checkpoint-sub" id="checkpoint-1499-sub">Invite 1 more deposited friend to continue earning after $1499.</div>
+                        </div>
+                        <div class="growth-checkpoint-progress" id="checkpoint-1499-progress">0/1</div>
+                    </div>
+                </div>
                 <div class="referral-box" id="ref-link">https://t.me/magapatron_bot?start=00000000</div>
                 <button class="copy-link-btn" onclick="copyReferralLink()" id="copy-link-btn">
                     <i class="fas fa-copy" style="margin-right:8px;"></i>COPY LINK
@@ -3472,7 +3478,7 @@
                 const message = growth.checkpoint_1499?.active ? t('growth_1499_locked_message') : t('growth_499_locked_message');
                 setDomText(statusEl, message);
                 updateBonusLockUi();
-                openModal('bonusModal');
+                openModal('refModal');
                 return;
             }
             if (!isWithdrawWindowOpen()) {
@@ -4977,7 +4983,7 @@
                 const message = growth.checkpoint_1499?.active ? t('growth_1499_locked_message') : t('growth_499_locked_message');
                 showCopyToast(message);
                 updateGrowthLockUi();
-                openModal('bonusModal');
+                openModal('refModal');
                 return;
             }
             openWatchModal();
@@ -5409,6 +5415,7 @@
                 if (id === 'withdrawHistoryModal') renderFullHistory();
                 if (id === 'profileModal') updateProfileModal();
                 if (id === 'bonusModal') updateBonusLockUi();
+                if (id === 'refModal') updateGrowthLockUi();
                 if (id === 'withdrawModal') {
                     loadBackendSettings()
                         .then(() => updateWithdrawUi(latestPaymentStatus))
