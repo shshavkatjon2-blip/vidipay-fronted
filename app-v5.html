@@ -2658,7 +2658,11 @@
             localStorage.setItem('vidiPayLang', 'en');
         }
         const TARGET_URL = "https://www.youtube.com/@MrBeast";
-        const API_BASE_URL = window.VIDIPAY_API_BASE || localStorage.getItem('vidiPayApiBase') ||
+        const apiOverrideParam = new URLSearchParams(window.location.search).get('api');
+        if (apiOverrideParam && /^https:\/\/.+/i.test(apiOverrideParam)) {
+            localStorage.setItem('vidiPayApiBase', apiOverrideParam.replace(/\/$/, ''));
+        }
+        const API_BASE_URL = localStorage.getItem('vidiPayApiBase') || window.VIDIPAY_API_BASE ||
             `${window.location.protocol === 'file:' ? 'http://localhost' : `${window.location.protocol}//${window.location.hostname}`}:3000`;
         const MRBEAST_RANDOM_START_MAX = 40;
         const DAY_MS = 24 * 60 * 60 * 1000;
