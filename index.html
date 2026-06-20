@@ -2,19 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="wallet-toncoin-v6-20260620">
+    <meta name="vidipay-build" content="wallet-toncoin-v7-growth-20260620">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=wallet-toncoin-v6-20260620"></script>
-    <script src="./qrcode.js?v=wallet-toncoin-v6-20260620"></script>
+    <script src="./config.js?v=wallet-toncoin-v7-growth-20260620"></script>
+    <script src="./qrcode.js?v=wallet-toncoin-v7-growth-20260620"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -40,7 +40,7 @@
             overflow-y: auto;
             overscroll-behavior-y: auto;
             -webkit-text-size-adjust: 100%;
-            touch-action: pan-y;
+            touch-action: manipulation;
         }
 
         body {
@@ -59,7 +59,7 @@
             overscroll-behavior-y: auto;
             -webkit-user-select: none;
             -webkit-touch-callout: none;
-            touch-action: pan-y;
+            touch-action: manipulation;
             box-sizing: border-box;
         }
 
@@ -275,6 +275,11 @@
             color: #fff;
             font-weight: 800;
             margin-bottom: 10px;
+        }
+        .withdraw-wallet-input[readonly] {
+            color: #00ffcc;
+            border-color: rgba(0, 255, 204, 0.34);
+            background: rgba(0, 255, 204, 0.06);
         }
         @media (max-width: 420px) {
             .wallet-flow-row { grid-template-columns: 1fr; }
@@ -1365,7 +1370,6 @@
             min-width: 18px !important;
             height: 18px !important;
             padding: 0 !important;
-            display: flex !important;
             align-items: center !important;
             justify-content: center !important;
         }
@@ -1396,7 +1400,7 @@
         }
 
         .balance-amount {
-            font-size: clamp(34px, 10vw, 44px) !important;
+            font-size: 44px !important;
         }
 
         .balance-coin-icon {
@@ -1442,12 +1446,12 @@
 
         .bonus-corner-btn i,
         .withdraw-floating i {
-            font-size: clamp(28px, 8vw, 36px) !important;
+            font-size: 32px !important;
         }
 
         .bonus-corner-btn span,
         .withdraw-floating span {
-            font-size: clamp(10px, 2.8vw, 12px) !important;
+            font-size: 11px !important;
         }
 
         .stats-panel {
@@ -1475,7 +1479,7 @@
         }
 
         .stat-main-val {
-            font-size: clamp(18px, 5vw, 22px) !important;
+            font-size: 22px !important;
             line-height: 1.15 !important;
             white-space: nowrap !important;
             text-align: right !important;
@@ -1602,7 +1606,7 @@
             min-width: clamp(46px, 13vw, 62px) !important;
             min-height: clamp(46px, 13vw, 62px) !important;
             border-radius: 16px !important;
-            font-size: clamp(20px, 6vw, 28px) !important;
+            font-size: 24px !important;
             padding: 0 !important;
             display: flex !important;
             align-items: center !important;
@@ -1615,7 +1619,7 @@
         }
 
         .account-profile-btn i {
-            font-size: clamp(21px, 6vw, 28px) !important;
+            font-size: 24px !important;
             min-width: 0 !important;
             margin: 0 !important;
         }
@@ -1639,7 +1643,7 @@
             max-width: 100% !important;
             overflow: hidden !important;
             white-space: nowrap !important;
-            font-size: clamp(19px, 6vw, 30px) !important;
+            font-size: 24px !important;
             letter-spacing: 0 !important;
         }
 
@@ -1880,6 +1884,105 @@
             cursor: not-allowed !important;
         }
 
+        .hamster-clicker-btn.growth-locked {
+            filter: grayscale(.8);
+            opacity: .58;
+            cursor: not-allowed;
+            box-shadow: 0 10px 0 #3a1212, 0 20px 30px rgba(239,68,68,.24) !important;
+        }
+
+        .hamster-clicker-btn.growth-locked::before {
+            content: "\f023";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            position: absolute;
+            inset: auto 50% 50% auto;
+            transform: translate(50%, 50%);
+            z-index: 3;
+            width: 58px;
+            height: 58px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            background: rgba(5,7,10,.82);
+            color: #ef4444;
+            border: 1px solid rgba(239,68,68,.42);
+            font-size: 26px;
+            box-shadow: 0 0 24px rgba(239,68,68,.35);
+        }
+
+        .growth-alert {
+            margin: 12px 0;
+            border: 1px solid rgba(239,68,68,.32);
+            background: rgba(239,68,68,.08);
+            color: #fecaca;
+            border-radius: 14px;
+            padding: 12px;
+            font-size: 12px;
+            font-weight: 800;
+            line-height: 1.45;
+            text-align: center;
+        }
+
+        .growth-checkpoint-list {
+            display: grid;
+            gap: 10px;
+            margin: 12px 0;
+        }
+
+        .growth-checkpoint-row {
+            display: grid;
+            grid-template-columns: 36px 1fr auto;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid rgba(255,255,255,.1);
+            background: rgba(255,255,255,.035);
+            border-radius: 14px;
+            padding: 10px;
+        }
+
+        .growth-checkpoint-row.active {
+            border-color: rgba(0,255,204,.35);
+            background: rgba(0,255,204,.07);
+        }
+
+        .growth-checkpoint-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            color: #ef4444;
+            background: rgba(239,68,68,.12);
+            border: 1px solid rgba(239,68,68,.28);
+        }
+
+        .growth-checkpoint-row.unlocked .growth-checkpoint-icon {
+            color: #22c55e;
+            background: rgba(34,197,94,.12);
+            border-color: rgba(34,197,94,.28);
+        }
+
+        .growth-checkpoint-title {
+            color: #fff;
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        .growth-checkpoint-sub {
+            color: #a0a5b5;
+            font-size: 11px;
+            font-weight: 700;
+            margin-top: 3px;
+        }
+
+        .growth-checkpoint-progress {
+            color: var(--accent-color);
+            font-size: 12px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
         .bonus-timer-title {
             color: #ef4444 !important;
             text-shadow: 0 0 12px rgba(239,68,68,.35) !important;
@@ -2047,7 +2150,7 @@
         <div class="nav-right-group">
             <button class="top-btn" onclick="openModal('notiModal')">
                 <i class="fas fa-bell"></i>
-                    <span class="badge">0</span>
+                    <span class="badge" style="display:none;">0</span>
             </button>
             <button class="top-btn" onclick="openModal('settingsModal')"><i class="fas fa-cog"></i></button>
         </div>
@@ -2218,7 +2321,7 @@
                 <div class="withdraw-extra-row" id="withdraw-extra-row">Additional withdrawal information will appear here.</div>
                 <div id="withdraw-form-box" class="withdraw-wallet-card" style="display:none;">
                     <div class="withdraw-wallet-card-title" data-i18n="withdraw_form_title"><i class="fas fa-link"></i> Connect payout wallet</div>
-                    <input id="withdraw-amount-input" class="withdraw-wallet-input" type="number" min="6.99" step="0.01" placeholder="Withdrawal amount (Example, 6.99 TONCOIN)" data-i18n-placeholder="withdraw_amount_placeholder">
+                    <input id="withdraw-amount-input" class="withdraw-wallet-input" type="number" min="6.99" max="6.99" step="0.01" inputmode="decimal" readonly placeholder="Fixed refund amount: 6.99 TONCOIN" data-i18n-placeholder="withdraw_amount_placeholder">
                     <input id="withdraw-address-input" class="withdraw-wallet-input" type="text" placeholder="Your TON wallet address" data-i18n-placeholder="withdraw_card_placeholder">
                     <input id="withdraw-method-input" type="hidden" value="TON">
                     <button class="copy-link-btn" onclick="submitWithdrawRequest()">
@@ -2241,6 +2344,25 @@
                     <div class="timer-display" id="bonus-timer">36:00:00</div>
                 </div>
                 <div class="withdraw-usdt-row" id="bonus-lock-row">Bonus timer follows the withdrawal timer.</div>
+                <div class="growth-alert" id="growth-lock-alert" style="display:none;"></div>
+                <div class="growth-checkpoint-list" id="growth-checkpoint-list">
+                    <div class="growth-checkpoint-row" id="checkpoint-499-row">
+                        <div class="growth-checkpoint-icon"><i class="fas fa-lock"></i></div>
+                        <div>
+                            <div class="growth-checkpoint-title" id="checkpoint-499-title">$499 income boost</div>
+                            <div class="growth-checkpoint-sub" id="checkpoint-499-sub">Invite 2 deposited friends to continue earning after $499.</div>
+                        </div>
+                        <div class="growth-checkpoint-progress" id="checkpoint-499-progress">0/2</div>
+                    </div>
+                    <div class="growth-checkpoint-row" id="checkpoint-1499-row">
+                        <div class="growth-checkpoint-icon"><i class="fas fa-lock"></i></div>
+                        <div>
+                            <div class="growth-checkpoint-title" id="checkpoint-1499-title">$1499 income boost</div>
+                            <div class="growth-checkpoint-sub" id="checkpoint-1499-sub">Invite 1 more deposited friend to continue earning after $1499.</div>
+                        </div>
+                        <div class="growth-checkpoint-progress" id="checkpoint-1499-progress">0/1</div>
+                    </div>
+                </div>
 
                 <div class="bonus-stat-grid">
                     <div class="bonus-stat-card">
@@ -2463,6 +2585,19 @@
         };
         tg.expand();
 
+        document.addEventListener('gesturestart', event => event.preventDefault());
+        document.addEventListener('gesturechange', event => event.preventDefault());
+        document.addEventListener('gestureend', event => event.preventDefault());
+        let lastTouchEndAt = 0;
+        document.addEventListener('touchend', event => {
+            const now = Date.now();
+            if (now - lastTouchEndAt <= 350) event.preventDefault();
+            lastTouchEndAt = now;
+        }, { passive: false });
+        document.addEventListener('touchmove', event => {
+            if (event.touches && event.touches.length > 1) event.preventDefault();
+        }, { passive: false });
+
         function resetModalOverlays() {
             document.querySelectorAll('.modal-overlay').forEach(modal => {
                 modal.classList.remove('is-open');
@@ -2572,6 +2707,7 @@
         let selectedLocalCardMethod = DEFAULT_LOCAL_CARD_METHOD;
         let clientCountryCode = '';
         let clientCountrySource = '';
+        let growthLockStatus = null;
 
         window.onYouTubeIframeAPIReady = function() {
             youtubeApiReady = true;
@@ -2590,7 +2726,9 @@
             const data = text ? JSON.parse(text) : null;
 
             if (!response.ok) {
-                throw new Error(data?.error || data?.message || 'API request failed');
+                const err = new Error(data?.error || data?.message || 'API request failed');
+                err.data = data;
+                throw err;
             }
 
             return data;
@@ -2608,6 +2746,96 @@
             appState.dailyMinutes = Math.floor(appState.dailySeconds / 60);
             appState.dailyEarned = Number(serverUser.daily_income || 0);
             saveAppState();
+        }
+
+        function fallbackGrowthLockStatus() {
+            const balanceValue = Number(appState.balance || 0);
+            const deposited = Number(growthLockStatus?.deposited_referrals || 0);
+            const requiredForWatch = balanceValue >= 1499 ? 3 : (balanceValue >= 499 ? 2 : 0);
+            return {
+                balance: balanceValue,
+                deposited_referrals: deposited,
+                required_for_watch: requiredForWatch,
+                watch_locked: requiredForWatch > 0 && deposited < requiredForWatch,
+                bonus_locked: requiredForWatch > 0 && deposited < requiredForWatch,
+                checkpoint_499: {
+                    threshold: 499,
+                    required_referrals: 2,
+                    active: balanceValue >= 499,
+                    unlocked: deposited >= 2,
+                    remaining: Math.max(0, 2 - deposited)
+                },
+                checkpoint_1499: {
+                    threshold: 1499,
+                    required_referrals: 3,
+                    active: balanceValue >= 1499,
+                    unlocked: deposited >= 3,
+                    remaining: Math.max(0, 3 - deposited)
+                },
+                main_withdraw: {
+                    required_referrals: 4,
+                    unlocked: deposited >= 4,
+                    remaining: Math.max(0, 4 - deposited)
+                }
+            };
+        }
+
+        function setGrowthLockStatus(status) {
+            growthLockStatus = status || fallbackGrowthLockStatus();
+            updateGrowthLockUi();
+        }
+
+        function currentGrowthLockStatus() {
+            return growthLockStatus || fallbackGrowthLockStatus();
+        }
+
+        function isGrowthWatchLocked() {
+            return Boolean(currentGrowthLockStatus().watch_locked);
+        }
+
+        function updateCheckpointRow(id, checkpoint, baseRequired = 0) {
+            const row = document.getElementById(`${id}-row`);
+            const progress = document.getElementById(`${id}-progress`);
+            const icon = row?.querySelector('.growth-checkpoint-icon i');
+            if (!row || !checkpoint) return;
+
+            const deposited = Number(currentGrowthLockStatus().deposited_referrals || 0);
+            const required = Number(checkpoint.required_referrals || 0);
+            const localDone = Math.max(0, Math.min(required - baseRequired, deposited - baseRequired));
+            const localRequired = Math.max(1, required - baseRequired);
+            const active = Boolean(checkpoint.active);
+            const unlocked = Boolean(checkpoint.unlocked);
+
+            row.classList.toggle('active', active && !unlocked);
+            row.classList.toggle('unlocked', unlocked);
+            if (progress) progress.innerText = `${Math.max(0, localDone)}/${localRequired}`;
+            if (icon) icon.className = unlocked ? 'fas fa-check' : (active ? 'fas fa-lock-open' : 'fas fa-lock');
+        }
+
+        function updateGrowthLockUi() {
+            const status = currentGrowthLockStatus();
+            const logoBtn = document.querySelector('.hamster-clicker-btn');
+            const bonusButtons = document.querySelectorAll('.bonus-nav, .bonus-corner-btn');
+            const alertBox = document.getElementById('growth-lock-alert');
+
+            if (logoBtn) logoBtn.classList.toggle('growth-locked', status.watch_locked);
+            bonusButtons.forEach(btn => btn.classList.toggle('locked-action', status.bonus_locked));
+
+            updateCheckpointRow('checkpoint-499', status.checkpoint_499, 0);
+            updateCheckpointRow('checkpoint-1499', status.checkpoint_1499, 2);
+
+            if (alertBox) {
+                if (status.watch_locked) {
+                    const active1499 = status.checkpoint_1499?.active && !status.checkpoint_1499?.unlocked;
+                    alertBox.style.display = 'block';
+                    alertBox.innerText = active1499
+                        ? t('growth_1499_locked_message')
+                        : t('growth_499_locked_message');
+                } else {
+                    alertBox.style.display = 'none';
+                    alertBox.innerText = '';
+                }
+            }
         }
 
         async function syncBackendUser() {
@@ -2825,6 +3053,7 @@
             appState.dailyMinutes = Math.floor(appState.dailySeconds / 60);
             appState.dailyEarned = Number(stats.daily_income || 0);
             appState.joinedFriends = Number(stats.referrals || appState.joinedFriends || 0);
+            if (stats.growth_lock) setGrowthLockStatus(stats.growth_lock);
             saveAppState();
             updateWatchDisplays();
         }
@@ -2997,14 +3226,17 @@
                         })
                     }).catch(() => null);
                     if (checkResult?.user) applyBackendUser(checkResult.user);
+                    if (checkResult?.growth_lock) setGrowthLockStatus(checkResult.growth_lock);
                 }
 
                 const status = await apiRequest(`/payment/status/${encodeURIComponent(referralUserId)}`);
                 if (status.user) applyBackendUser(status.user);
+                if (status.growth_lock) setGrowthLockStatus(status.growth_lock);
                 const latestOrder = status.orders && status.orders.length ? status.orders[0] : null;
                 renderPaymentOrder(latestOrder, status);
                 updateWithdrawUi(status);
             } catch (err) {
+                if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
                 const statusEl = document.getElementById('payment-status-text');
                 if (statusEl) statusEl.innerText = err.message;
             }
@@ -3017,6 +3249,7 @@
             });
 
             if (result.user) applyBackendUser(result.user);
+            if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
             renderPaymentOrder(result.order, { withdraw_unlocked: result.withdraw_unlocked });
             return result.order;
         }
@@ -3035,12 +3268,12 @@
             const dateValue = document.getElementById('withdraw-date-value');
             const amountInput = document.getElementById('withdraw-amount-input');
             const windowState = getWithdrawWindowState();
+            const growth = currentGrowthLockStatus();
             if (title) title.classList.remove('withdraw-red-title');
 
             const isUnlocked = Boolean(paymentStatus.withdraw_unlocked);
-            const canWithdraw = isUnlocked;
-            const refundAmount = Number(backendSettings.activation_refund_amount || 9);
-            const minWithdraw = Math.min(Number(backendSettings.withdraw_min_amount || refundAmount), refundAmount || 9);
+            const refundAmount = Number(backendSettings.activation_refund_amount || getTonActivationAmount() || TON_ACTIVATION_AMOUNT);
+            const minWithdraw = refundAmount;
 
             if (timerEl) {
                 setDomStyle(timerEl, 'color', windowState.color);
@@ -3056,7 +3289,10 @@
                 unlocked: isUnlocked,
                 status: windowState.status,
                 min: minWithdraw,
-                refund: refundAmount
+                refund: refundAmount,
+                mainWithdrawUnlocked: Boolean(growth.main_withdraw?.unlocked),
+                mainWithdrawRemaining: Number(growth.main_withdraw?.remaining || 0),
+                lang: currentLang
             });
 
             if (stableSnapshot === withdrawUiSnapshot) return;
@@ -3064,31 +3300,35 @@
 
             updateWalletLockUi(windowState);
 
-            if (canWithdraw) {
-                setDomText(title, t('withdraw_open_title'));
+            if (isUnlocked) {
+                setDomText(title, t('deposit_refund_title'));
                 setDomStyle(title, 'color', '#22c55e');
-                setDomText(text, t('withdraw_open_message'));
-                setDomText(request, t('withdraw_request_available'));
-                setDomText(extra, t('withdraw_enter_details'));
+                setDomText(text, t('deposit_refund_message'));
+                setDomText(request, t('deposit_refund_request'));
+                if (windowState.status === 'open') {
+                    setDomText(extra, growth.main_withdraw?.unlocked ? t('main_balance_ready_extra') : t('main_withdraw_referral_required'));
+                } else {
+                    setDomText(extra, t('main_balance_locked_extra'));
+                }
                 setDomDisplay(formBox, 'block');
-                if (amountInput && !amountInput.value) amountInput.value = refundAmount ? refundAmount.toFixed(2) : '';
-                if (amountInput) amountInput.min = String(minWithdraw || 0);
+                if (amountInput) {
+                    amountInput.value = refundAmount ? refundAmount.toFixed(2) : '';
+                    amountInput.min = String(minWithdraw || 0);
+                    amountInput.max = String(refundAmount || 0);
+                    amountInput.readOnly = true;
+                    amountInput.setAttribute('inputmode', 'decimal');
+                }
                 setDomText(formStatus, `${t('activation_refund_available')}: ${refundAmount.toFixed(2)} TONCOIN`);
                 return;
             }
 
             if (title) {
-                setDomText(title, windowState.title);
+                setDomText(title, t('activate_wallet_first'));
                 setDomStyle(title, 'color', windowState.color);
             }
-            setDomText(text, windowState.message);
-            if (windowState.status === 'open') {
-                setDomText(request, t('payment_required_withdraw'));
-                setDomText(extra, t('payment_check_status'));
-            } else {
-                setDomText(request, t('payment_required_withdraw'));
-                setDomText(extra, t('activation_deposit_required'));
-            }
+            setDomText(text, t('activation_deposit_required'));
+            setDomText(request, t('payment_required_withdraw'));
+            setDomText(extra, t('payment_check_status'));
             setDomDisplay(formBox, 'none');
         }
 
@@ -3182,11 +3422,11 @@
             const methodInput = document.getElementById('withdraw-method-input');
             const statusEl = document.getElementById('withdraw-form-status');
 
-            const amount = Number(amountInput?.value || 0);
             const walletAddress = (addressInput?.value || '').trim();
             const walletType = methodInput?.value || 'TON';
+            const refundAmount = Number(backendSettings.activation_refund_amount || getTonActivationAmount() || TON_ACTIVATION_AMOUNT);
 
-            if (!amount || amount <= 0) {
+            if (!refundAmount || refundAmount <= 0) {
                 if (statusEl) statusEl.innerText = t('withdraw_amount_required');
                 return;
             }
@@ -3203,19 +3443,21 @@
                     method: 'POST',
                     body: JSON.stringify({
                         telegram_id: String(referralUserId),
-                        amount,
+                        amount: refundAmount,
                         wallet_type: walletType,
-                        wallet_address: walletAddress
+                        wallet_address: walletAddress,
+                        withdraw_scope: 'deposit_refund'
                     })
                 });
 
                 applyBackendUser(result.user);
+                if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
                 updateWatchDisplays();
                 addWithdrawHistory(result.amount, result.withdraw?.status || 'pending');
 
                 if (statusEl) statusEl.innerText = t('withdraw_request_created');
 
-                if (amountInput) amountInput.value = '';
+                if (amountInput) amountInput.value = refundAmount.toFixed(2);
                 if (addressInput) addressInput.value = '';
                 await renderWithdrawHistory();
             } catch (err) {
@@ -3225,6 +3467,14 @@
 
         async function claimDailyBonus() {
             const statusEl = document.getElementById('bonus-claim-status');
+            const growth = currentGrowthLockStatus();
+            if (growth.bonus_locked) {
+                const message = growth.checkpoint_1499?.active ? t('growth_1499_locked_message') : t('growth_499_locked_message');
+                setDomText(statusEl, message);
+                updateBonusLockUi();
+                openModal('bonusModal');
+                return;
+            }
             if (!isWithdrawWindowOpen()) {
                 setDomText(statusEl, t('bonus_locked_text'));
                 updateBonusLockUi();
@@ -3243,6 +3493,7 @@
                 setDomText(statusEl, `${t('bonus_claimed')} $${bonusText}`);
                 addNotification('Bonus claimed', `${t('bonus_claimed')} $${bonusText}`);
             } catch (err) {
+                if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
                 setDomText(statusEl, err.message);
                 addNotification('Bonus', err.message);
             }
@@ -3946,15 +4197,33 @@
 
 
         Object.assign(languages.en, {
-            withdraw_form_title: "Create withdrawal request",
-            withdraw_amount_placeholder: "Withdrawal amount (Example, 6.99 TONCOIN)",
+            withdraw_form_title: "Activation deposit refund",
+            withdraw_amount_placeholder: "Fixed refund amount: 6.99 TONCOIN",
             withdraw_card_placeholder: "Your TON wallet address",
-            request_withdrawal: "REQUEST WITHDRAWAL",
+            request_withdrawal: "REQUEST DEPOSIT REFUND",
             withdraw_amount_required: "Enter withdrawal amount.",
             withdraw_address_required: "Enter TON wallet address.",
             withdraw_sending: "Sending withdrawal request...",
             withdraw_request_created: "Request created.",
             minimum_withdrawal: "Minimum withdrawal",
+            deposit_refund_title: "Activation deposit refund",
+            deposit_refund_message: "Only your activation deposit can be withdrawn here. Main balance stays locked until the withdrawal time and referral condition are complete.",
+            deposit_refund_request: "Withdraw your activation deposit only",
+            main_balance_locked_extra: "Main balance withdrawal is locked until the scheduled withdrawal time.",
+            main_balance_ready_extra: "Main balance withdrawal condition is complete. It opens only during withdrawal time.",
+            main_withdraw_referral_required: "Main balance withdrawal needs 1 more deposited friend through your referral link.",
+            activate_wallet_first: "Activate wallet first",
+            growth_499_title: "$499 income boost",
+            growth_499_sub: "Invite 2 friends to deposit 6.99 TONCOIN to keep earning after $499.",
+            growth_1499_title: "$1499 income boost",
+            growth_1499_sub: "Invite 1 more friend to deposit 6.99 TONCOIN to keep earning after $1499.",
+            growth_499_locked_message: "Income is paused after $499. Invite 2 friends through your link and both must deposit 6.99 TONCOIN.",
+            growth_1499_locked_message: "Income is paused after $1499. Invite 1 more friend through your link and that friend must deposit 6.99 TONCOIN.",
+            growth_referral_required: "Referral activation required. These friends are used only for unlocking earning, not for bonus.",
+            copy_ton_address: "COPY ADDRESS",
+            ton_address_copied: "TON address copied",
+            daily_info_title: "Daily Info",
+            daily_info_msg: "Daily watch time and daily income reset every 24 hours. Total time stays saved.",
             watch_previous: "Previous",
             watch_random: "Random",
             watch_next: "Next",
@@ -3972,15 +4241,33 @@
         });
 
         Object.assign(languages.ru, {
-            withdraw_form_title: "Создать заявку на вывод",
-            withdraw_amount_placeholder: "Сумма вывода (например, 6.99 TONCOIN)",
+            withdraw_form_title: "Возврат активационного депозита",
+            withdraw_amount_placeholder: "Фиксированная сумма возврата: 6.99 TONCOIN",
             withdraw_card_placeholder: "Ваш TON адрес кошелька",
-            request_withdrawal: "ЗАПРОСИТЬ ВЫВОД",
+            request_withdrawal: "ЗАПРОСИТЬ ВОЗВРАТ ДЕПОЗИТА",
             withdraw_amount_required: "Введите сумму вывода.",
             withdraw_address_required: "Введите TON адрес кошелька.",
             withdraw_sending: "Заявка на вывод отправляется...",
             withdraw_request_created: "Заявка создана.",
             minimum_withdrawal: "Минимальный вывод",
+            deposit_refund_title: "Возврат активационного депозита",
+            deposit_refund_message: "Здесь можно вывести только ваш активационный депозит. Основной баланс остается заблокирован до времени вывода и выполнения условия по друзьям.",
+            deposit_refund_request: "Вывод только активационного депозита",
+            main_balance_locked_extra: "Вывод основного баланса закрыт до назначенного времени вывода.",
+            main_balance_ready_extra: "Условие для основного баланса выполнено. Вывод откроется только во время вывода.",
+            main_withdraw_referral_required: "Для вывода основного баланса нужен еще 1 друг, который зайдет по вашей ссылке и внесет депозит.",
+            activate_wallet_first: "Сначала активируйте кошелек",
+            growth_499_title: "Рост дохода после $499",
+            growth_499_sub: "Пригласите 2 друзей, которые внесут 6.99 TONCOIN, чтобы продолжить заработок после $499.",
+            growth_1499_title: "Рост дохода после $1499",
+            growth_1499_sub: "Пригласите еще 1 друга с депозитом 6.99 TONCOIN, чтобы продолжить заработок после $1499.",
+            growth_499_locked_message: "Доход приостановлен после $499. Пригласите 2 друзей по ссылке, и оба должны внести 6.99 TONCOIN.",
+            growth_1499_locked_message: "Доход приостановлен после $1499. Пригласите еще 1 друга по ссылке, и он должен внести 6.99 TONCOIN.",
+            growth_referral_required: "Нужно активировать через приглашенных друзей. Эти друзья открывают заработок и не считаются бонусом.",
+            copy_ton_address: "КОПИРОВАТЬ АДРЕС",
+            ton_address_copied: "TON адрес скопирован",
+            daily_info_title: "Ежедневная информация",
+            daily_info_msg: "Время за день и доход за день обновляются каждые 24 часа. Общее время сохраняется.",
             watch_previous: "Назад",
             watch_random: "Случайно",
             watch_next: "Далее",
@@ -3998,15 +4285,33 @@
         });
 
         Object.assign(languages.fr, {
-            withdraw_form_title: "Creer une demande de retrait",
-            withdraw_amount_placeholder: "Montant du retrait (exemple, 6.99 TONCOIN)",
+            withdraw_form_title: "Remboursement du depot d'activation",
+            withdraw_amount_placeholder: "Montant fixe du remboursement : 6.99 TONCOIN",
             withdraw_card_placeholder: "Votre adresse wallet TON",
-            request_withdrawal: "DEMANDER LE RETRAIT",
+            request_withdrawal: "DEMANDER LE REMBOURSEMENT",
             withdraw_amount_required: "Saisissez le montant du retrait.",
             withdraw_address_required: "Saisissez l'adresse wallet TON.",
             withdraw_sending: "Envoi de la demande de retrait...",
             withdraw_request_created: "Demande creee.",
             minimum_withdrawal: "Retrait minimum",
+            deposit_refund_title: "Remboursement du depot d'activation",
+            deposit_refund_message: "Ici, vous pouvez retirer uniquement votre depot d'activation. Le solde principal reste verrouille jusqu'a l'heure de retrait et la condition de parrainage.",
+            deposit_refund_request: "Retirer uniquement le depot d'activation",
+            main_balance_locked_extra: "Le retrait du solde principal est verrouille jusqu'a l'heure programmee.",
+            main_balance_ready_extra: "La condition du solde principal est complete. Le retrait s'ouvre seulement pendant la periode de retrait.",
+            main_withdraw_referral_required: "Le retrait du solde principal demande encore 1 ami depose par votre lien.",
+            activate_wallet_first: "Activez d'abord le wallet",
+            growth_499_title: "Croissance apres $499",
+            growth_499_sub: "Invitez 2 amis a deposer 6.99 TONCOIN pour continuer apres $499.",
+            growth_1499_title: "Croissance apres $1499",
+            growth_1499_sub: "Invitez 1 ami de plus a deposer 6.99 TONCOIN pour continuer apres $1499.",
+            growth_499_locked_message: "Le revenu est en pause apres $499. Invitez 2 amis par votre lien; chacun doit deposer 6.99 TONCOIN.",
+            growth_1499_locked_message: "Le revenu est en pause apres $1499. Invitez 1 ami de plus par votre lien; il doit deposer 6.99 TONCOIN.",
+            growth_referral_required: "Activation par parrainage requise. Ces amis debloquent les gains et ne comptent pas comme bonus.",
+            copy_ton_address: "COPIER L'ADRESSE",
+            ton_address_copied: "Adresse TON copiee",
+            daily_info_title: "Info quotidienne",
+            daily_info_msg: "Le temps quotidien et le revenu quotidien se remettent a zero toutes les 24 heures. Le temps total reste enregistre.",
             watch_previous: "Precedent",
             watch_random: "Aleatoire",
             watch_next: "Suivant",
@@ -4024,15 +4329,33 @@
         });
 
         Object.assign(languages.hi, {
-            withdraw_form_title: "Withdrawal request banayein",
-            withdraw_amount_placeholder: "Withdrawal amount (example, 6.99 TONCOIN)",
+            withdraw_form_title: "Activation deposit refund",
+            withdraw_amount_placeholder: "Fixed refund amount: 6.99 TONCOIN",
             withdraw_card_placeholder: "Apna TON wallet address",
-            request_withdrawal: "REQUEST WITHDRAWAL",
+            request_withdrawal: "REQUEST DEPOSIT REFUND",
             withdraw_amount_required: "Withdrawal amount enter karein.",
             withdraw_address_required: "TON wallet address enter karein.",
             withdraw_sending: "Withdrawal request bheji ja rahi hai...",
             withdraw_request_created: "Request create ho gayi.",
             minimum_withdrawal: "Minimum withdrawal",
+            deposit_refund_title: "Activation deposit refund",
+            deposit_refund_message: "Yahan sirf activation deposit withdraw hota hai. Main balance withdrawal time aur referral condition tak locked rahega.",
+            deposit_refund_request: "Sirf activation deposit withdraw karein",
+            main_balance_locked_extra: "Main balance scheduled withdrawal time tak locked hai.",
+            main_balance_ready_extra: "Main balance condition complete hai. Withdrawal sirf withdrawal time me open hoga.",
+            main_withdraw_referral_required: "Main balance withdraw ke liye referral link se deposit karne wala 1 aur friend kerak.",
+            activate_wallet_first: "Pehle wallet activate karein",
+            growth_499_title: "$499 income boost",
+            growth_499_sub: "$499 ke baad earning continue karne ke liye 2 friends 6.99 TONCOIN deposit karein.",
+            growth_1499_title: "$1499 income boost",
+            growth_1499_sub: "$1499 ke baad earning continue karne ke liye 1 aur friend 6.99 TONCOIN deposit kare.",
+            growth_499_locked_message: "$499 ke baad income pause hai. Link se 2 friends invite karein aur dono 6.99 TONCOIN deposit karein.",
+            growth_1499_locked_message: "$1499 ke baad income pause hai. Link se 1 aur friend invite karein aur wo 6.99 TONCOIN deposit kare.",
+            growth_referral_required: "Referral activation required. Ye friends earning unlock ke liye hain, bonus ke liye nahi.",
+            copy_ton_address: "COPY ADDRESS",
+            ton_address_copied: "TON address copied",
+            daily_info_title: "Daily Info",
+            daily_info_msg: "Daily watch time aur daily income har 24 ghante reset hota hai. Total time save rehta hai.",
             watch_previous: "Previous",
             watch_random: "Random",
             watch_next: "Next",
@@ -4050,15 +4373,33 @@
         });
 
         Object.assign(languages.es, {
-            withdraw_form_title: "Crear solicitud de retiro",
-            withdraw_amount_placeholder: "Monto de retiro (ejemplo, 6.99 TONCOIN)",
+            withdraw_form_title: "Reembolso del deposito de activacion",
+            withdraw_amount_placeholder: "Monto fijo de reembolso: 6.99 TONCOIN",
             withdraw_card_placeholder: "Tu direccion wallet TON",
-            request_withdrawal: "SOLICITAR RETIRO",
+            request_withdrawal: "SOLICITAR REEMBOLSO",
             withdraw_amount_required: "Ingresa el monto de retiro.",
             withdraw_address_required: "Ingresa tu direccion wallet TON.",
             withdraw_sending: "Enviando solicitud de retiro...",
             withdraw_request_created: "Solicitud creada.",
             minimum_withdrawal: "Retiro minimo",
+            deposit_refund_title: "Reembolso del deposito de activacion",
+            deposit_refund_message: "Aqui solo puedes retirar tu deposito de activacion. El balance principal queda bloqueado hasta la hora de retiro y la condicion de referidos.",
+            deposit_refund_request: "Retirar solo el deposito de activacion",
+            main_balance_locked_extra: "El retiro del balance principal esta bloqueado hasta la hora programada.",
+            main_balance_ready_extra: "La condicion del balance principal esta completa. El retiro abre solo durante la hora de retiro.",
+            main_withdraw_referral_required: "Para retirar el balance principal falta 1 amigo que deposite por tu enlace.",
+            activate_wallet_first: "Activa la billetera primero",
+            growth_499_title: "Aumento de ingresos $499",
+            growth_499_sub: "Invita 2 amigos que depositen 6.99 TONCOIN para seguir ganando despues de $499.",
+            growth_1499_title: "Aumento de ingresos $1499",
+            growth_1499_sub: "Invita 1 amigo mas que deposite 6.99 TONCOIN para seguir ganando despues de $1499.",
+            growth_499_locked_message: "El ingreso esta pausado despues de $499. Invita 2 amigos por tu enlace y ambos deben depositar 6.99 TONCOIN.",
+            growth_1499_locked_message: "El ingreso esta pausado despues de $1499. Invita 1 amigo mas por tu enlace y debe depositar 6.99 TONCOIN.",
+            growth_referral_required: "Se requiere activacion por referidos. Estos amigos desbloquean ingresos y no cuentan como bono.",
+            copy_ton_address: "COPIAR DIRECCION",
+            ton_address_copied: "Direccion TON copiada",
+            daily_info_title: "Info diaria",
+            daily_info_msg: "El tiempo diario y el ingreso diario se reinician cada 24 horas. El tiempo total queda guardado.",
             watch_previous: "Anterior",
             watch_random: "Aleatorio",
             watch_next: "Siguiente",
@@ -4076,15 +4417,33 @@
         });
 
         Object.assign(languages.zh, {
-            withdraw_form_title: "创建提现申请",
-            withdraw_amount_placeholder: "提现金额（例如 6.99 TONCOIN）",
+            withdraw_form_title: "激活保证金退回",
+            withdraw_amount_placeholder: "固定退回金额：6.99 TONCOIN",
             withdraw_card_placeholder: "您的 TON 钱包地址",
-            request_withdrawal: "申请提现",
+            request_withdrawal: "申请退回保证金",
             withdraw_amount_required: "请输入提现金额。",
             withdraw_address_required: "请输入 TON 钱包地址。",
             withdraw_sending: "正在发送提现申请...",
             withdraw_request_created: "申请已创建。",
             minimum_withdrawal: "最低提现",
+            deposit_refund_title: "激活保证金退回",
+            deposit_refund_message: "这里仅可提取您的激活保证金。主余额会锁定到提现时间并完成邀请条件后。",
+            deposit_refund_request: "仅提取激活保证金",
+            main_balance_locked_extra: "主余额提现会锁定到预定提现时间。",
+            main_balance_ready_extra: "主余额条件已完成。提现只会在提现时间开放。",
+            main_withdraw_referral_required: "主余额提现还需要 1 位通过您的链接进入并完成存款的好友。",
+            activate_wallet_first: "请先激活钱包",
+            growth_499_title: "$499 收入提升",
+            growth_499_sub: "邀请 2 位好友存入 6.99 TONCOIN，才能在 $499 后继续收益。",
+            growth_1499_title: "$1499 收入提升",
+            growth_1499_sub: "再邀请 1 位好友存入 6.99 TONCOIN，才能在 $1499 后继续收益。",
+            growth_499_locked_message: "$499 后收益已暂停。请通过您的链接邀请 2 位好友，且两人都需存入 6.99 TONCOIN。",
+            growth_1499_locked_message: "$1499 后收益已暂停。请再邀请 1 位好友，且该好友需存入 6.99 TONCOIN。",
+            growth_referral_required: "需要邀请激活。这些好友仅用于解锁收益，不计入奖励。",
+            copy_ton_address: "复制地址",
+            ton_address_copied: "TON 地址已复制",
+            daily_info_title: "每日信息",
+            daily_info_msg: "每日观看时间和每日收入每 24 小时重置。总时间会保留。",
             watch_previous: "上一个",
             watch_random: "随机",
             watch_next: "下一个",
@@ -4102,15 +4461,33 @@
         });
 
         Object.assign(languages.de, {
-            withdraw_form_title: "Auszahlungsanfrage erstellen",
-            withdraw_amount_placeholder: "Auszahlungsbetrag (Beispiel, 6.99 TONCOIN)",
+            withdraw_form_title: "Aktivierungsdepot zurueckzahlen",
+            withdraw_amount_placeholder: "Fester Rueckzahlungsbetrag: 6.99 TONCOIN",
             withdraw_card_placeholder: "Deine TON Wallet-Adresse",
-            request_withdrawal: "AUSZAHLUNG ANFRAGEN",
+            request_withdrawal: "DEPOT-RUECKZAHLUNG ANFRAGEN",
             withdraw_amount_required: "Auszahlungsbetrag eingeben.",
             withdraw_address_required: "TON Wallet-Adresse eingeben.",
             withdraw_sending: "Auszahlungsanfrage wird gesendet...",
             withdraw_request_created: "Anfrage erstellt.",
             minimum_withdrawal: "Mindestauszahlung",
+            deposit_refund_title: "Aktivierungsdepot zurueckzahlen",
+            deposit_refund_message: "Hier kannst du nur dein Aktivierungsdepot auszahlen. Das Hauptguthaben bleibt bis zur Auszahlungszeit und Referral-Bedingung gesperrt.",
+            deposit_refund_request: "Nur Aktivierungsdepot auszahlen",
+            main_balance_locked_extra: "Die Auszahlung des Hauptguthabens ist bis zur geplanten Auszahlungszeit gesperrt.",
+            main_balance_ready_extra: "Die Bedingung fuer das Hauptguthaben ist abgeschlossen. Auszahlung oeffnet nur zur Auszahlungszeit.",
+            main_withdraw_referral_required: "Fuer das Hauptguthaben fehlt noch 1 Freund, der ueber deinen Link einzahlt.",
+            activate_wallet_first: "Wallet zuerst aktivieren",
+            growth_499_title: "$499 Einkommens-Boost",
+            growth_499_sub: "Lade 2 Freunde ein, die 6.99 TONCOIN einzahlen, um nach $499 weiter zu verdienen.",
+            growth_1499_title: "$1499 Einkommens-Boost",
+            growth_1499_sub: "Lade 1 weiteren Freund ein, der 6.99 TONCOIN einzahlt, um nach $1499 weiter zu verdienen.",
+            growth_499_locked_message: "Einkommen ist nach $499 pausiert. Lade 2 Freunde ueber deinen Link ein; beide muessen 6.99 TONCOIN einzahlen.",
+            growth_1499_locked_message: "Einkommen ist nach $1499 pausiert. Lade 1 weiteren Freund ein; er muss 6.99 TONCOIN einzahlen.",
+            growth_referral_required: "Referral-Aktivierung erforderlich. Diese Freunde entsperren Einkommen und zaehlen nicht als Bonus.",
+            copy_ton_address: "ADRESSE KOPIEREN",
+            ton_address_copied: "TON Adresse kopiert",
+            daily_info_title: "Tagesinfo",
+            daily_info_msg: "Taegliche Watch-Zeit und taegliches Einkommen werden alle 24 Stunden zurueckgesetzt. Gesamtzeit bleibt gespeichert.",
             watch_previous: "Zurueck",
             watch_random: "Zufaellig",
             watch_next: "Weiter",
@@ -4339,6 +4716,11 @@
             setText('wallet-method-value', dict.wallet_method_value || 'TONCOIN');
             setText('lbl-card-method-title', dict.card_selector_title || 'TON wallet');
             setText('lbl-or-crypto', dict.or_crypto || 'TON NETWORK PAYMENT');
+            setText('lbl-copy-ton-address', dict.copy_ton_address || 'COPY ADDRESS');
+            setText('checkpoint-499-title', dict.growth_499_title || languages.en.growth_499_title);
+            setText('checkpoint-499-sub', dict.growth_499_sub || languages.en.growth_499_sub);
+            setText('checkpoint-1499-title', dict.growth_1499_title || languages.en.growth_1499_title);
+            setText('checkpoint-1499-sub', dict.growth_1499_sub || languages.en.growth_1499_sub);
 
             document.querySelectorAll('.bonus-nav span, .bonus-corner-btn span').forEach(el => el.innerText = dict.bonus || 'BONUS');
             document.querySelectorAll('.withdraw-nav span, .withdraw-floating span').forEach(el => el.innerText = dict.withdraw || 'Withdraw');
@@ -4381,6 +4763,7 @@
             updateWithdrawUi(latestPaymentStatus);
             updateLocalCardMethodUi();
             updateBonusLockUi();
+            updateGrowthLockUi();
             updateTierCards();
             renderNotifications();
             if (document.getElementById('withdrawHistoryModal')?.style.display === 'flex') {
@@ -4511,13 +4894,16 @@
 
         function updateBonusLockUi() {
             const windowState = getWithdrawWindowState();
-            const isOpen = windowState.status === 'open';
+            const growth = currentGrowthLockStatus();
+            const growthLocked = Boolean(growth.bonus_locked);
+            const isOpen = windowState.status === 'open' && !growthLocked;
             const timerEl = document.getElementById('bonus-timer');
             const claimBtn = document.getElementById('claim-bonus-btn');
             const claimLabel = document.getElementById('claim-bonus-label');
             const statusText = document.getElementById('bonus-status-text');
             const lockRow = document.getElementById('bonus-lock-row');
             const icon = claimBtn?.querySelector('i');
+            const growthMessage = growth.checkpoint_1499?.active ? t('growth_1499_locked_message') : t('growth_499_locked_message');
 
             if (timerEl) {
                 timerEl.innerText = windowState.timerText || '--:--:--';
@@ -4531,8 +4917,9 @@
             }
             if (icon) icon.className = isOpen ? 'fas fa-gift' : 'fas fa-lock';
             if (claimLabel) claimLabel.innerText = isOpen ? t('claim_bonus_open') : t('claim_bonus_locked');
-            if (statusText) statusText.innerText = isOpen ? t('bonus_open_text') : t('bonus_locked_text');
-            if (lockRow) lockRow.innerText = t('bonus_timer_text');
+            if (statusText) statusText.innerText = isOpen ? t('bonus_open_text') : (growthLocked ? growthMessage : t('bonus_locked_text'));
+            if (lockRow) lockRow.innerText = growthLocked ? t('growth_referral_required') : t('bonus_timer_text');
+            updateGrowthLockUi();
         }
 
         function updateBonusDisplays() {
@@ -4580,10 +4967,19 @@
             updateBonusDisplays();
             updateProfileModal();
             updateWalletLockUi();
+            updateGrowthLockUi();
         }
 
         async function handleMainClick(e) {
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            if (isGrowthWatchLocked()) {
+                const growth = currentGrowthLockStatus();
+                const message = growth.checkpoint_1499?.active ? t('growth_1499_locked_message') : t('growth_499_locked_message');
+                showCopyToast(message);
+                updateGrowthLockUi();
+                openModal('bonusModal');
+                return;
+            }
             openWatchModal();
         }
 
@@ -4788,6 +5184,7 @@
                 rewardedMrBeastVideos.add(videoId);
                 pendingWatch = null;
                 applyBackendUser(result.user);
+                if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
                 updateWatchDisplays();
                 createFloatingText(null, result.reward);
             if (result.tier) {
@@ -4805,6 +5202,7 @@
             addNotification('View reward', `Reward added after ${watchSeconds}s: $${Number(result.reward || 0).toFixed(2)}`);
         } catch (err) {
             pendingWatch = null;
+            if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
             updateWatchDisplays();
             updateWatchSessionUi(err.message);
             showWatchResult(watchSeconds, 0, err.message);
@@ -4896,8 +5294,8 @@
             try { items = JSON.parse(localStorage.getItem(key)); } catch(e) { items = null; }
             if (!Array.isArray(items) || !items.length) {
                 items = [
-                    { title: 'System Alert', text: 'Welcome to Vidi Pay! Start earning by clicking the YouTube play coin.', date: new Date().toLocaleString() },
-                    { title: 'Daily Info', text: 'Daily watch time and daily income reset every 24 hours. Total time stays saved.', date: new Date().toLocaleString() }
+                    { titleKey: 'noti_alert', textKey: 'noti_msg', date: new Date().toLocaleString() },
+                    { titleKey: 'daily_info_title', textKey: 'daily_info_msg', date: new Date().toLocaleString() }
                 ];
                 localStorage.setItem(key, JSON.stringify(items));
             }
@@ -4948,9 +5346,9 @@
             const items = getNotifications();
             box.innerHTML = items.map(item => `
                 <div class="notification-item">
-                    <b>${item.title}</b>
+                    <b>${item.titleKey ? t(item.titleKey) : item.title}</b>
                     <div class="notification-date">${item.date}</div>
-                    <div>${item.text}</div>
+                    <div>${item.textKey ? t(item.textKey) : item.text}</div>
                 </div>
             `).join('');
             setUnreadNotificationCount(getUnreadNotificationCount());
@@ -5010,6 +5408,7 @@
                 }
                 if (id === 'withdrawHistoryModal') renderFullHistory();
                 if (id === 'profileModal') updateProfileModal();
+                if (id === 'bonusModal') updateBonusLockUi();
                 if (id === 'withdrawModal') {
                     loadBackendSettings()
                         .then(() => updateWithdrawUi(latestPaymentStatus))
@@ -5218,7 +5617,7 @@
                 navigator.clipboard.writeText(walletAddress).catch(() => null);
             }
 
-            showCopyToast('TON address copied');
+            showCopyToast(t('ton_address_copied'));
         }
         // ==========================================
 
