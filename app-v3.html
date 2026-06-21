@@ -2,19 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="wallet-ui-clean-v3-20260619">
+    <meta name="vidipay-build" content="wallet-toncoin-v7-growth-20260620">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=wallet-ui-clean-v3-20260619"></script>
-    <script src="./qrcode.js?v=wallet-ui-clean-v3-20260619"></script>
+    <script src="./config.js?v=wallet-toncoin-v7-growth-20260620"></script>
+    <script src="./qrcode.js?v=wallet-toncoin-v7-growth-20260620"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -40,7 +40,7 @@
             overflow-y: auto;
             overscroll-behavior-y: auto;
             -webkit-text-size-adjust: 100%;
-            touch-action: pan-y;
+            touch-action: manipulation;
         }
 
         body {
@@ -59,7 +59,7 @@
             overscroll-behavior-y: auto;
             -webkit-user-select: none;
             -webkit-touch-callout: none;
-            touch-action: pan-y;
+            touch-action: manipulation;
             box-sizing: border-box;
         }
 
@@ -143,6 +143,26 @@
         .ton-qr-box table {
             border-collapse: collapse;
             margin: 0;
+        }
+        .ton-qr-box table,
+        .ton-qr-box tbody,
+        .ton-qr-box tr,
+        .ton-qr-box td {
+            border: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+        }
+        .ton-qr-box td {
+            width: 4px !important;
+            height: 4px !important;
+            min-width: 4px !important;
+            min-height: 4px !important;
+        }
+        .ton-qr-box img,
+        .ton-qr-box svg {
+            display: block;
+            width: 158px;
+            height: 158px;
         }
         .ton-address-box {
             color: #ffffff;
@@ -275,6 +295,11 @@
             color: #fff;
             font-weight: 800;
             margin-bottom: 10px;
+        }
+        .withdraw-wallet-input[readonly] {
+            color: #00ffcc;
+            border-color: rgba(0, 255, 204, 0.34);
+            background: rgba(0, 255, 204, 0.06);
         }
         @media (max-width: 420px) {
             .wallet-flow-row { grid-template-columns: 1fr; }
@@ -1223,10 +1248,11 @@
         .top-user-info { display: flex; flex-direction: column; align-items: flex-start; overflow: hidden; line-height: 1.1; }
         .top-user-name { color: #fff; font-size: 14px; font-weight: 900; max-width: 122px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .top-user-id { color: var(--accent-color); font-size: 11px; font-weight: 800; opacity: .9; max-width: 122px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .notification-list { max-height: 360px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 4px; }
-        .notification-item { background: rgba(255,255,255,.035); border: 1px solid rgba(0,255,204,.12); border-radius: 14px; padding: 12px; }
-        .notification-item b { display:block; color: #fff; margin-bottom: 4px; }
-        .notification-date { color: var(--accent-color); font-size: 11px; font-weight: 800; margin-bottom: 6px; }
+        .notification-list { max-height: 360px; overflow-y: auto; display: grid; grid-template-columns: 1fr; gap: 10px; padding: 2px 4px 2px 0; text-align: left; }
+        .notification-item { width: 100%; box-sizing: border-box; background: rgba(255,255,255,.035); border: 1px solid rgba(0,255,204,.12); border-radius: 14px; padding: 12px; display: grid; gap: 6px; align-items: start; overflow: hidden; }
+        .notification-title { color: #fff; font-size: 14px; font-weight: 900; line-height: 1.25; overflow-wrap: anywhere; word-break: break-word; }
+        .notification-date { color: var(--accent-color); font-size: 11px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+        .notification-body { color: #cbd5e1; font-size: 13px; font-weight: 700; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
         .support-chat-box { max-height: 340px; overflow-y: auto; display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
         .chat-msg { border-radius: 14px; padding: 10px 12px; font-size: 13px; line-height: 1.45; }
         .chat-msg.user { align-self:flex-end; background: rgba(0,255,204,.14); color:#fff; border:1px solid rgba(0,255,204,.2); }
@@ -1365,7 +1391,6 @@
             min-width: 18px !important;
             height: 18px !important;
             padding: 0 !important;
-            display: flex !important;
             align-items: center !important;
             justify-content: center !important;
         }
@@ -1396,7 +1421,7 @@
         }
 
         .balance-amount {
-            font-size: clamp(34px, 10vw, 44px) !important;
+            font-size: 44px !important;
         }
 
         .balance-coin-icon {
@@ -1442,12 +1467,12 @@
 
         .bonus-corner-btn i,
         .withdraw-floating i {
-            font-size: clamp(28px, 8vw, 36px) !important;
+            font-size: 32px !important;
         }
 
         .bonus-corner-btn span,
         .withdraw-floating span {
-            font-size: clamp(10px, 2.8vw, 12px) !important;
+            font-size: 11px !important;
         }
 
         .stats-panel {
@@ -1475,7 +1500,7 @@
         }
 
         .stat-main-val {
-            font-size: clamp(18px, 5vw, 22px) !important;
+            font-size: 22px !important;
             line-height: 1.15 !important;
             white-space: nowrap !important;
             text-align: right !important;
@@ -1602,7 +1627,7 @@
             min-width: clamp(46px, 13vw, 62px) !important;
             min-height: clamp(46px, 13vw, 62px) !important;
             border-radius: 16px !important;
-            font-size: clamp(20px, 6vw, 28px) !important;
+            font-size: 24px !important;
             padding: 0 !important;
             display: flex !important;
             align-items: center !important;
@@ -1615,7 +1640,7 @@
         }
 
         .account-profile-btn i {
-            font-size: clamp(21px, 6vw, 28px) !important;
+            font-size: 24px !important;
             min-width: 0 !important;
             margin: 0 !important;
         }
@@ -1639,7 +1664,7 @@
             max-width: 100% !important;
             overflow: hidden !important;
             white-space: nowrap !important;
-            font-size: clamp(19px, 6vw, 30px) !important;
+            font-size: 24px !important;
             letter-spacing: 0 !important;
         }
 
@@ -1880,6 +1905,111 @@
             cursor: not-allowed !important;
         }
 
+        .hamster-clicker-btn.growth-locked {
+            filter: grayscale(.8);
+            opacity: .58;
+            cursor: not-allowed;
+            box-shadow: 0 10px 0 #3a1212, 0 20px 30px rgba(239,68,68,.24) !important;
+        }
+
+        .hamster-clicker-btn.growth-locked::before {
+            content: "\f023";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            position: absolute;
+            inset: auto 50% 50% auto;
+            transform: translate(50%, 50%);
+            z-index: 3;
+            width: 58px;
+            height: 58px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            background: rgba(5,7,10,.82);
+            color: #ef4444;
+            border: 1px solid rgba(239,68,68,.42);
+            font-size: 26px;
+            box-shadow: 0 0 24px rgba(239,68,68,.35);
+        }
+
+        .growth-alert {
+            margin: 12px 0;
+            border: 1px solid rgba(239,68,68,.32);
+            background: rgba(239,68,68,.08);
+            color: #fecaca;
+            border-radius: 14px;
+            padding: 12px;
+            font-size: 12px;
+            font-weight: 800;
+            line-height: 1.45;
+            text-align: center;
+        }
+
+        .growth-checkpoint-list {
+            display: grid;
+            gap: 10px;
+            margin: 12px 0;
+        }
+
+        .growth-checkpoint-row {
+            display: grid;
+            grid-template-columns: 36px 1fr auto;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid rgba(255,255,255,.1);
+            background: rgba(255,255,255,.035);
+            border-radius: 14px;
+            padding: 10px;
+        }
+
+        .growth-checkpoint-row.active {
+            border-color: rgba(0,255,204,.35);
+            background: rgba(0,255,204,.07);
+        }
+
+        .growth-checkpoint-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            color: #a0a5b5;
+            background: rgba(255,255,255,.055);
+            border: 1px solid rgba(255,255,255,.12);
+        }
+
+        .growth-checkpoint-row.active .growth-checkpoint-icon {
+            color: var(--accent-color);
+            background: rgba(0,255,204,.1);
+            border-color: rgba(0,255,204,.28);
+        }
+
+        .growth-checkpoint-row.unlocked .growth-checkpoint-icon {
+            color: var(--accent-color);
+            background: rgba(0,255,204,.1);
+            border-color: rgba(0,255,204,.28);
+        }
+
+        .growth-checkpoint-title {
+            color: #fff;
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        .growth-checkpoint-sub {
+            color: #a0a5b5;
+            font-size: 11px;
+            font-weight: 700;
+            margin-top: 3px;
+        }
+
+        .growth-checkpoint-progress {
+            color: var(--accent-color);
+            font-size: 12px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
         .bonus-timer-title {
             color: #ef4444 !important;
             text-shadow: 0 0 12px rgba(239,68,68,.35) !important;
@@ -2047,7 +2177,7 @@
         <div class="nav-right-group">
             <button class="top-btn" onclick="openModal('notiModal')">
                 <i class="fas fa-bell"></i>
-                    <span class="badge">0</span>
+                    <span class="badge" style="display:none;">0</span>
             </button>
             <button class="top-btn" onclick="openModal('settingsModal')"><i class="fas fa-cog"></i></button>
         </div>
@@ -2144,7 +2274,6 @@
                 <div style="text-align: center; margin-bottom: 15px;">
                     <i class="fas fa-user-astronaut" style="font-size: 50px; color: var(--accent-color); margin-bottom: 8px;"></i>
                     <div style="font-weight: bold; font-size: 18px; color: #fff;" id="user-display-name">Loading...</div>
-                    <div style="margin-top: 5px; color: var(--accent-color); font-weight: 800; font-size: 12px;" id="lbl-mdl-verified">STATUS: 100% ANONIM (NO-KYC)</div>
                 </div>
                 
                 <div class="profile-data-field">
@@ -2218,9 +2347,9 @@
                 <div class="withdraw-extra-row" id="withdraw-extra-row">Additional withdrawal information will appear here.</div>
                 <div id="withdraw-form-box" class="withdraw-wallet-card" style="display:none;">
                     <div class="withdraw-wallet-card-title" data-i18n="withdraw_form_title"><i class="fas fa-link"></i> Connect payout wallet</div>
-                    <input id="withdraw-amount-input" class="withdraw-wallet-input" type="number" min="9" step="0.01" placeholder="Withdrawal amount (Example, 9 USDT)" data-i18n-placeholder="withdraw_amount_placeholder">
+                    <input id="withdraw-amount-input" class="withdraw-wallet-input" type="number" min="6.99" max="6.99" step="0.01" inputmode="decimal" readonly placeholder="Fixed refund amount: 6.99 TONCOIN" data-i18n-placeholder="withdraw_amount_placeholder">
                     <input id="withdraw-address-input" class="withdraw-wallet-input" type="text" placeholder="Your TON wallet address" data-i18n-placeholder="withdraw_card_placeholder">
-                    <input id="withdraw-method-input" type="hidden" value="USDT_TON">
+                    <input id="withdraw-method-input" type="hidden" value="TON">
                     <button class="copy-link-btn" onclick="submitWithdrawRequest()">
                         <i class="fas fa-paper-plane" style="margin-right:8px;"></i><span data-i18n="request_withdrawal">REQUEST WITHDRAWAL</span>
                     </button>
@@ -2272,48 +2401,60 @@
     <div id="walletModal" class="modal-overlay">
         <div class="modal-content">
             <button class="modal-close" onclick="closeModal('walletModal')"><i class="fas fa-times"></i></button>
-            <div class="modal-title">Wallet</div>
+            <div class="modal-title" id="wallet-modal-title">Wallet activation</div>
             <div class="info-sub-block">
                 <div class="profile-data-field">
                     <span class="profile-data-label" id="wallet-current-balance-label">Current Balance:</span>
                     <span class="profile-data-value" id="wallet-balance-view">$0.00</span>
                 </div>
                 <div class="profile-data-field">
-                    <span class="profile-data-label" id="wallet-method-label">Withdrawal Method:</span>
-                    <span class="profile-data-value" id="wallet-method-value" style="color: var(--accent-color);">TON USDT</span>
+                    <span class="profile-data-label" id="wallet-method-label">Activation network:</span>
+                    <span class="profile-data-value" id="wallet-method-value" style="color: var(--accent-color);">TONCOIN</span>
                 </div>
-                <div class="withdraw-locked-row" id="wallet-lock-row">Wallet locked until withdrawal time</div>
-                <div class="withdraw-extra-row" id="wallet-lock-extra">Your unique TON wallet address and QR code will appear here.</div>
+                <div class="withdraw-locked-row" id="wallet-lock-row"><i class="fas fa-lock" style="margin-right:8px;"></i>Wallet locked</div>
+                <div class="withdraw-extra-row" id="wallet-lock-extra">Earn $20.00 in total to unlock wallet activation.</div>
                 
                 <div id="payment-unlock-box" class="wallet-activation-card" style="display:none;">
-                    <div style="font-weight:900; color:var(--accent-color); margin-bottom:12px; font-size:16px; text-align:center;" id="lbl-unlock-title">Account unlock activation</div>
-
-                    <div class="wallet-flow-row">
-                        <div class="wallet-flow-item"><b>10 USDT</b><span id="wallet-flow-deposit">Activation deposit</span></div>
-                        <div class="wallet-flow-item"><b>9 USDT</b><span id="wallet-flow-refund">Withdrawable payout</span></div>
-                        <div class="wallet-flow-item"><b>1 USDT</b><span id="wallet-flow-fee">Activation fee</span></div>
-                    </div>
-
+                    <div style="font-weight:900; color:var(--accent-color); margin-bottom:12px; font-size:16px; text-align:center;" id="lbl-unlock-title">Wallet activation</div>
                     <div class="wallet-pay-card">
                         <div class="wallet-pay-heading">
-                            <span id="lbl-fastest-method"><i class="fas fa-qrcode"></i> TON USDT address</span>
+                            <span id="lbl-fastest-method"><i class="fas fa-shield-alt"></i> Security confirmation</span>
                             <span class="wallet-network-pill">TON</span>
                         </div>
-                        <div class="wallet-help-text" id="lbl-fiat-desc">Send 10 USDT on TON. After confirmation, 9 USDT becomes withdrawable and 1 USDT is kept as the activation fee.</div>
-                        <div class="ton-qr-box" id="ton-qr-box"></div>
+                        <div class="wallet-help-text" id="lbl-fiat-desc">Confirm that you are not a bot and connect your personal TON wallet to the VidiPay system. To activate it, top up exactly 6.99 TONCOIN and after confirmation you can request withdrawal to your TON wallet. Blockchain network commission may apply.</div>
                         <div class="ton-payment-actions">
-                            <button type="button" onclick="copyTonPaymentAddress()"><i class="fas fa-copy"></i> <span id="lbl-copy-ton-address">COPY ADDRESS</span></button>
-                            <button type="button" id="fiat-pay-btn" onclick="refreshPaymentStatus()"><i class="fas fa-sync-alt"></i> <span id="lbl-pay-fiat">CHECK PAYMENT</span></button>
+                            <button type="button" id="fiat-pay-btn" onclick="openTonDepositModal()"><i class="fas fa-coins"></i> <span id="lbl-pay-fiat">TOP UP 6.99 TONCOIN</span></button>
                         </div>
                     </div>
+                    <div id="payment-status-text" style="margin-top:8px; color:#a0a5b5; font-size:12px; font-weight:800;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tonDepositModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('tonDepositModal')"><i class="fas fa-times"></i></button>
+            <div class="modal-title" id="ton-deposit-title">6.99 TONCOIN payment</div>
+            <div class="info-sub-block">
+                <div class="wallet-pay-card">
+                    <div class="wallet-pay-heading">
+                        <span><i class="fas fa-qrcode"></i> TON deposit address</span>
+                        <span class="wallet-network-pill">TON</span>
+                    </div>
+                    <div class="wallet-help-text" id="ton-deposit-warning">Send exactly 6.99 TONCOIN to this address. Less or more than 6.99 TONCOIN will not be confirmed automatically.</div>
+                    <div class="ton-qr-box" id="ton-qr-box"></div>
                     <div id="payment-address-box" style="display:none; margin-top:10px; padding:12px; border:1px solid rgba(0,255,204,.24); border-radius:14px; background:rgba(0,255,204,.06);">
                         <div id="payment-amount-text" style="color:#00ffcc; font-size:13px; font-weight:900; margin-bottom:8px;"></div>
-                        <div class="wallet-address-label">TON USDT deposit address</div>
+                        <div class="wallet-address-label" id="payment-address-label">Unique TON deposit address</div>
                         <div id="payment-address-text" style="color:#ffffff; font-size:12px; font-weight:900; line-height:1.45; word-break:break-all;"></div>
                         <div id="payment-expiry-text" style="color:#a0a5b5; font-size:11px; font-weight:800; margin-top:8px;"></div>
                     </div>
-                    <div id="payment-formula-text" style="margin-top:10px; color:#d7fbe8; font-size:12px; font-weight:900;"></div>
-                    <div id="payment-status-text" style="margin-top:8px; color:#a0a5b5; font-size:12px; font-weight:800;"></div>
+                    <div class="ton-payment-actions">
+                        <button type="button" onclick="copyTonPaymentAddress()"><i class="fas fa-copy"></i> <span id="lbl-copy-ton-address">COPY ADDRESS</span></button>
+                        <button type="button" onclick="refreshPaymentStatus()"><i class="fas fa-sync-alt"></i> <span id="lbl-check-ton-payment">CHECK PAYMENT</span></button>
+                    </div>
+                    <div id="ton-deposit-status-text" style="margin-top:8px; color:#a0a5b5; font-size:12px; font-weight:800;"></div>
                 </div>
             </div>
         </div>
@@ -2335,10 +2476,11 @@
             <div class="modal-title" data-i18n="watch_title">MrBeast Watch</div>
             <div class="info-sub-block">
                 <div id="mrbeast-player" style="width:100%; aspect-ratio:16/9; border-radius:16px; overflow:hidden; background:#05070a;"></div>
-                <div class="watch-video-controls" style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px; margin:12px 0;">
+                <div class="watch-video-controls" style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; margin:12px 0;">
                     <button class="copy-link-btn" style="margin:0; padding:10px 8px; font-size:11px;" onclick="playPreviousMrBeastVideo()" data-i18n="watch_previous">Previous</button>
                     <button class="copy-link-btn" style="margin:0; padding:10px 8px; font-size:11px;" onclick="playRandomMrBeastVideo()" data-i18n="watch_random">Random</button>
                     <button class="copy-link-btn" style="margin:0; padding:10px 8px; font-size:11px;" onclick="playNextMrBeastVideo()" data-i18n="watch_next">Next</button>
+                    <button class="copy-link-btn" style="margin:0; padding:10px 8px; font-size:11px;" onclick="openWatchFullscreen()" data-i18n="watch_fullscreen">Fullscreen</button>
                 </div>
                 <div class="profile-data-field">
                     <span class="profile-data-label" data-i18n="watched_result">Watched time:</span>
@@ -2378,6 +2520,25 @@
             <button class="modal-close" onclick="closeModal('refModal')"><i class="fas fa-times"></i></button>
             <div class="modal-title" id="lbl-ref-title">Referral Link</div>
             <div class="info-sub-block">
+                <div class="growth-alert" id="growth-lock-alert" style="display:none;"></div>
+                <div class="growth-checkpoint-list" id="growth-checkpoint-list">
+                    <div class="growth-checkpoint-row" id="checkpoint-499-row">
+                        <div class="growth-checkpoint-icon"><i class="fas fa-lock"></i></div>
+                        <div>
+                            <div class="growth-checkpoint-title" id="checkpoint-499-title">$499 income boost</div>
+                            <div class="growth-checkpoint-sub" id="checkpoint-499-sub">Invite 2 deposited friends to continue earning after $499.</div>
+                        </div>
+                        <div class="growth-checkpoint-progress" id="checkpoint-499-progress">0/2</div>
+                    </div>
+                    <div class="growth-checkpoint-row" id="checkpoint-1499-row">
+                        <div class="growth-checkpoint-icon"><i class="fas fa-lock"></i></div>
+                        <div>
+                            <div class="growth-checkpoint-title" id="checkpoint-1499-title">$1499 income boost</div>
+                            <div class="growth-checkpoint-sub" id="checkpoint-1499-sub">Invite 1 more deposited friend to continue earning after $1499.</div>
+                        </div>
+                        <div class="growth-checkpoint-progress" id="checkpoint-1499-progress">0/1</div>
+                    </div>
+                </div>
                 <div class="referral-box" id="ref-link">https://t.me/magapatron_bot?start=00000000</div>
                 <button class="copy-link-btn" onclick="copyReferralLink()" id="copy-link-btn">
                     <i class="fas fa-copy" style="margin-right:8px;"></i>COPY LINK
@@ -2451,6 +2612,19 @@
         };
         tg.expand();
 
+        document.addEventListener('gesturestart', event => event.preventDefault());
+        document.addEventListener('gesturechange', event => event.preventDefault());
+        document.addEventListener('gestureend', event => event.preventDefault());
+        let lastTouchEndAt = 0;
+        document.addEventListener('touchend', event => {
+            const now = Date.now();
+            if (now - lastTouchEndAt <= 350) event.preventDefault();
+            lastTouchEndAt = now;
+        }, { passive: false });
+        document.addEventListener('touchmove', event => {
+            if (event.touches && event.touches.length > 1) event.preventDefault();
+        }, { passive: false });
+
         function resetModalOverlays() {
             document.querySelectorAll('.modal-overlay').forEach(modal => {
                 modal.classList.remove('is-open');
@@ -2463,8 +2637,33 @@
         window.addEventListener('pageshow', resetModalOverlays);
 
         const BOT_USERNAME = "magapatron_bot"; 
+        const pageParams = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
 
-        const user = tg.initDataUnsafe?.user;
+        function parseTelegramUserFromWebAppData(rawWebAppData) {
+            if (!rawWebAppData) return null;
+            try {
+                const webAppParams = new URLSearchParams(rawWebAppData);
+                const rawUser = webAppParams.get('user');
+                if (!rawUser) return null;
+                try {
+                    return JSON.parse(rawUser);
+                } catch (err) {
+                    return JSON.parse(decodeURIComponent(rawUser));
+                }
+            } catch (err) {
+                return null;
+            }
+        }
+
+        function resolveTelegramUser() {
+            return tg.initDataUnsafe?.user ||
+                parseTelegramUserFromWebAppData(hashParams.get('tgWebAppData')) ||
+                parseTelegramUserFromWebAppData(pageParams.get('tgWebAppData')) ||
+                null;
+        }
+
+        const user = resolveTelegramUser();
         if (user) {
             document.getElementById('user-display-name').innerText = user.first_name + (user.last_name ? " " + user.last_name : "");
             document.getElementById('user-display-id').innerText = user.id;
@@ -2473,11 +2672,9 @@
             document.getElementById('user-display-id').innerText = "Sandbox Mode";
         }
 
-        const referralUserId = user?.id || (localStorage.getItem('vidiPayGuestId') || ('guest_' + Math.random().toString(36).slice(2, 10)));
+        const referralUserId = user?.id ? String(user.id) : (localStorage.getItem('vidiPayGuestId') || ('guest_' + Math.random().toString(36).slice(2, 10)));
         if (!user?.id && !localStorage.getItem('vidiPayGuestId')) localStorage.setItem('vidiPayGuestId', referralUserId);
         const referralLink = `https://t.me/${BOT_USERNAME}?start=ref_${referralUserId}`;
-        const pageParams = new URLSearchParams(window.location.search);
-        const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
         const referralStartParam =
             pageParams.get('ref') ||
             pageParams.get('start') ||
@@ -2505,11 +2702,54 @@
             localStorage.setItem('vidiPayLang', 'en');
         }
         const TARGET_URL = "https://www.youtube.com/@MrBeast";
-        const API_BASE_URL = window.VIDIPAY_API_BASE || localStorage.getItem('vidiPayApiBase') ||
-            `${window.location.protocol === 'file:' ? 'http://localhost' : `${window.location.protocol}//${window.location.hostname}`}:3000`;
+        const apiOverrideParam = pageParams.get('api');
+        if (apiOverrideParam && /^https:\/\/.+/i.test(apiOverrideParam)) {
+            localStorage.setItem('vidiPayApiBase', apiOverrideParam.replace(/\/$/, ''));
+        }
+        const FALLBACK_API_BASE_URLS = [
+            'https://ads-outside-interracial-twice.trycloudflare.com',
+            'https://vidipay-backend.onrender.com',
+            'http://127.0.0.1:10000'
+        ];
+
+        function normalizeApiBaseUrl(value) {
+            const raw = String(value || '').trim().replace(/\/$/, '');
+            if (!raw) return '';
+            try {
+                const url = new URL(raw);
+                if (!['https:', 'http:'].includes(url.protocol)) return '';
+                if (url.pathname && /\.html?$/i.test(url.pathname)) return '';
+                if (url.hostname.endsWith('github.io') || url.hostname.includes('vidipay-fronted')) return '';
+                return `${url.origin}${url.pathname}`.replace(/\/$/, '');
+            } catch (err) {
+                return '';
+            }
+        }
+
+        function getCurrentOriginApiBase() {
+            if (!/^https?:$/i.test(window.location.protocol)) return '';
+            if (window.location.hostname.endsWith('github.io')) return '';
+            return normalizeApiBaseUrl(window.location.origin);
+        }
+
+        function getApiBaseCandidates() {
+            const candidates = [
+                apiOverrideParam,
+                window.VIDIPAY_API_BASE,
+                getCurrentOriginApiBase(),
+                localStorage.getItem('vidiPayApiBase'),
+                ...FALLBACK_API_BASE_URLS
+            ].map(normalizeApiBaseUrl).filter(Boolean);
+            return [...new Set(candidates)];
+        }
+
+        let API_BASE_URL = getApiBaseCandidates()[0] || 'http://127.0.0.1:10000';
+        localStorage.setItem('vidiPayApiBase', API_BASE_URL);
         const MRBEAST_RANDOM_START_MAX = 40;
         const DAY_MS = 24 * 60 * 60 * 1000;
         const BONUS_PER_FRIEND = 9.99;
+        const WALLET_UNLOCK_REQUIRED_USD = 20;
+        const TON_ACTIVATION_AMOUNT = 6.99;
         const storageKey = `vidiPayState_${referralUserId}`;
         const defaultState = {
             balance: 0,
@@ -2545,6 +2785,7 @@
         let watchSessionVideoIds = new Set();
         let lastWatchUiSnapshot = '';
         let rewardedMrBeastVideos = new Set();
+        let shouldStartMrBeastWhenApiReady = false;
         const MRBEAST_UPLOADS_PLAYLIST = 'UUX6OQ3DkcsbYNE6H8uQQuVA';
         let latestPaymentStatus = {};
         let currentTierStatus = {
@@ -2558,28 +2799,58 @@
         let selectedLocalCardMethod = DEFAULT_LOCAL_CARD_METHOD;
         let clientCountryCode = '';
         let clientCountrySource = '';
+        let growthLockStatus = null;
 
         window.onYouTubeIframeAPIReady = function() {
             youtubeApiReady = true;
+            if (shouldStartMrBeastWhenApiReady) {
+                shouldStartMrBeastWhenApiReady = false;
+                startMrBeastPlayer();
+            }
         };
 
         async function apiRequest(path, options = {}) {
-            const response = await fetch(`${API_BASE_URL}${path}`, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(options.headers || {})
-                },
-                ...options
-            });
+            const bases = [API_BASE_URL, ...getApiBaseCandidates()].map(normalizeApiBaseUrl).filter(Boolean);
+            const uniqueBases = [...new Set(bases)];
+            let lastError = null;
 
-            const text = await response.text();
-            const data = text ? JSON.parse(text) : null;
+            for (const baseUrl of uniqueBases) {
+                try {
+                    const response = await fetch(`${baseUrl}${path}`, {
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(options.headers || {})
+                        },
+                        ...options
+                    });
 
-            if (!response.ok) {
-                throw new Error(data?.error || data?.message || 'API request failed');
+                    const text = await response.text();
+                    let data = null;
+                    if (text) {
+                        try {
+                            data = JSON.parse(text);
+                        } catch (parseErr) {
+                            lastError = new Error(`Backend API noto'g'ri URL qaytardi: ${baseUrl}`);
+                            continue;
+                        }
+                    }
+
+                    if (!response.ok) {
+                        const err = new Error(data?.error || data?.message || 'API request failed');
+                        err.data = data;
+                        throw err;
+                    }
+
+                    API_BASE_URL = baseUrl;
+                    localStorage.setItem('vidiPayApiBase', baseUrl);
+                    return data;
+                } catch (err) {
+                    lastError = err;
+                    if (err.data) throw err;
+                }
             }
 
-            return data;
+            throw lastError || new Error('Backend API ulanmagan');
         }
 
         function applyBackendUser(serverUser) {
@@ -2596,9 +2867,102 @@
             saveAppState();
         }
 
+        function fallbackGrowthLockStatus() {
+            const balanceValue = Number(appState.balance || 0);
+            const deposited = Number(growthLockStatus?.deposited_referrals || 0);
+            const requiredForWatch = balanceValue >= 1499 ? 3 : (balanceValue >= 499 ? 2 : 0);
+            return {
+                balance: balanceValue,
+                deposited_referrals: deposited,
+                required_for_watch: requiredForWatch,
+                watch_locked: requiredForWatch > 0 && deposited < requiredForWatch,
+                bonus_locked: requiredForWatch > 0 && deposited < requiredForWatch,
+                checkpoint_499: {
+                    threshold: 499,
+                    required_referrals: 2,
+                    active: balanceValue >= 499,
+                    unlocked: deposited >= 2,
+                    remaining: Math.max(0, 2 - deposited)
+                },
+                checkpoint_1499: {
+                    threshold: 1499,
+                    required_referrals: 3,
+                    active: balanceValue >= 1499,
+                    unlocked: deposited >= 3,
+                    remaining: Math.max(0, 3 - deposited)
+                },
+                main_withdraw: {
+                    required_referrals: 4,
+                    unlocked: deposited >= 4,
+                    remaining: Math.max(0, 4 - deposited)
+                }
+            };
+        }
+
+        function setGrowthLockStatus(status) {
+            growthLockStatus = status || fallbackGrowthLockStatus();
+            updateGrowthLockUi();
+        }
+
+        function currentGrowthLockStatus() {
+            return growthLockStatus || fallbackGrowthLockStatus();
+        }
+
+        function isGrowthWatchLocked() {
+            return Boolean(currentGrowthLockStatus().watch_locked);
+        }
+
+        function updateCheckpointRow(id, checkpoint, baseRequired = 0) {
+            const row = document.getElementById(`${id}-row`);
+            const progress = document.getElementById(`${id}-progress`);
+            const icon = row?.querySelector('.growth-checkpoint-icon i');
+            if (!row || !checkpoint) return;
+
+            const deposited = Number(currentGrowthLockStatus().deposited_referrals || 0);
+            const required = Number(checkpoint.required_referrals || 0);
+            const localDone = Math.max(0, Math.min(required - baseRequired, deposited - baseRequired));
+            const localRequired = Math.max(1, required - baseRequired);
+            const active = Boolean(checkpoint.active);
+            const unlocked = Boolean(checkpoint.unlocked);
+
+            row.classList.toggle('active', active && !unlocked);
+            row.classList.toggle('unlocked', unlocked);
+            if (progress) progress.innerText = `${Math.max(0, localDone)}/${localRequired}`;
+            if (icon) icon.className = unlocked ? 'fas fa-check' : (active ? 'fas fa-lock-open' : 'fas fa-lock');
+        }
+
+        function updateGrowthLockUi() {
+            const status = currentGrowthLockStatus();
+            const logoBtn = document.querySelector('.hamster-clicker-btn');
+            const bonusButtons = document.querySelectorAll('.bonus-nav, .bonus-corner-btn');
+            const alertBox = document.getElementById('growth-lock-alert');
+
+            if (logoBtn) logoBtn.classList.toggle('growth-locked', status.watch_locked);
+            bonusButtons.forEach(btn => btn.classList.toggle('locked-action', status.bonus_locked));
+
+            updateCheckpointRow('checkpoint-499', status.checkpoint_499, 0);
+            updateCheckpointRow('checkpoint-1499', status.checkpoint_1499, 2);
+
+            if (alertBox) {
+                if (status.watch_locked) {
+                    const active1499 = status.checkpoint_1499?.active && !status.checkpoint_1499?.unlocked;
+                    alertBox.style.display = 'block';
+                    alertBox.innerText = active1499
+                        ? t('growth_1499_locked_message')
+                        : t('growth_499_locked_message');
+                } else {
+                    alertBox.style.display = 'none';
+                    alertBox.innerText = '';
+                }
+            }
+        }
+
         async function syncBackendUser() {
             const payload = {
                 telegram_id: String(referralUserId),
+                username: user?.username || null,
+                first_name: user?.first_name || null,
+                last_name: user?.last_name || null,
                 referrer_id: referrerId && String(referrerId) !== String(referralUserId) ? String(referrerId) : null
             };
 
@@ -2669,9 +3033,25 @@
         async function detectClientCountryCode() {
             if (clientCountryCode) return clientCountryCode;
 
-            const cloudflareGeo = await fetchJsonWithTimeout('/geo');
-            clientCountryCode = normalizeClientCountryCode(cloudflareGeo?.country_code || cloudflareGeo?.country);
-            if (clientCountryCode) clientCountrySource = 'cloudflare_geo';
+            const urlCountry = normalizeClientCountryCode(
+                pageParams.get('country') ||
+                pageParams.get('country_code') ||
+                hashParams.get('country') ||
+                hashParams.get('country_code')
+            );
+            if (urlCountry) {
+                clientCountryCode = urlCountry;
+                clientCountrySource = 'url_country';
+                return clientCountryCode;
+            }
+
+            const backendGeo = await fetchJsonWithTimeout(`${API_BASE_URL}/tier/status`);
+            clientCountryCode = normalizeClientCountryCode(
+                backendGeo?.country_code ||
+                backendGeo?.detected_country_code ||
+                backendGeo?.country
+            );
+            if (clientCountryCode) clientCountrySource = backendGeo?.country_source || 'backend_geo';
 
             if (clientCountryCode) return clientCountryCode;
 
@@ -2685,6 +3065,8 @@
                     fetchJsonWithTimeout('https://ipwho.is/'),
                     fetchJsonWithTimeout('https://api.country.is/'),
                     fetchJsonWithTimeout('https://get.geojs.io/v1/ip/country.json'),
+                    fetchJsonWithTimeout('https://ipinfo.io/json'),
+                    fetchJsonWithTimeout('https://ifconfig.co/json'),
                     fetchTextWithTimeout('https://www.cloudflare.com/cdn-cgi/trace')
                 ]);
 
@@ -2695,6 +3077,8 @@
                     if (index === 1) return normalizeClientCountryCode(value?.country_code);
                     if (index === 2) return normalizeClientCountryCode(value?.country);
                     if (index === 3) return normalizeClientCountryCode(value?.country);
+                    if (index === 4) return normalizeClientCountryCode(value?.country);
+                    if (index === 5) return normalizeClientCountryCode(value?.country || value?.country_iso);
                     return countryCodeFromTrace(value);
                 }).filter(Boolean);
 
@@ -2769,6 +3153,16 @@
             if (el && el.innerText !== value) el.innerText = value;
         }
 
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[char]));
+        }
+
         function setDomStyle(el, prop, value) {
             if (el && el.style[prop] !== value) el.style[prop] = value;
         }
@@ -2811,6 +3205,7 @@
             appState.dailyMinutes = Math.floor(appState.dailySeconds / 60);
             appState.dailyEarned = Number(stats.daily_income || 0);
             appState.joinedFriends = Number(stats.referrals || appState.joinedFriends || 0);
+            if (stats.growth_lock) setGrowthLockStatus(stats.growth_lock);
             saveAppState();
             updateWatchDisplays();
         }
@@ -2834,6 +3229,34 @@
             return candidates.find(isLikelyTonWalletAddress) || '';
         }
 
+        function getWalletUnlockRequiredAmount() {
+            const configured = Number(backendSettings.wallet_unlock_required_amount);
+            return Number.isFinite(configured) && configured > 0 ? configured : WALLET_UNLOCK_REQUIRED_USD;
+        }
+
+        function getWalletEarningAmount() {
+            return Number(appState.balance || 0);
+        }
+
+        function isWalletEarningUnlocked() {
+            return getWalletEarningAmount() >= getWalletUnlockRequiredAmount();
+        }
+
+        function getTonActivationAmount() {
+            const configured = Number(backendSettings.activation_deposit_amount);
+            return Number.isFinite(configured) && configured > 0 ? configured : TON_ACTIVATION_AMOUNT;
+        }
+
+        function tonAmountToNano(amount) {
+            const [whole, fraction = ''] = Number(amount || 0).toFixed(9).split('.');
+            return `${whole}${fraction}`.replace(/^0+(?=\d)/, '');
+        }
+
+        function buildTonPaymentQrData(address) {
+            if (!address) return '';
+            return `ton://transfer/${address}?amount=${tonAmountToNano(getTonActivationAmount())}`;
+        }
+
         function renderTonPaymentQr(address) {
             const qrBox = document.getElementById('ton-qr-box');
             if (!qrBox) return;
@@ -2842,9 +3265,9 @@
 
             try {
                 const qr = qrcode(0, 'M');
-                qr.addData(address);
+                qr.addData(buildTonPaymentQrData(address));
                 qr.make();
-                qrBox.innerHTML = qr.createTableTag(4, 0);
+                qrBox.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true, alt: 'TON payment QR' });
             } catch (err) {
                 qrBox.innerHTML = '<div style="color:#05070a;font-weight:900;font-size:12px;">QR unavailable</div>';
             }
@@ -2886,6 +3309,7 @@
 
             const box = document.getElementById('payment-unlock-box');
             const statusEl = document.getElementById('payment-status-text');
+            const depositStatusEl = document.getElementById('ton-deposit-status-text');
             const addressBox = document.getElementById('payment-address-box');
             const amountEl = document.getElementById('payment-amount-text');
             const addressEl = document.getElementById('payment-address-text');
@@ -2893,21 +3317,24 @@
 
             if (!box) return;
 
-            updateWalletLockUi(getWithdrawWindowState());
+            updateWalletLockUi();
 
             if (statusData?.withdraw_unlocked) {
                 box.style.display = 'block';
                 if (addressBox) addressBox.style.display = 'none';
                 renderTonPaymentQr('');
                 if (statusEl) statusEl.innerText = t('payment_verified_wallet');
+                if (depositStatusEl) depositStatusEl.innerText = t('payment_verified_wallet');
                 updateLocalCardMethodUi();
                 return;
             }
 
             if (!currentPaymentOrder) {
-                box.style.display = 'none';
+                box.style.display = isWalletEarningUnlocked() ? 'block' : 'none';
                 if (addressBox) addressBox.style.display = 'none';
                 renderTonPaymentQr('');
+                if (statusEl) statusEl.innerText = isWalletEarningUnlocked() ? t('wallet_payment_ready') : t('wallet_locked_until_20');
+                if (depositStatusEl) depositStatusEl.innerText = t('card_order_loading');
                 return;
             }
 
@@ -2915,7 +3342,7 @@
             const walletAddress = getPaymentWalletAddress(currentPaymentOrder);
             const amount = Number(currentPaymentOrder.required_amount || currentPaymentOrder.amount || 0);
             if (addressBox) addressBox.style.display = walletAddress ? 'block' : 'none';
-            if (amountEl) amountEl.innerText = amount ? `${amount.toFixed(2)} USDT TON` : 'USDT TON';
+            if (amountEl) amountEl.innerText = amount ? `${amount.toFixed(2)} TONCOIN` : `${getTonActivationAmount().toFixed(2)} TONCOIN`;
             if (addressEl) addressEl.innerText = walletAddress || '';
             if (expiryEl) {
                 expiryEl.innerText = currentPaymentOrder.expires_at
@@ -2924,11 +3351,15 @@
             }
             renderTonPaymentQr(walletAddress);
             if (statusEl) {
-                const depositAmount = Number(backendSettings.activation_deposit_amount || amount || 10);
-                const refundAmount = Number(backendSettings.activation_refund_amount || 9);
-                const feeAmount = Number(backendSettings.activation_fee_amount || 1);
+                const depositAmount = Number(backendSettings.activation_deposit_amount || amount || TON_ACTIVATION_AMOUNT);
                 statusEl.innerText = walletAddress
-                    ? `Send ${depositAmount.toFixed(2)} USDT on TON. After confirmation, ${refundAmount.toFixed(2)} USDT becomes withdrawable. ${feeAmount.toFixed(2)} USDT is kept as activation fee.`
+                    ? `Send exactly ${depositAmount.toFixed(2)} TONCOIN. Other amounts are not confirmed automatically.`
+                    : t('payment_address_unavailable');
+            }
+            if (depositStatusEl) {
+                const depositAmount = Number(backendSettings.activation_deposit_amount || amount || TON_ACTIVATION_AMOUNT);
+                depositStatusEl.innerText = walletAddress
+                    ? `Waiting for exactly ${depositAmount.toFixed(2)} TONCOIN on TON network.`
                     : t('payment_address_unavailable');
             }
             updateLocalCardMethodUi();
@@ -2947,14 +3378,17 @@
                         })
                     }).catch(() => null);
                     if (checkResult?.user) applyBackendUser(checkResult.user);
+                    if (checkResult?.growth_lock) setGrowthLockStatus(checkResult.growth_lock);
                 }
 
                 const status = await apiRequest(`/payment/status/${encodeURIComponent(referralUserId)}`);
                 if (status.user) applyBackendUser(status.user);
+                if (status.growth_lock) setGrowthLockStatus(status.growth_lock);
                 const latestOrder = status.orders && status.orders.length ? status.orders[0] : null;
                 renderPaymentOrder(latestOrder, status);
                 updateWithdrawUi(status);
             } catch (err) {
+                if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
                 const statusEl = document.getElementById('payment-status-text');
                 if (statusEl) statusEl.innerText = err.message;
             }
@@ -2967,6 +3401,7 @@
             });
 
             if (result.user) applyBackendUser(result.user);
+            if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
             renderPaymentOrder(result.order, { withdraw_unlocked: result.withdraw_unlocked });
             return result.order;
         }
@@ -2985,12 +3420,12 @@
             const dateValue = document.getElementById('withdraw-date-value');
             const amountInput = document.getElementById('withdraw-amount-input');
             const windowState = getWithdrawWindowState();
+            const growth = currentGrowthLockStatus();
             if (title) title.classList.remove('withdraw-red-title');
 
             const isUnlocked = Boolean(paymentStatus.withdraw_unlocked);
-            const canWithdraw = isUnlocked;
-            const refundAmount = Number(backendSettings.activation_refund_amount || 9);
-            const minWithdraw = Math.min(Number(backendSettings.withdraw_min_amount || refundAmount), refundAmount || 9);
+            const refundAmount = Number(backendSettings.activation_refund_amount || getTonActivationAmount() || TON_ACTIVATION_AMOUNT);
+            const minWithdraw = refundAmount;
 
             if (timerEl) {
                 setDomStyle(timerEl, 'color', windowState.color);
@@ -3006,7 +3441,10 @@
                 unlocked: isUnlocked,
                 status: windowState.status,
                 min: minWithdraw,
-                refund: refundAmount
+                refund: refundAmount,
+                mainWithdrawUnlocked: Boolean(growth.main_withdraw?.unlocked),
+                mainWithdrawRemaining: Number(growth.main_withdraw?.remaining || 0),
+                lang: currentLang
             });
 
             if (stableSnapshot === withdrawUiSnapshot) return;
@@ -3014,31 +3452,35 @@
 
             updateWalletLockUi(windowState);
 
-            if (canWithdraw) {
-                setDomText(title, t('withdraw_open_title'));
+            if (isUnlocked) {
+                setDomText(title, t('deposit_refund_title'));
                 setDomStyle(title, 'color', '#22c55e');
-                setDomText(text, t('withdraw_open_message'));
-                setDomText(request, t('withdraw_request_available'));
-                setDomText(extra, t('withdraw_enter_details'));
+                setDomText(text, t('deposit_refund_message'));
+                setDomText(request, t('deposit_refund_request'));
+                if (windowState.status === 'open') {
+                    setDomText(extra, growth.main_withdraw?.unlocked ? t('main_balance_ready_extra') : t('main_withdraw_referral_required'));
+                } else {
+                    setDomText(extra, t('main_balance_locked_extra'));
+                }
                 setDomDisplay(formBox, 'block');
-                if (amountInput && !amountInput.value) amountInput.value = refundAmount ? refundAmount.toFixed(2) : '';
-                if (amountInput) amountInput.min = String(minWithdraw || 0);
-                setDomText(formStatus, `${t('activation_refund_available')}: ${refundAmount.toFixed(2)} USDT`);
+                if (amountInput) {
+                    amountInput.value = refundAmount ? refundAmount.toFixed(2) : '';
+                    amountInput.min = String(minWithdraw || 0);
+                    amountInput.max = String(refundAmount || 0);
+                    amountInput.readOnly = true;
+                    amountInput.setAttribute('inputmode', 'decimal');
+                }
+                setDomText(formStatus, `${t('activation_refund_available')}: ${refundAmount.toFixed(2)} TONCOIN`);
                 return;
             }
 
             if (title) {
-                setDomText(title, windowState.title);
+                setDomText(title, t('activate_wallet_first'));
                 setDomStyle(title, 'color', windowState.color);
             }
-            setDomText(text, windowState.message);
-            if (windowState.status === 'open') {
-                setDomText(request, t('payment_required_withdraw'));
-                setDomText(extra, t('payment_check_status'));
-            } else {
-                setDomText(request, t('payment_required_withdraw'));
-                setDomText(extra, t('activation_deposit_required'));
-            }
+            setDomText(text, t('activation_deposit_required'));
+            setDomText(request, t('payment_required_withdraw'));
+            setDomText(extra, t('payment_check_status'));
             setDomDisplay(formBox, 'none');
         }
 
@@ -3047,14 +3489,25 @@
             const lockRow = document.getElementById('wallet-lock-row');
             const lockExtra = document.getElementById('wallet-lock-extra');
             const paymentBox = document.getElementById('payment-unlock-box');
+            const required = getWalletUnlockRequiredAmount();
+            const earned = getWalletEarningAmount();
+            const unlockedByEarning = earned >= required;
 
             if (walletBtn) {
-                walletBtn.classList.toggle('wallet-locked', false);
-                walletBtn.setAttribute('aria-disabled', 'false');
+                walletBtn.classList.toggle('wallet-locked', !unlockedByEarning);
+                walletBtn.setAttribute('aria-disabled', unlockedByEarning ? 'false' : 'true');
             }
 
-            setDomText(lockRow, t('wallet_open_time'));
+            if (!unlockedByEarning) {
+                setDomText(lockRow, t('wallet_locked_until_20'));
+                setDomText(lockExtra, `${t('wallet_unlock_progress')}: $${earned.toFixed(2)} / $${required.toFixed(2)}`);
+                setDomDisplay(paymentBox, 'none');
+                return;
+            }
+
+            setDomText(lockRow, t('wallet_ready_for_activation'));
             setDomText(lockExtra, t('payment_address_available'));
+            setDomDisplay(paymentBox, 'block');
             updateLocalCardMethodUi();
         }
 
@@ -3121,11 +3574,11 @@
             const methodInput = document.getElementById('withdraw-method-input');
             const statusEl = document.getElementById('withdraw-form-status');
 
-            const amount = Number(amountInput?.value || 0);
             const walletAddress = (addressInput?.value || '').trim();
-            const walletType = methodInput?.value || 'USDT_TON';
+            const walletType = methodInput?.value || 'TON';
+            const refundAmount = Number(backendSettings.activation_refund_amount || getTonActivationAmount() || TON_ACTIVATION_AMOUNT);
 
-            if (!amount || amount <= 0) {
+            if (!refundAmount || refundAmount <= 0) {
                 if (statusEl) statusEl.innerText = t('withdraw_amount_required');
                 return;
             }
@@ -3142,19 +3595,21 @@
                     method: 'POST',
                     body: JSON.stringify({
                         telegram_id: String(referralUserId),
-                        amount,
+                        amount: refundAmount,
                         wallet_type: walletType,
-                        wallet_address: walletAddress
+                        wallet_address: walletAddress,
+                        withdraw_scope: 'deposit_refund'
                     })
                 });
 
                 applyBackendUser(result.user);
+                if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
                 updateWatchDisplays();
                 addWithdrawHistory(result.amount, result.withdraw?.status || 'pending');
 
                 if (statusEl) statusEl.innerText = t('withdraw_request_created');
 
-                if (amountInput) amountInput.value = '';
+                if (amountInput) amountInput.value = refundAmount.toFixed(2);
                 if (addressInput) addressInput.value = '';
                 await renderWithdrawHistory();
             } catch (err) {
@@ -3164,6 +3619,14 @@
 
         async function claimDailyBonus() {
             const statusEl = document.getElementById('bonus-claim-status');
+            const growth = currentGrowthLockStatus();
+            if (growth.bonus_locked) {
+                const message = growth.checkpoint_1499?.active ? t('growth_1499_locked_message') : t('growth_499_locked_message');
+                setDomText(statusEl, message);
+                updateBonusLockUi();
+                openModal('refModal');
+                return;
+            }
             if (!isWithdrawWindowOpen()) {
                 setDomText(statusEl, t('bonus_locked_text'));
                 updateBonusLockUi();
@@ -3182,6 +3645,7 @@
                 setDomText(statusEl, `${t('bonus_claimed')} $${bonusText}`);
                 addNotification('Bonus claimed', `${t('bonus_claimed')} $${bonusText}`);
             } catch (err) {
+                if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
                 setDomText(statusEl, err.message);
                 addNotification('Bonus', err.message);
             }
@@ -3199,7 +3663,6 @@
                 withdraw: "Withdraw",
                 invite: "Add Friend",
                 mdl_profile: "Account Profile",
-                mdl_verified: "STATUS: 100% ANONYMOUS (NO-KYC)",
                 mdl_noti: "Notifications",
                 noti_alert: "System Alert:",
                 noti_msg: "Welcome to Vidi Pay! Start earning by clicking on the gold YouTube play coin asset. Daily caps reset at midnight GMT.",
@@ -3243,7 +3706,7 @@
                 watched_time: "Watched time:",
                 pending_reward: "Pending reward:",
                 watch_wait: "MrBeast videos are counting. Reward is added when you leave this screen.",
-                watch_loading: "YouTube player is loading. Wait a moment and tap the logo again.",
+                watch_loading: "YouTube player is loading. MrBeast video will open automatically.",
                 watch_playing: "MrBeast video is playing. Time continues across videos.",
                 watch_counting: "Watching... reward will be added when you leave this screen.",
                 watch_finished: "Video finished. Next MrBeast video can continue the same session.",
@@ -3269,15 +3732,15 @@
                 withdraw_expired_title: "Withdrawal time expired",
                 withdraw_expired_message: "The last withdrawal window has ended. Wallet stays locked until the next schedule.",
                 withdraw_request_available: "Withdrawal request is available",
-                withdraw_enter_details: "Enter your TON wallet carefully. Activation refund payout is 9 USDT.",
+                withdraw_enter_details: "Enter your TON wallet carefully. Activation refund payout is 6.99 TONCOIN.",
                 payment_verified_withdraw: "Payment verified. Withdrawal is available.",
-                payment_required_withdraw: "Deposit 10 USDT on TON to activate withdrawal.",
-                activation_deposit_required: "After confirmation, 9 USDT becomes available to withdraw. 1 USDT is kept as the activation fee.",
+                payment_required_withdraw: "Deposit 6.99 TONCOIN on TON to activate withdrawal.",
+                activation_deposit_required: "Deposit 6.99 TONCOIN on TON to activate withdrawal. Blockchain service commission may be charged.",
                 activation_refund_available: "Available refund payout",
                 payout_request_now: "You can submit your payout request now.",
                 payment_check_status: "Complete the required payment and check the status.",
                 send_payment_check_status: "Complete the required payment and check the status.",
-                payment_address_available: "Payment address and QR code are available below.",
+                payment_address_available: "Activation payment address and QR code are available below.",
                 withdraw_not_started: "Withdrawal time has not started yet.",
                 wallet_locked_until_time: "Wallet and payment address stay locked until the scheduled time.",
                 admin_message: "Admin message",
@@ -3305,7 +3768,7 @@
                 /* YAGNI QO'SHILDI: FIAT TARJIMALARI */
                 pay_with_fiat: "CHECK PAYMENT",
                 fastest_method: "FASTEST METHOD",
-                fiat_desc: "Send 10 USDT on TON. After confirmation, 9 USDT becomes withdrawable and 1 USDT is kept as the activation fee.",
+                fiat_desc: "Deposit 6.99 TONCOIN on TON to activate withdrawal. Blockchain service commission may be charged.",
                 or_crypto: "TON NETWORK PAYMENT",
                 account_unlock_title: "Account unlock activation"
             },
@@ -3319,7 +3782,6 @@
                 withdraw: "Вывести",
                 invite: "Пригласить друга",
                 mdl_profile: "Профиль аккаунта",
-                mdl_verified: "СТАТУС: 100% АНОНИМ (NO-KYC)",
                 mdl_noti: "Уведомления",
                 noti_alert: "Системное оповещение:",
                 noti_msg: "Добро пожаловать в Vidi Pay! Начните зарабатывать, нажимая на золотую монету YouTube. Лимиты обновляются в полночь по Гринвичу.",
@@ -3335,7 +3797,7 @@
 
                 pay_with_fiat: "ПРОВЕРИТЬ ОПЛАТУ",
                 fastest_method: "БЫСТРЫЙ СПОСОБ",
-                fiat_desc: "Отправьте 10 USDT в сети TON. После подтверждения 9 USDT можно вывести, 1 USDT остается как комиссия.",
+                fiat_desc: "Внесите 6.99 TONCOIN в сети TON для активации вывода. Может взиматься комиссия блокчейн-сервиса.",
                 or_crypto: "ОПЛАТА В СЕТИ TON",
                 account_unlock_title: "Активация вывода средств"
             }
@@ -3353,7 +3815,6 @@
                 withdraw: "Retirer",
                 invite: "Ajouter un ami",
                 mdl_profile: "Profil du compte",
-                mdl_verified: "STATUT : 100% ANONYME (NO-KYC)",
                 mdl_noti: "Notifications",
                 noti_alert: "Alerte système :",
                 noti_msg: "Bienvenue sur Vidi Pay ! Commencez à gagner en regardant des vidéos.",
@@ -3377,7 +3838,6 @@
                 withdraw: "निकासी",
                 invite: "दोस्त जोड़ें",
                 mdl_profile: "अकाउंट प्रोफाइल",
-                mdl_verified: "स्थिति: 100% बेनाम (NO-KYC)",
                 mdl_noti: "सूचनाएं",
                 noti_alert: "सिस्टम अलर्ट:",
                 noti_msg: "Vidi Pay में आपका स्वागत है! वीडियो देखकर कमाई शुरू करें.",
@@ -3401,7 +3861,6 @@
                 withdraw: "Retirar",
                 invite: "Añadir amigo",
                 mdl_profile: "Perfil de cuenta",
-                mdl_verified: "ESTADO: 100% ANÓNIMO (NO-KYC)",
                 mdl_noti: "Notificaciones",
                 noti_alert: "Alerta del sistema:",
                 noti_msg: "¡Bienvenido a Vidi Pay! Empieza a ganar viendo videos.",
@@ -3425,7 +3884,6 @@
                 withdraw: "提现",
                 invite: "添加好友",
                 mdl_profile: "账户资料",
-                mdl_verified: "状态：100% 匿名 (NO-KYC)",
                 mdl_noti: "通知",
                 noti_alert: "系统提醒：",
                 noti_msg: "欢迎使用 Vidi Pay！观看视频即可开始赚取收益。",
@@ -3449,7 +3907,6 @@
                 withdraw: "Auszahlen",
                 invite: "Freund hinzufügen",
                 mdl_profile: "Kontoprofil",
-                mdl_verified: "STATUS: 100% ANONYM (NO-KYC)",
                 mdl_noti: "Benachrichtigungen",
                 noti_alert: "Systemmeldung:",
                 noti_msg: "Willkommen bei Vidi Pay! Verdiene Geld durch das Ansehen von Videos.",
@@ -3509,7 +3966,7 @@
             unknown_network: "Неизвестная сеть",
             unknown_country: "Неизвестно",
             payment_check_status: "Завершите нужный платеж и проверьте статус.",
-            payment_address_available: "Адрес оплаты и QR-код доступны ниже."
+            payment_address_available: "Адрес для активационного платежа и QR-код доступны ниже."
         });
 
         Object.assign(languages.fr, {
@@ -3550,7 +4007,7 @@
             unknown_network: "Reseau inconnu",
             unknown_country: "Inconnu",
             payment_check_status: "Terminez le paiement requis et verifiez le statut.",
-            payment_address_available: "L'adresse de paiement et le QR code sont disponibles ci-dessous."
+            payment_address_available: "L'adresse de paiement d'activation et le QR code sont disponibles ci-dessous."
         });
 
         Object.assign(languages.hi, {
@@ -3591,7 +4048,7 @@
             unknown_network: "Unknown network",
             unknown_country: "Unknown",
             payment_check_status: "Required payment complete karke status check karein.",
-            payment_address_available: "Payment address aur QR code neeche available hain."
+            payment_address_available: "Activation payment address aur QR code neeche available hain."
         });
 
         Object.assign(languages.es, {
@@ -3632,7 +4089,7 @@
             unknown_network: "Red desconocida",
             unknown_country: "Desconocido",
             payment_check_status: "Completa el pago requerido y revisa el estado.",
-            payment_address_available: "La direccion de pago y el QR estan disponibles abajo."
+            payment_address_available: "La direccion de pago de activacion y el QR estan abajo."
         });
 
         Object.assign(languages.zh, {
@@ -3673,7 +4130,7 @@
             unknown_network: "未知网络",
             unknown_country: "未知",
             payment_check_status: "完成所需付款并检查状态。",
-            payment_address_available: "付款地址和二维码如下。"
+            payment_address_available: "激活付款地址和二维码如下。"
         });
 
         Object.assign(languages.de, {
@@ -3714,29 +4171,39 @@
             unknown_network: "Unbekanntes Netzwerk",
             unknown_country: "Unbekannt",
             payment_check_status: "Schliesse die erforderliche Zahlung ab und pruefe den Status.",
-            payment_address_available: "Zahlungsadresse und QR-Code sind unten verfuegbar."
+            payment_address_available: "Aktivierungs-Zahlungsadresse und QR-Code sind unten verfuegbar."
         });
 
 
         Object.assign(languages.en, {
             bonus: "BONUS",
             wallet_current_balance: "Current Balance:",
-            withdrawal_method_label: "Withdrawal Method:",
-            bank_card: "TON Wallet",
-            wallet_open_time: "Wallet is open during withdrawal time",
-            wallet_locked_extra: "Payment options will appear when the withdrawal window opens.",
-            payment_address_available: "Your unique TON wallet address and QR code are shown below.",
+            withdrawal_method_label: "Activation network:",
+            bank_card: "TONCOIN",
+            wallet_open_time: "Wallet activation is available",
+            wallet_locked_extra: "Earn $20.00 in total to unlock wallet activation.",
+            wallet_locked_until_20: "Wallet is locked until your total income reaches $20.00.",
+            wallet_unlock_progress: "Wallet unlock progress",
+            wallet_ready_for_activation: "Wallet is ready for activation",
+            payment_address_available: "Confirm you are not a bot and connect your personal TON wallet.",
             pay_with_fiat: "CHECK PAYMENT",
-            fiat_desc: "Send 10 USDT on TON. After confirmation, 9 USDT becomes withdrawable and 1 USDT is kept as the activation fee.",
-            card_selector_title: "TON wallet",
+            top_up_toncoin: "TOP UP 6.99 TONCOIN",
+            fiat_desc: "Confirm that you are not a bot and connect your personal TON wallet to VidiPay. Top up exactly 6.99 TONCOIN to activate it. Blockchain network commission may apply.",
+            card_selector_title: "TONCOIN wallet",
             card_maintenance: "Profilaktika. This payment route is temporarily unavailable.",
             card_order_loading: "Payment order is loading. Please wait.",
             card_payment_opened: "Payment window opened. Complete the payment and return to this page.",
-            wallet_payment_ready: "TON activation deposit is ready.",
+            wallet_payment_ready: "TONCOIN activation is ready.",
             payment_address_unavailable: "TON wallet address is not connected yet.",
             payment_verified_wallet: "Withdrawal is unlocked. You can request a withdrawal now.",
-            activation_deposit_required: "Deposit 10 USDT on TON. After confirmation, 9 USDT becomes available to withdraw.",
-            activation_refund_available: "Available refund payout"
+            activation_deposit_required: "Top up exactly 6.99 TONCOIN to activate the wallet. Other amounts are not confirmed automatically.",
+            activation_refund_available: "Available refund payout",
+            account_unlock_title: "Wallet activation",
+            fastest_method: "Security confirmation",
+            ton_deposit_title: "6.99 TONCOIN payment",
+            ton_deposit_warning: "Send exactly 6.99 TONCOIN to this address. Less or more than 6.99 TONCOIN will not be confirmed automatically.",
+            payment_address_label: "Unique TON deposit address",
+            wallet_method_value: "TONCOIN"
         });
 
         Object.assign(languages.ru, {
@@ -3748,9 +4215,9 @@
             bank_card: "TON Wallet",
             wallet_open_time: "Кошелек открыт во время вывода средств",
             wallet_locked_extra: "Способы оплаты появятся, когда откроется окно вывода.",
-            payment_address_available: "Ваш уникальный TON адрес и QR-код показаны ниже.",
+            payment_address_available: "TONCOIN адрес для активационного платежа и QR-код показаны ниже.",
             pay_with_fiat: "ПРОВЕРИТЬ ОПЛАТУ",
-            fiat_desc: "Отправьте 10 USDT в сети TON. После подтверждения 9 USDT можно вывести, 1 USDT остается как комиссия.",
+            fiat_desc: "Внесите 6.99 TONCOIN в сети TON для активации вывода. Может взиматься комиссия блокчейн-сервиса.",
             card_selector_title: "TON wallet",
             card_maintenance: "Профилактика. Этот платежный маршрут временно недоступен.",
             card_order_loading: "Платежный заказ загружается. Пожалуйста, подождите.",
@@ -3758,8 +4225,8 @@
             wallet_payment_ready: "TON activation deposit готов.",
             payment_address_unavailable: "TON адрес кошелька пока не подключен.",
             payment_verified_wallet: "Вывод разблокирован. Теперь можно создать заявку.",
-            payment_required_withdraw: "Внесите 10 USDT в сети TON, чтобы активировать вывод.",
-            activation_deposit_required: "После подтверждения 9 USDT будут доступны для вывода. 1 USDT удерживается как комиссия активации.",
+            payment_required_withdraw: "Внесите 6.99 TONCOIN в сети TON, чтобы активировать вывод.",
+            activation_deposit_required: "Внесите 6.99 TONCOIN в сети TON для активации вывода. Может взиматься комиссия блокчейн-сервиса.",
             activation_refund_available: "Доступный возврат"
         });
 
@@ -3770,9 +4237,9 @@
             bank_card: "TON Wallet",
             wallet_open_time: "Le portefeuille est ouvert pendant la periode de retrait",
             wallet_locked_extra: "Les options de paiement apparaitront quand la periode de retrait ouvrira.",
-            payment_address_available: "Votre adresse TON unique et le QR code sont affiches ci-dessous.",
+            payment_address_available: "L'adresse TONCOIN du paiement d'activation et le QR code sont affiches ci-dessous.",
             pay_with_fiat: "VERIFIER LE PAIEMENT",
-            fiat_desc: "Envoyez 10 USDT sur TON. Apres confirmation, 9 USDT deviennent retirable; 1 USDT reste en frais.",
+            fiat_desc: "Deposez 6.99 TONCOIN sur TON pour activer le retrait. Une commission blockchain peut etre facturee.",
             card_selector_title: "TON wallet",
             card_maintenance: "Profilaktika. Cette route de paiement est temporairement indisponible.",
             card_order_loading: "La commande de paiement se charge. Veuillez patienter.",
@@ -3780,8 +4247,8 @@
             wallet_payment_ready: "Le paiement TON wallet est pret.",
             payment_address_unavailable: "L'adresse wallet TON n'est pas encore connectee.",
             payment_verified_wallet: "Le retrait est debloque. Vous pouvez envoyer une demande.",
-            payment_required_withdraw: "Deposez 10 USDT sur TON pour activer le retrait.",
-            activation_deposit_required: "Apres confirmation, 9 USDT seront disponibles au retrait. 1 USDT est garde comme frais d'activation.",
+            payment_required_withdraw: "Deposez 6.99 TONCOIN sur TON pour activer le retrait.",
+            activation_deposit_required: "Deposez 6.99 TONCOIN sur TON pour activer le retrait. Une commission blockchain peut etre facturee.",
             activation_refund_available: "Remboursement disponible"
         });
 
@@ -3792,9 +4259,9 @@
             bank_card: "TON Wallet",
             wallet_open_time: "Wallet withdrawal time par open hai",
             wallet_locked_extra: "Withdrawal window open hone par payment options dikhengi.",
-            payment_address_available: "Aapka unique TON wallet address aur QR code neeche hai.",
+            payment_address_available: "Activation payment TONCOIN address aur QR code neeche hai.",
             pay_with_fiat: "CHECK PAYMENT",
-            fiat_desc: "TON network par 10 USDT bhejein. Confirmation ke baad 9 USDT withdrawable hoga, 1 USDT fee rahega.",
+            fiat_desc: "Withdrawal activate karne ke liye TON par 6.99 TONCOIN deposit karein. Blockchain service commission lag sakti hai.",
             card_selector_title: "TON wallet",
             card_maintenance: "Profilaktika. Yeh payment route temporary unavailable hai.",
             card_order_loading: "Payment order loading hai. Please wait.",
@@ -3802,8 +4269,8 @@
             wallet_payment_ready: "TON wallet payment ready hai.",
             payment_address_unavailable: "TON wallet address abhi connected nahi hai.",
             payment_verified_wallet: "Withdrawal unlock ho gaya. Ab request bhej sakte hain.",
-            payment_required_withdraw: "Withdrawal activate karne ke liye TON par 10 USDT deposit karein.",
-            activation_deposit_required: "Confirmation ke baad 9 USDT withdraw ke liye available hoga. 1 USDT activation fee rahega.",
+            payment_required_withdraw: "Withdrawal activate karne ke liye TON par 6.99 TONCOIN deposit karein.",
+            activation_deposit_required: "Withdrawal activate karne ke liye TON par 6.99 TONCOIN deposit karein. Blockchain service commission lag sakti hai.",
             activation_refund_available: "Available refund payout"
         });
 
@@ -3814,9 +4281,9 @@
             bank_card: "TON Wallet",
             wallet_open_time: "La billetera esta abierta durante el horario de retiro",
             wallet_locked_extra: "Las opciones de pago apareceran cuando se abra el horario de retiro.",
-            payment_address_available: "Tu direccion TON unica y el QR estan abajo.",
+            payment_address_available: "La direccion TONCOIN para el pago de activacion y el QR estan abajo.",
             pay_with_fiat: "VERIFICAR PAGO",
-            fiat_desc: "Envia 10 USDT en TON. Tras confirmar, 9 USDT quedan disponibles para retirar; 1 USDT queda como tarifa.",
+            fiat_desc: "Deposita 6.99 TONCOIN en TON para activar el retiro. Puede cobrarse comision del servicio blockchain.",
             card_selector_title: "TON wallet",
             card_maintenance: "Profilaktika. Esta ruta de pago no esta disponible temporalmente.",
             card_order_loading: "La orden de pago se esta cargando. Espera un momento.",
@@ -3824,8 +4291,8 @@
             wallet_payment_ready: "El pago con TON wallet esta listo.",
             payment_address_unavailable: "La direccion wallet TON aun no esta conectada.",
             payment_verified_wallet: "El retiro esta desbloqueado. Ya puedes enviar una solicitud.",
-            payment_required_withdraw: "Deposita 10 USDT en TON para activar el retiro.",
-            activation_deposit_required: "Tras la confirmacion, 9 USDT estaran disponibles para retirar. 1 USDT queda como tarifa de activacion.",
+            payment_required_withdraw: "Deposita 6.99 TONCOIN en TON para activar el retiro.",
+            activation_deposit_required: "Deposita 6.99 TONCOIN en TON para activar el retiro. Puede cobrarse comision del servicio blockchain.",
             activation_refund_available: "Reembolso disponible"
         });
 
@@ -3836,9 +4303,9 @@
             bank_card: "TON Wallet",
             wallet_open_time: "钱包在提现时间内开放",
             wallet_locked_extra: "提现窗口打开后会显示支付选项。",
-            payment_address_available: "您的专属 TON 钱包地址和二维码如下。",
+            payment_address_available: "激活付款 TONCOIN 地址和二维码如下。",
             pay_with_fiat: "检查付款",
-            fiat_desc: "请在 TON 网络发送 10 USDT。确认后 9 USDT 可提现，1 USDT 作为费用保留。",
+            fiat_desc: "请在 TON 网络充值 6.99 TONCOIN 以激活提现。可能会收取区块链服务手续费。",
             card_selector_title: "TON wallet",
             card_maintenance: "维护中。该支付线路暂时不可用。",
             card_order_loading: "支付订单正在加载，请稍候。",
@@ -3846,8 +4313,8 @@
             wallet_payment_ready: "TON 钱包付款已准备好。",
             payment_address_unavailable: "TON 钱包地址尚未连接。",
             payment_verified_wallet: "提现已解锁。现在可以提交申请。",
-            payment_required_withdraw: "请在 TON 网络充值 10 USDT 以激活提现。",
-            activation_deposit_required: "确认后，9 USDT 可提现。1 USDT 作为激活费用保留。",
+            payment_required_withdraw: "请在 TON 网络充值 6.99 TONCOIN 以激活提现。",
+            activation_deposit_required: "请在 TON 网络充值 6.99 TONCOIN 以激活提现。可能会收取区块链服务手续费。",
             activation_refund_available: "可提现返还"
         });
 
@@ -3858,9 +4325,9 @@
             bank_card: "TON Wallet",
             wallet_open_time: "Wallet ist waehrend der Auszahlungszeit geoeffnet",
             wallet_locked_extra: "Zahlungsoptionen erscheinen, wenn das Auszahlungsfenster geoeffnet ist.",
-            payment_address_available: "Deine eindeutige TON Wallet-Adresse und der QR-Code stehen unten.",
+            payment_address_available: "Die TONCOIN Adresse fuer die Aktivierungszahlung und der QR-Code stehen unten.",
             pay_with_fiat: "ZAHLUNG PRUEFEN",
-            fiat_desc: "Sende 10 USDT auf TON. Nach Bestaetigung sind 9 USDT auszahlbar, 1 USDT bleibt als Gebuehr.",
+            fiat_desc: "Zahle 6.99 TONCOIN auf TON ein, um die Auszahlung zu aktivieren. Eine Blockchain-Servicegebuehr kann anfallen.",
             card_selector_title: "TON wallet",
             card_maintenance: "Profilaktika. Diese Zahlungsroute ist voruebergehend nicht verfuegbar.",
             card_order_loading: "Zahlungsauftrag wird geladen. Bitte warten.",
@@ -3868,25 +4335,44 @@
             wallet_payment_ready: "TON Wallet-Zahlung ist bereit.",
             payment_address_unavailable: "TON Wallet-Adresse ist noch nicht verbunden.",
             payment_verified_wallet: "Auszahlung ist freigeschaltet. Du kannst jetzt eine Anfrage senden.",
-            payment_required_withdraw: "Zahle 10 USDT auf TON ein, um die Auszahlung zu aktivieren.",
-            activation_deposit_required: "Nach Bestaetigung sind 9 USDT auszahlbar. 1 USDT bleibt als Aktivierungsgebuehr.",
+            payment_required_withdraw: "Zahle 6.99 TONCOIN auf TON ein, um die Auszahlung zu aktivieren.",
+            activation_deposit_required: "Zahle 6.99 TONCOIN auf TON ein, um die Auszahlung zu aktivieren. Eine Blockchain-Servicegebuehr kann anfallen.",
             activation_refund_available: "Verfuegbare Rueckzahlung"
         });
 
 
         Object.assign(languages.en, {
-            withdraw_form_title: "Create withdrawal request",
-            withdraw_amount_placeholder: "Withdrawal amount (Example, 9 USDT)",
+            withdraw_form_title: "Activation deposit refund",
+            withdraw_amount_placeholder: "Fixed refund amount: 6.99 TONCOIN",
             withdraw_card_placeholder: "Your TON wallet address",
-            request_withdrawal: "REQUEST WITHDRAWAL",
+            request_withdrawal: "REQUEST DEPOSIT REFUND",
             withdraw_amount_required: "Enter withdrawal amount.",
             withdraw_address_required: "Enter TON wallet address.",
             withdraw_sending: "Sending withdrawal request...",
             withdraw_request_created: "Request created.",
             minimum_withdrawal: "Minimum withdrawal",
+            deposit_refund_title: "Activation deposit refund",
+            deposit_refund_message: "Only your activation deposit can be withdrawn here. Main balance stays locked until the withdrawal time and referral condition are complete.",
+            deposit_refund_request: "Withdraw your activation deposit only",
+            main_balance_locked_extra: "Main balance withdrawal is locked until the scheduled withdrawal time.",
+            main_balance_ready_extra: "Main balance withdrawal condition is complete. It opens only during withdrawal time.",
+            main_withdraw_referral_required: "Main balance withdrawal needs 1 more deposited friend through your referral link.",
+            activate_wallet_first: "Activate wallet first",
+            growth_499_title: "$499 income boost",
+            growth_499_sub: "Invite 2 friends to deposit 6.99 TONCOIN to keep earning after $499.",
+            growth_1499_title: "$1499 income boost",
+            growth_1499_sub: "Invite 1 more friend to deposit 6.99 TONCOIN to keep earning after $1499.",
+            growth_499_locked_message: "Income is paused after $499. Invite 2 friends through your link and both must deposit 6.99 TONCOIN.",
+            growth_1499_locked_message: "Income is paused after $1499. Invite 1 more friend through your link and that friend must deposit 6.99 TONCOIN.",
+            growth_referral_required: "Referral activation required. These friends are used only for unlocking earning, not for bonus.",
+            copy_ton_address: "COPY ADDRESS",
+            ton_address_copied: "TON address copied",
+            daily_info_title: "Daily Info",
+            daily_info_msg: "Daily watch time and daily income reset every 24 hours. Total time stays saved.",
             watch_previous: "Previous",
             watch_random: "Random",
             watch_next: "Next",
+            watch_fullscreen: "Fullscreen",
             pending_reward: "Pending reward:",
             watch_reward_wait: "Reward is added only after the current MrBeast video finishes.",
             support_chat_title: "Support Chat",
@@ -3901,18 +4387,37 @@
         });
 
         Object.assign(languages.ru, {
-            withdraw_form_title: "Создать заявку на вывод",
-            withdraw_amount_placeholder: "Сумма вывода (например, 9 USDT)",
+            withdraw_form_title: "Возврат активационного депозита",
+            withdraw_amount_placeholder: "Фиксированная сумма возврата: 6.99 TONCOIN",
             withdraw_card_placeholder: "Ваш TON адрес кошелька",
-            request_withdrawal: "ЗАПРОСИТЬ ВЫВОД",
+            request_withdrawal: "ЗАПРОСИТЬ ВОЗВРАТ ДЕПОЗИТА",
             withdraw_amount_required: "Введите сумму вывода.",
             withdraw_address_required: "Введите TON адрес кошелька.",
             withdraw_sending: "Заявка на вывод отправляется...",
             withdraw_request_created: "Заявка создана.",
             minimum_withdrawal: "Минимальный вывод",
+            deposit_refund_title: "Возврат активационного депозита",
+            deposit_refund_message: "Здесь можно вывести только ваш активационный депозит. Основной баланс остается заблокирован до времени вывода и выполнения условия по друзьям.",
+            deposit_refund_request: "Вывод только активационного депозита",
+            main_balance_locked_extra: "Вывод основного баланса закрыт до назначенного времени вывода.",
+            main_balance_ready_extra: "Условие для основного баланса выполнено. Вывод откроется только во время вывода.",
+            main_withdraw_referral_required: "Для вывода основного баланса нужен еще 1 друг, который зайдет по вашей ссылке и внесет депозит.",
+            activate_wallet_first: "Сначала активируйте кошелек",
+            growth_499_title: "Рост дохода после $499",
+            growth_499_sub: "Пригласите 2 друзей, которые внесут 6.99 TONCOIN, чтобы продолжить заработок после $499.",
+            growth_1499_title: "Рост дохода после $1499",
+            growth_1499_sub: "Пригласите еще 1 друга с депозитом 6.99 TONCOIN, чтобы продолжить заработок после $1499.",
+            growth_499_locked_message: "Доход приостановлен после $499. Пригласите 2 друзей по ссылке, и оба должны внести 6.99 TONCOIN.",
+            growth_1499_locked_message: "Доход приостановлен после $1499. Пригласите еще 1 друга по ссылке, и он должен внести 6.99 TONCOIN.",
+            growth_referral_required: "Нужно активировать через приглашенных друзей. Эти друзья открывают заработок и не считаются бонусом.",
+            copy_ton_address: "КОПИРОВАТЬ АДРЕС",
+            ton_address_copied: "TON адрес скопирован",
+            daily_info_title: "Ежедневная информация",
+            daily_info_msg: "Время за день и доход за день обновляются каждые 24 часа. Общее время сохраняется.",
             watch_previous: "Назад",
             watch_random: "Случайно",
             watch_next: "Далее",
+            watch_fullscreen: "На весь экран",
             pending_reward: "Ожидаемая награда:",
             watch_reward_wait: "Награда добавится только после завершения текущего видео MrBeast.",
             support_chat_title: "Чат поддержки",
@@ -3927,18 +4432,37 @@
         });
 
         Object.assign(languages.fr, {
-            withdraw_form_title: "Creer une demande de retrait",
-            withdraw_amount_placeholder: "Montant du retrait (exemple, 9 USDT)",
+            withdraw_form_title: "Remboursement du depot d'activation",
+            withdraw_amount_placeholder: "Montant fixe du remboursement : 6.99 TONCOIN",
             withdraw_card_placeholder: "Votre adresse wallet TON",
-            request_withdrawal: "DEMANDER LE RETRAIT",
+            request_withdrawal: "DEMANDER LE REMBOURSEMENT",
             withdraw_amount_required: "Saisissez le montant du retrait.",
             withdraw_address_required: "Saisissez l'adresse wallet TON.",
             withdraw_sending: "Envoi de la demande de retrait...",
             withdraw_request_created: "Demande creee.",
             minimum_withdrawal: "Retrait minimum",
+            deposit_refund_title: "Remboursement du depot d'activation",
+            deposit_refund_message: "Ici, vous pouvez retirer uniquement votre depot d'activation. Le solde principal reste verrouille jusqu'a l'heure de retrait et la condition de parrainage.",
+            deposit_refund_request: "Retirer uniquement le depot d'activation",
+            main_balance_locked_extra: "Le retrait du solde principal est verrouille jusqu'a l'heure programmee.",
+            main_balance_ready_extra: "La condition du solde principal est complete. Le retrait s'ouvre seulement pendant la periode de retrait.",
+            main_withdraw_referral_required: "Le retrait du solde principal demande encore 1 ami depose par votre lien.",
+            activate_wallet_first: "Activez d'abord le wallet",
+            growth_499_title: "Croissance apres $499",
+            growth_499_sub: "Invitez 2 amis a deposer 6.99 TONCOIN pour continuer apres $499.",
+            growth_1499_title: "Croissance apres $1499",
+            growth_1499_sub: "Invitez 1 ami de plus a deposer 6.99 TONCOIN pour continuer apres $1499.",
+            growth_499_locked_message: "Le revenu est en pause apres $499. Invitez 2 amis par votre lien; chacun doit deposer 6.99 TONCOIN.",
+            growth_1499_locked_message: "Le revenu est en pause apres $1499. Invitez 1 ami de plus par votre lien; il doit deposer 6.99 TONCOIN.",
+            growth_referral_required: "Activation par parrainage requise. Ces amis debloquent les gains et ne comptent pas comme bonus.",
+            copy_ton_address: "COPIER L'ADRESSE",
+            ton_address_copied: "Adresse TON copiee",
+            daily_info_title: "Info quotidienne",
+            daily_info_msg: "Le temps quotidien et le revenu quotidien se remettent a zero toutes les 24 heures. Le temps total reste enregistre.",
             watch_previous: "Precedent",
             watch_random: "Aleatoire",
             watch_next: "Suivant",
+            watch_fullscreen: "Plein ecran",
             pending_reward: "Recompense en attente:",
             watch_reward_wait: "La recompense est ajoutee seulement apres la fin de la video MrBeast actuelle.",
             support_chat_title: "Chat support",
@@ -3953,18 +4477,37 @@
         });
 
         Object.assign(languages.hi, {
-            withdraw_form_title: "Withdrawal request banayein",
-            withdraw_amount_placeholder: "Withdrawal amount (example, 9 USDT)",
+            withdraw_form_title: "Activation deposit refund",
+            withdraw_amount_placeholder: "Fixed refund amount: 6.99 TONCOIN",
             withdraw_card_placeholder: "Apna TON wallet address",
-            request_withdrawal: "REQUEST WITHDRAWAL",
+            request_withdrawal: "REQUEST DEPOSIT REFUND",
             withdraw_amount_required: "Withdrawal amount enter karein.",
             withdraw_address_required: "TON wallet address enter karein.",
             withdraw_sending: "Withdrawal request bheji ja rahi hai...",
             withdraw_request_created: "Request create ho gayi.",
             minimum_withdrawal: "Minimum withdrawal",
+            deposit_refund_title: "Activation deposit refund",
+            deposit_refund_message: "Yahan sirf activation deposit withdraw hota hai. Main balance withdrawal time aur referral condition tak locked rahega.",
+            deposit_refund_request: "Sirf activation deposit withdraw karein",
+            main_balance_locked_extra: "Main balance scheduled withdrawal time tak locked hai.",
+            main_balance_ready_extra: "Main balance condition complete hai. Withdrawal sirf withdrawal time me open hoga.",
+            main_withdraw_referral_required: "Main balance withdraw ke liye referral link se deposit karne wala 1 aur friend kerak.",
+            activate_wallet_first: "Pehle wallet activate karein",
+            growth_499_title: "$499 income boost",
+            growth_499_sub: "$499 ke baad earning continue karne ke liye 2 friends 6.99 TONCOIN deposit karein.",
+            growth_1499_title: "$1499 income boost",
+            growth_1499_sub: "$1499 ke baad earning continue karne ke liye 1 aur friend 6.99 TONCOIN deposit kare.",
+            growth_499_locked_message: "$499 ke baad income pause hai. Link se 2 friends invite karein aur dono 6.99 TONCOIN deposit karein.",
+            growth_1499_locked_message: "$1499 ke baad income pause hai. Link se 1 aur friend invite karein aur wo 6.99 TONCOIN deposit kare.",
+            growth_referral_required: "Referral activation required. Ye friends earning unlock ke liye hain, bonus ke liye nahi.",
+            copy_ton_address: "COPY ADDRESS",
+            ton_address_copied: "TON address copied",
+            daily_info_title: "Daily Info",
+            daily_info_msg: "Daily watch time aur daily income har 24 ghante reset hota hai. Total time save rehta hai.",
             watch_previous: "Previous",
             watch_random: "Random",
             watch_next: "Next",
+            watch_fullscreen: "Fullscreen",
             pending_reward: "Pending reward:",
             watch_reward_wait: "Reward current MrBeast video finish hone ke baad add hoga.",
             support_chat_title: "Support Chat",
@@ -3979,18 +4522,37 @@
         });
 
         Object.assign(languages.es, {
-            withdraw_form_title: "Crear solicitud de retiro",
-            withdraw_amount_placeholder: "Monto de retiro (ejemplo, 9 USDT)",
+            withdraw_form_title: "Reembolso del deposito de activacion",
+            withdraw_amount_placeholder: "Monto fijo de reembolso: 6.99 TONCOIN",
             withdraw_card_placeholder: "Tu direccion wallet TON",
-            request_withdrawal: "SOLICITAR RETIRO",
+            request_withdrawal: "SOLICITAR REEMBOLSO",
             withdraw_amount_required: "Ingresa el monto de retiro.",
             withdraw_address_required: "Ingresa tu direccion wallet TON.",
             withdraw_sending: "Enviando solicitud de retiro...",
             withdraw_request_created: "Solicitud creada.",
             minimum_withdrawal: "Retiro minimo",
+            deposit_refund_title: "Reembolso del deposito de activacion",
+            deposit_refund_message: "Aqui solo puedes retirar tu deposito de activacion. El balance principal queda bloqueado hasta la hora de retiro y la condicion de referidos.",
+            deposit_refund_request: "Retirar solo el deposito de activacion",
+            main_balance_locked_extra: "El retiro del balance principal esta bloqueado hasta la hora programada.",
+            main_balance_ready_extra: "La condicion del balance principal esta completa. El retiro abre solo durante la hora de retiro.",
+            main_withdraw_referral_required: "Para retirar el balance principal falta 1 amigo que deposite por tu enlace.",
+            activate_wallet_first: "Activa la billetera primero",
+            growth_499_title: "Aumento de ingresos $499",
+            growth_499_sub: "Invita 2 amigos que depositen 6.99 TONCOIN para seguir ganando despues de $499.",
+            growth_1499_title: "Aumento de ingresos $1499",
+            growth_1499_sub: "Invita 1 amigo mas que deposite 6.99 TONCOIN para seguir ganando despues de $1499.",
+            growth_499_locked_message: "El ingreso esta pausado despues de $499. Invita 2 amigos por tu enlace y ambos deben depositar 6.99 TONCOIN.",
+            growth_1499_locked_message: "El ingreso esta pausado despues de $1499. Invita 1 amigo mas por tu enlace y debe depositar 6.99 TONCOIN.",
+            growth_referral_required: "Se requiere activacion por referidos. Estos amigos desbloquean ingresos y no cuentan como bono.",
+            copy_ton_address: "COPIAR DIRECCION",
+            ton_address_copied: "Direccion TON copiada",
+            daily_info_title: "Info diaria",
+            daily_info_msg: "El tiempo diario y el ingreso diario se reinician cada 24 horas. El tiempo total queda guardado.",
             watch_previous: "Anterior",
             watch_random: "Aleatorio",
             watch_next: "Siguiente",
+            watch_fullscreen: "Pantalla completa",
             pending_reward: "Recompensa pendiente:",
             watch_reward_wait: "La recompensa se agrega solo cuando termina el video actual de MrBeast.",
             support_chat_title: "Chat de soporte",
@@ -4005,18 +4567,37 @@
         });
 
         Object.assign(languages.zh, {
-            withdraw_form_title: "创建提现申请",
-            withdraw_amount_placeholder: "提现金额（例如 9 USDT）",
+            withdraw_form_title: "激活保证金退回",
+            withdraw_amount_placeholder: "固定退回金额：6.99 TONCOIN",
             withdraw_card_placeholder: "您的 TON 钱包地址",
-            request_withdrawal: "申请提现",
+            request_withdrawal: "申请退回保证金",
             withdraw_amount_required: "请输入提现金额。",
             withdraw_address_required: "请输入 TON 钱包地址。",
             withdraw_sending: "正在发送提现申请...",
             withdraw_request_created: "申请已创建。",
             minimum_withdrawal: "最低提现",
+            deposit_refund_title: "激活保证金退回",
+            deposit_refund_message: "这里仅可提取您的激活保证金。主余额会锁定到提现时间并完成邀请条件后。",
+            deposit_refund_request: "仅提取激活保证金",
+            main_balance_locked_extra: "主余额提现会锁定到预定提现时间。",
+            main_balance_ready_extra: "主余额条件已完成。提现只会在提现时间开放。",
+            main_withdraw_referral_required: "主余额提现还需要 1 位通过您的链接进入并完成存款的好友。",
+            activate_wallet_first: "请先激活钱包",
+            growth_499_title: "$499 收入提升",
+            growth_499_sub: "邀请 2 位好友存入 6.99 TONCOIN，才能在 $499 后继续收益。",
+            growth_1499_title: "$1499 收入提升",
+            growth_1499_sub: "再邀请 1 位好友存入 6.99 TONCOIN，才能在 $1499 后继续收益。",
+            growth_499_locked_message: "$499 后收益已暂停。请通过您的链接邀请 2 位好友，且两人都需存入 6.99 TONCOIN。",
+            growth_1499_locked_message: "$1499 后收益已暂停。请再邀请 1 位好友，且该好友需存入 6.99 TONCOIN。",
+            growth_referral_required: "需要邀请激活。这些好友仅用于解锁收益，不计入奖励。",
+            copy_ton_address: "复制地址",
+            ton_address_copied: "TON 地址已复制",
+            daily_info_title: "每日信息",
+            daily_info_msg: "每日观看时间和每日收入每 24 小时重置。总时间会保留。",
             watch_previous: "上一个",
             watch_random: "随机",
             watch_next: "下一个",
+            watch_fullscreen: "全屏",
             pending_reward: "待发奖励：",
             watch_reward_wait: "奖励只会在当前 MrBeast 视频结束后添加。",
             support_chat_title: "支持聊天",
@@ -4031,18 +4612,37 @@
         });
 
         Object.assign(languages.de, {
-            withdraw_form_title: "Auszahlungsanfrage erstellen",
-            withdraw_amount_placeholder: "Auszahlungsbetrag (Beispiel, 9 USDT)",
+            withdraw_form_title: "Aktivierungsdepot zurueckzahlen",
+            withdraw_amount_placeholder: "Fester Rueckzahlungsbetrag: 6.99 TONCOIN",
             withdraw_card_placeholder: "Deine TON Wallet-Adresse",
-            request_withdrawal: "AUSZAHLUNG ANFRAGEN",
+            request_withdrawal: "DEPOT-RUECKZAHLUNG ANFRAGEN",
             withdraw_amount_required: "Auszahlungsbetrag eingeben.",
             withdraw_address_required: "TON Wallet-Adresse eingeben.",
             withdraw_sending: "Auszahlungsanfrage wird gesendet...",
             withdraw_request_created: "Anfrage erstellt.",
             minimum_withdrawal: "Mindestauszahlung",
+            deposit_refund_title: "Aktivierungsdepot zurueckzahlen",
+            deposit_refund_message: "Hier kannst du nur dein Aktivierungsdepot auszahlen. Das Hauptguthaben bleibt bis zur Auszahlungszeit und Referral-Bedingung gesperrt.",
+            deposit_refund_request: "Nur Aktivierungsdepot auszahlen",
+            main_balance_locked_extra: "Die Auszahlung des Hauptguthabens ist bis zur geplanten Auszahlungszeit gesperrt.",
+            main_balance_ready_extra: "Die Bedingung fuer das Hauptguthaben ist abgeschlossen. Auszahlung oeffnet nur zur Auszahlungszeit.",
+            main_withdraw_referral_required: "Fuer das Hauptguthaben fehlt noch 1 Freund, der ueber deinen Link einzahlt.",
+            activate_wallet_first: "Wallet zuerst aktivieren",
+            growth_499_title: "$499 Einkommens-Boost",
+            growth_499_sub: "Lade 2 Freunde ein, die 6.99 TONCOIN einzahlen, um nach $499 weiter zu verdienen.",
+            growth_1499_title: "$1499 Einkommens-Boost",
+            growth_1499_sub: "Lade 1 weiteren Freund ein, der 6.99 TONCOIN einzahlt, um nach $1499 weiter zu verdienen.",
+            growth_499_locked_message: "Einkommen ist nach $499 pausiert. Lade 2 Freunde ueber deinen Link ein; beide muessen 6.99 TONCOIN einzahlen.",
+            growth_1499_locked_message: "Einkommen ist nach $1499 pausiert. Lade 1 weiteren Freund ein; er muss 6.99 TONCOIN einzahlen.",
+            growth_referral_required: "Referral-Aktivierung erforderlich. Diese Freunde entsperren Einkommen und zaehlen nicht als Bonus.",
+            copy_ton_address: "ADRESSE KOPIEREN",
+            ton_address_copied: "TON Adresse kopiert",
+            daily_info_title: "Tagesinfo",
+            daily_info_msg: "Taegliche Watch-Zeit und taegliches Einkommen werden alle 24 Stunden zurueckgesetzt. Gesamtzeit bleibt gespeichert.",
             watch_previous: "Zurueck",
             watch_random: "Zufaellig",
             watch_next: "Weiter",
+            watch_fullscreen: "Vollbild",
             pending_reward: "Ausstehende Belohnung:",
             watch_reward_wait: "Die Belohnung wird erst nach Ende des aktuellen MrBeast-Videos hinzugefuegt.",
             support_chat_title: "Support-Chat",
@@ -4124,7 +4724,7 @@
             not_enough_time: "Время просмотра недостаточно. Деньги не добавлены.",
             not_scheduled: "Не запланировано",
             opening_date: "Дата открытия",
-            payment_required_withdraw: "Внесите 10 USDT в сети TON, чтобы активировать вывод.",
+            payment_required_withdraw: "Внесите 6.99 TONCOIN в сети TON, чтобы активировать вывод.",
             payment_verified_withdraw: "Оплата подтверждена. Вывод доступен.",
             payout_request_now: "Теперь можно отправить заявку на выплату.",
             receipt_date_time: "Дата и время",
@@ -4132,16 +4732,16 @@
             receipt_note: "Примечание",
             receipt_verified_at: "Подтверждено",
             wallet_locked: "Кошелек заблокирован до времени вывода",
-            wallet_locked_until_time: "Для активации вывода нужен депозит 10 USDT в сети TON.",
+            wallet_locked_until_time: "Для активации вывода нужен депозит 6.99 TONCOIN в сети TON.",
             wallet_title: "Кошелек",
             watch_added: "Вы вышли с экрана просмотра. Время и заработок добавлены на главную страницу.",
             watch_counting: "Просмотр идет... награда добавится, когда вы выйдете с этого экрана.",
             watch_finished: "Видео завершено. Следующее видео MrBeast может продолжить эту же сессию.",
-            watch_loading: "YouTube-плеер загружается. Подождите немного и нажмите на логотип снова.",
+            watch_loading: "YouTube-плеер загружается. Видео MrBeast откроется автоматически.",
             watch_playing: "Видео MrBeast воспроизводится. Время продолжает считаться между видео.",
             watch_wait: "Видео MrBeast засчитываются. Награда добавится, когда вы выйдете с этого экрана.",
             withdraw_closed_title: "Вывод закрыт",
-            withdraw_enter_details: "Введите TON адрес кошелька внимательно. Доступный возврат: 9 USDT.",
+            withdraw_enter_details: "Введите TON адрес кошелька внимательно. Доступный возврат: 6.99 TONCOIN.",
             withdraw_expired_message: "Последнее окно вывода завершилось. Кошелек остается заблокированным до следующего расписания.",
             withdraw_expired_title: "Время вывода истекло",
             withdraw_not_scheduled_message: "Время вывода еще не запланировано.",
@@ -4220,7 +4820,6 @@
             setText('lbl-total-watch-time', dict.total_watch_time);
             setText('lbl-earned-money', dict.earned_money);
             setText('lbl-mdl-profile', dict.mdl_profile);
-            setText('lbl-mdl-verified', dict.mdl_verified);
             setText('lbl-mdl-noti', dict.mdl_noti);
             setText('lbl-noti-alert', dict.noti_alert);
             setText('lbl-noti-msg', dict.noti_msg);
@@ -4255,22 +4854,31 @@
             setText('lbl-mark-all-read', dict.mark_all_read);
 
             // YANGI QO'SHILGAN TARJIMALAR UCHUN:
-            setText('lbl-unlock-title', dict.account_unlock_title || 'Account unlock activation');
-            setText('lbl-fastest-method', dict.fastest_method || 'FASTEST METHOD');
-            setText('lbl-fiat-desc', dict.fiat_desc || 'Send 10 USDT on TON. After confirmation, 9 USDT becomes withdrawable and 1 USDT is kept as the activation fee.');
-            setText('lbl-pay-fiat', dict.pay_with_fiat || 'CHECK PAYMENT');
+            setText('lbl-unlock-title', dict.account_unlock_title || 'Wallet activation');
+            setText('lbl-fastest-method', dict.fastest_method || 'Security confirmation');
+            setText('lbl-fiat-desc', dict.fiat_desc || languages.en.fiat_desc);
+            setText('lbl-pay-fiat', dict.top_up_toncoin || 'TOP UP 6.99 TONCOIN');
+            setText('ton-deposit-title', dict.ton_deposit_title || '6.99 TONCOIN payment');
+            setText('ton-deposit-warning', dict.ton_deposit_warning || 'Send exactly 6.99 TONCOIN to this address. Less or more than 6.99 TONCOIN will not be confirmed automatically.');
+            setText('payment-address-label', dict.payment_address_label || 'Unique TON deposit address');
+            setText('lbl-check-ton-payment', dict.pay_with_fiat || 'CHECK PAYMENT');
             setText('wallet-current-balance-label', dict.wallet_current_balance || 'Current Balance:');
-            setText('wallet-method-label', dict.withdrawal_method_label || 'Withdrawal Method:');
-            setText('wallet-method-value', dict.wallet_method_value || 'TON USDT');
+            setText('wallet-method-label', dict.withdrawal_method_label || 'Activation network:');
+            setText('wallet-method-value', dict.wallet_method_value || 'TONCOIN');
             setText('lbl-card-method-title', dict.card_selector_title || 'TON wallet');
             setText('lbl-or-crypto', dict.or_crypto || 'TON NETWORK PAYMENT');
+            setText('lbl-copy-ton-address', dict.copy_ton_address || 'COPY ADDRESS');
+            setText('checkpoint-499-title', dict.growth_499_title || languages.en.growth_499_title);
+            setText('checkpoint-499-sub', dict.growth_499_sub || languages.en.growth_499_sub);
+            setText('checkpoint-1499-title', dict.growth_1499_title || languages.en.growth_1499_title);
+            setText('checkpoint-1499-sub', dict.growth_1499_sub || languages.en.growth_1499_sub);
 
             document.querySelectorAll('.bonus-nav span, .bonus-corner-btn span').forEach(el => el.innerText = dict.bonus || 'BONUS');
             document.querySelectorAll('.withdraw-nav span, .withdraw-floating span').forEach(el => el.innerText = dict.withdraw || 'Withdraw');
             document.querySelectorAll('.wallet-nav span').forEach(el => el.innerText = dict.wallet || 'WALLET');
             document.querySelectorAll('.history-nav span').forEach(el => el.innerText = dict.history || 'HISTORY');
             const walletTitle = document.querySelector('#walletModal .modal-title');
-            if (walletTitle) walletTitle.innerText = dict.wallet_title || 'Wallet';
+            if (walletTitle) walletTitle.innerText = dict.wallet_title || 'Wallet activation';
             const historyTitle = document.querySelector('#withdrawHistoryModal .modal-title');
             if (historyTitle) historyTitle.innerText = dict.withdraw_history || 'Withdrawal History';
             const watchTitle = document.querySelector('#watchModal .modal-title');
@@ -4306,6 +4914,7 @@
             updateWithdrawUi(latestPaymentStatus);
             updateLocalCardMethodUi();
             updateBonusLockUi();
+            updateGrowthLockUi();
             updateTierCards();
             renderNotifications();
             if (document.getElementById('withdrawHistoryModal')?.style.display === 'flex') {
@@ -4360,6 +4969,13 @@
         }
 
         function openWalletIfUnlocked() {
+            if (!isWalletEarningUnlocked()) {
+                const required = getWalletUnlockRequiredAmount();
+                const earned = getWalletEarningAmount();
+                showCopyToast(`${t('wallet_locked_until_20')} $${earned.toFixed(2)} / $${required.toFixed(2)}`);
+                updateWalletLockUi();
+                return;
+            }
             openModal('walletModal');
         }
 
@@ -4429,13 +5045,16 @@
 
         function updateBonusLockUi() {
             const windowState = getWithdrawWindowState();
-            const isOpen = windowState.status === 'open';
+            const growth = currentGrowthLockStatus();
+            const growthLocked = Boolean(growth.bonus_locked);
+            const isOpen = windowState.status === 'open' && !growthLocked;
             const timerEl = document.getElementById('bonus-timer');
             const claimBtn = document.getElementById('claim-bonus-btn');
             const claimLabel = document.getElementById('claim-bonus-label');
             const statusText = document.getElementById('bonus-status-text');
             const lockRow = document.getElementById('bonus-lock-row');
             const icon = claimBtn?.querySelector('i');
+            const growthMessage = growth.checkpoint_1499?.active ? t('growth_1499_locked_message') : t('growth_499_locked_message');
 
             if (timerEl) {
                 timerEl.innerText = windowState.timerText || '--:--:--';
@@ -4449,8 +5068,9 @@
             }
             if (icon) icon.className = isOpen ? 'fas fa-gift' : 'fas fa-lock';
             if (claimLabel) claimLabel.innerText = isOpen ? t('claim_bonus_open') : t('claim_bonus_locked');
-            if (statusText) statusText.innerText = isOpen ? t('bonus_open_text') : t('bonus_locked_text');
-            if (lockRow) lockRow.innerText = t('bonus_timer_text');
+            if (statusText) statusText.innerText = isOpen ? t('bonus_open_text') : (growthLocked ? growthMessage : t('bonus_locked_text'));
+            if (lockRow) lockRow.innerText = growthLocked ? t('growth_referral_required') : t('bonus_timer_text');
+            updateGrowthLockUi();
         }
 
         function updateBonusDisplays() {
@@ -4497,10 +5117,13 @@
             if (balanceEl) balanceEl.innerText = balance.toFixed(2);
             updateBonusDisplays();
             updateProfileModal();
+            updateWalletLockUi();
+            updateGrowthLockUi();
         }
 
         async function handleMainClick(e) {
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            if (isGrowthWatchLocked()) updateGrowthLockUi();
             openWatchModal();
         }
 
@@ -4537,24 +5160,9 @@
             mrbeastPlayer.previousVideo();
         }
 
-        function openWatchModal() {
-            countedWatchSeconds = 0;
-            watchAccumulatedMs = 0;
-            watchSegmentStartedAt = null;
-            currentWatchCompleted = false;
-            currentMrBeastVideoId = null;
-            watchSessionSubmitted = false;
-            watchSessionVideoIds = new Set();
-            lastWatchUiSnapshot = '';
-            pendingWatch = {
-                startedAt: Date.now(),
-                requiredSeconds: Number(backendSettings.view_seconds_required || 15)
-            };
-
-            openModal('watchModal');
-            updateWatchSessionUi(t('watch_wait'));
-
+        function startMrBeastPlayer() {
             if (!youtubeApiReady || !window.YT || !window.YT.Player) {
+                shouldStartMrBeastWhenApiReady = true;
                 updateWatchSessionUi(t('watch_loading'));
                 return;
             }
@@ -4570,7 +5178,7 @@
                         rel: 0,
                         modestbranding: 1,
                         playsinline: 1,
-                        fs: 0,
+                        fs: 1,
                         iv_load_policy: 3,
                         origin: window.location.origin
                     },
@@ -4584,12 +5192,46 @@
             }
         }
 
-        async function closeWatchModal() {
+        function openWatchFullscreen() {
+            const target = document.getElementById('mrbeast-player') || document.getElementById('watchModal');
+            const request = target?.requestFullscreen || target?.webkitRequestFullscreen || target?.msRequestFullscreen;
+            if (request) {
+                request.call(target);
+                return;
+            }
+            tg.expand?.();
+            showCopyToast('Fullscreen mode is not available on this device.');
+        }
+
+        function openWatchModal() {
+            countedWatchSeconds = 0;
+            watchAccumulatedMs = 0;
+            watchSegmentStartedAt = null;
+            currentWatchCompleted = false;
+            currentMrBeastVideoId = null;
+            watchSessionSubmitted = false;
+            watchSessionVideoIds = new Set();
+            lastWatchUiSnapshot = '';
+            pendingWatch = {
+                startedAt: Date.now(),
+                requiredSeconds: Number(backendSettings.view_seconds_required || 5)
+            };
+
+            openModal('watchModal');
+            updateWatchSessionUi(t('watch_wait'));
+            startMrBeastPlayer();
+        }
+
+        function closeWatchModal() {
             if (mrbeastPlayer && mrbeastPlayer.pauseVideo) {
                 mrbeastPlayer.pauseVideo();
             }
             clearInterval(watchTimerInterval);
-            await finalizeWatchSession();
+            closeModal('watchModal');
+            finalizeWatchSession().catch(err => {
+                const watchSeconds = syncCountedWatchSeconds();
+                showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), err.message || 'Reward could not be saved.');
+            });
         }
 
         function onMrBeastPlayerStateChange(event) {
@@ -4649,6 +5291,11 @@
             }, 1000);
         }
 
+        function estimateWatchReward(seconds) {
+            const rate = Number(currentTierStatus.reward_per_second || backendSettings.view_reward_per_second || 0.01);
+            return Number((Math.max(0, Number(seconds || 0)) * rate).toFixed(2));
+        }
+
         async function finalizeWatchSession() {
             if (watchSessionSubmitted) return;
             watchSessionSubmitted = true;
@@ -4658,13 +5305,14 @@
             const watchSeconds = syncCountedWatchSeconds();
             const videoId = currentMrBeastVideoId || Array.from(watchSessionVideoIds)[0] || `mrbeast_session_${Date.now()}`;
 
-            if (watchSeconds < Number(backendSettings.view_seconds_required || 15)) {
+            if (watchSeconds < Number(backendSettings.view_seconds_required || 5)) {
                 closeModal('watchModal');
                 showWatchResult(watchSeconds, 0, t('not_enough_time'));
                 updateWatchDisplays();
                 return;
             }
 
+            showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), 'Saving reward...');
             await finalizeWatchedVideo(watchSeconds, videoId);
         }
 
@@ -4683,7 +5331,7 @@
                 return;
             }
 
-            if (watchSeconds < Number(backendSettings.view_seconds_required || 15)) {
+            if (watchSeconds < Number(backendSettings.view_seconds_required || 5)) {
                 updateWatchSessionUi(`Video ended, but watched time is too short: ${formatDuration(watchSeconds)}.`);
                 showWatchResult(watchSeconds, 0, t('not_enough_time'));
                 pendingWatch = null;
@@ -4705,6 +5353,8 @@
                 rewardedMrBeastVideos.add(videoId);
                 pendingWatch = null;
                 applyBackendUser(result.user);
+                if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
+                await refreshStatsFromBackend().catch(() => null);
                 updateWatchDisplays();
                 createFloatingText(null, result.reward);
             if (result.tier) {
@@ -4722,9 +5372,10 @@
             addNotification('View reward', `Reward added after ${watchSeconds}s: $${Number(result.reward || 0).toFixed(2)}`);
         } catch (err) {
             pendingWatch = null;
+            if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
             updateWatchDisplays();
             updateWatchSessionUi(err.message);
-            showWatchResult(watchSeconds, 0, err.message);
+            showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), err.message);
             addNotification('View reward', err.message);
         }
     }
@@ -4813,8 +5464,8 @@
             try { items = JSON.parse(localStorage.getItem(key)); } catch(e) { items = null; }
             if (!Array.isArray(items) || !items.length) {
                 items = [
-                    { title: 'System Alert', text: 'Welcome to Vidi Pay! Start earning by clicking the YouTube play coin.', date: new Date().toLocaleString() },
-                    { title: 'Daily Info', text: 'Daily watch time and daily income reset every 24 hours. Total time stays saved.', date: new Date().toLocaleString() }
+                    { titleKey: 'noti_alert', textKey: 'noti_msg', date: new Date().toLocaleString() },
+                    { titleKey: 'daily_info_title', textKey: 'daily_info_msg', date: new Date().toLocaleString() }
                 ];
                 localStorage.setItem(key, JSON.stringify(items));
             }
@@ -4863,13 +5514,18 @@
             const box = document.getElementById('notification-list');
             if (!box) return;
             const items = getNotifications();
-            box.innerHTML = items.map(item => `
+            box.innerHTML = items.map(item => {
+                const title = item.titleKey ? t(item.titleKey) : (item.title || '');
+                const text = item.textKey ? t(item.textKey) : (item.text || '');
+                const date = item.date || '';
+                return `
                 <div class="notification-item">
-                    <b>${item.title}</b>
-                    <div class="notification-date">${item.date}</div>
-                    <div>${item.text}</div>
+                    <div class="notification-title">${escapeHtml(title)}</div>
+                    <div class="notification-date">${escapeHtml(date)}</div>
+                    <div class="notification-body">${escapeHtml(text)}</div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
             setUnreadNotificationCount(getUnreadNotificationCount());
         }
 
@@ -4927,6 +5583,8 @@
                 }
                 if (id === 'withdrawHistoryModal') renderFullHistory();
                 if (id === 'profileModal') updateProfileModal();
+                if (id === 'bonusModal') updateBonusLockUi();
+                if (id === 'refModal') updateGrowthLockUi();
                 if (id === 'withdrawModal') {
                     loadBackendSettings()
                         .then(() => updateWithdrawUi(latestPaymentStatus))
@@ -4936,10 +5594,13 @@
                     updateWalletModal();
                     loadBackendSettings()
                         .then(() => {
-                            updateWalletLockUi(getWithdrawWindowState());
-                            return createPaymentOrder().catch(() => refreshPaymentStatus());
+                            updateWalletLockUi();
+                            return refreshPaymentStatus().catch(() => null);
                         })
                         .catch(() => updateWalletLockUi());
+                }
+                if (id === 'tonDepositModal') {
+                    renderPaymentOrder(currentPaymentOrder, latestPaymentStatus);
                 }
             }
         }
@@ -4971,7 +5632,7 @@
             items.unshift({
                 amount: Number(amount || 0).toFixed(2),
                 status: status || 'Pending',
-                method: 'USDT',
+                method: 'TON',
                 date: new Date().toLocaleString()
             });
             localStorage.setItem(key, JSON.stringify(items));
@@ -4987,7 +5648,7 @@
                 items = (serverItems || []).map(item => ({
                     amount: Number(item.amount || 0).toFixed(2),
                     status: item.status || 'pending',
-                    method: item.wallet_type || 'USDT',
+                    method: item.wallet_type || 'TON',
                     date: item.created_at ? new Date(item.created_at).toLocaleString() : ''
                 }));
             } catch (err) {}
@@ -5096,6 +5757,26 @@
         // ==========================================
         // TON WALLET PAYMENT LOGIC
         // ==========================================
+        async function openTonDepositModal() {
+            if (!isWalletEarningUnlocked()) {
+                showCopyToast(t('wallet_locked_until_20'));
+                updateWalletLockUi();
+                return;
+            }
+
+            openModal('tonDepositModal');
+            const statusEl = document.getElementById('ton-deposit-status-text');
+            setDomText(statusEl, t('card_order_loading'));
+
+            try {
+                await loadBackendSettings();
+                const order = await createPaymentOrder();
+                renderPaymentOrder(order, latestPaymentStatus);
+            } catch (err) {
+                setDomText(statusEl, err.message);
+            }
+        }
+
         function copyTonPaymentAddress() {
             if (!currentPaymentOrder || !currentPaymentOrder.id) {
                 showCopyToast(t('card_order_loading'));
@@ -5112,7 +5793,7 @@
                 navigator.clipboard.writeText(walletAddress).catch(() => null);
             }
 
-            showCopyToast('TON address copied');
+            showCopyToast(t('ton_address_copied'));
         }
         // ==========================================
 
