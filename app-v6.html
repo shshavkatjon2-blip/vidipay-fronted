@@ -2476,10 +2476,11 @@
             <div class="modal-title" data-i18n="watch_title">MrBeast Watch</div>
             <div class="info-sub-block">
                 <div id="mrbeast-player" style="width:100%; aspect-ratio:16/9; border-radius:16px; overflow:hidden; background:#05070a;"></div>
-                <div class="watch-video-controls" style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px; margin:12px 0;">
+                <div class="watch-video-controls" style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; margin:12px 0;">
                     <button class="copy-link-btn" style="margin:0; padding:10px 8px; font-size:11px;" onclick="playPreviousMrBeastVideo()" data-i18n="watch_previous">Previous</button>
                     <button class="copy-link-btn" style="margin:0; padding:10px 8px; font-size:11px;" onclick="playRandomMrBeastVideo()" data-i18n="watch_random">Random</button>
                     <button class="copy-link-btn" style="margin:0; padding:10px 8px; font-size:11px;" onclick="playNextMrBeastVideo()" data-i18n="watch_next">Next</button>
+                    <button class="copy-link-btn" style="margin:0; padding:10px 8px; font-size:11px;" onclick="openWatchFullscreen()" data-i18n="watch_fullscreen">Fullscreen</button>
                 </div>
                 <div class="profile-data-field">
                     <span class="profile-data-label" data-i18n="watched_result">Watched time:</span>
@@ -2747,6 +2748,7 @@
         let watchSessionVideoIds = new Set();
         let lastWatchUiSnapshot = '';
         let rewardedMrBeastVideos = new Set();
+        let shouldStartMrBeastWhenApiReady = false;
         const MRBEAST_UPLOADS_PLAYLIST = 'UUX6OQ3DkcsbYNE6H8uQQuVA';
         let latestPaymentStatus = {};
         let currentTierStatus = {
@@ -2764,6 +2766,10 @@
 
         window.onYouTubeIframeAPIReady = function() {
             youtubeApiReady = true;
+            if (shouldStartMrBeastWhenApiReady) {
+                shouldStartMrBeastWhenApiReady = false;
+                startMrBeastPlayer();
+            }
         };
 
         async function apiRequest(path, options = {}) {
@@ -3631,7 +3637,7 @@
                 watched_time: "Watched time:",
                 pending_reward: "Pending reward:",
                 watch_wait: "MrBeast videos are counting. Reward is added when you leave this screen.",
-                watch_loading: "YouTube player is loading. Wait a moment and tap the logo again.",
+                watch_loading: "YouTube player is loading. MrBeast video will open automatically.",
                 watch_playing: "MrBeast video is playing. Time continues across videos.",
                 watch_counting: "Watching... reward will be added when you leave this screen.",
                 watch_finished: "Video finished. Next MrBeast video can continue the same session.",
@@ -4303,6 +4309,7 @@
             watch_previous: "Previous",
             watch_random: "Random",
             watch_next: "Next",
+            watch_fullscreen: "Fullscreen",
             pending_reward: "Pending reward:",
             watch_reward_wait: "Reward is added only after the current MrBeast video finishes.",
             support_chat_title: "Support Chat",
@@ -4347,6 +4354,7 @@
             watch_previous: "Назад",
             watch_random: "Случайно",
             watch_next: "Далее",
+            watch_fullscreen: "На весь экран",
             pending_reward: "Ожидаемая награда:",
             watch_reward_wait: "Награда добавится только после завершения текущего видео MrBeast.",
             support_chat_title: "Чат поддержки",
@@ -4391,6 +4399,7 @@
             watch_previous: "Precedent",
             watch_random: "Aleatoire",
             watch_next: "Suivant",
+            watch_fullscreen: "Plein ecran",
             pending_reward: "Recompense en attente:",
             watch_reward_wait: "La recompense est ajoutee seulement apres la fin de la video MrBeast actuelle.",
             support_chat_title: "Chat support",
@@ -4435,6 +4444,7 @@
             watch_previous: "Previous",
             watch_random: "Random",
             watch_next: "Next",
+            watch_fullscreen: "Fullscreen",
             pending_reward: "Pending reward:",
             watch_reward_wait: "Reward current MrBeast video finish hone ke baad add hoga.",
             support_chat_title: "Support Chat",
@@ -4479,6 +4489,7 @@
             watch_previous: "Anterior",
             watch_random: "Aleatorio",
             watch_next: "Siguiente",
+            watch_fullscreen: "Pantalla completa",
             pending_reward: "Recompensa pendiente:",
             watch_reward_wait: "La recompensa se agrega solo cuando termina el video actual de MrBeast.",
             support_chat_title: "Chat de soporte",
@@ -4523,6 +4534,7 @@
             watch_previous: "上一个",
             watch_random: "随机",
             watch_next: "下一个",
+            watch_fullscreen: "全屏",
             pending_reward: "待发奖励：",
             watch_reward_wait: "奖励只会在当前 MrBeast 视频结束后添加。",
             support_chat_title: "支持聊天",
@@ -4567,6 +4579,7 @@
             watch_previous: "Zurueck",
             watch_random: "Zufaellig",
             watch_next: "Weiter",
+            watch_fullscreen: "Vollbild",
             pending_reward: "Ausstehende Belohnung:",
             watch_reward_wait: "Die Belohnung wird erst nach Ende des aktuellen MrBeast-Videos hinzugefuegt.",
             support_chat_title: "Support-Chat",
@@ -4661,7 +4674,7 @@
             watch_added: "Вы вышли с экрана просмотра. Время и заработок добавлены на главную страницу.",
             watch_counting: "Просмотр идет... награда добавится, когда вы выйдете с этого экрана.",
             watch_finished: "Видео завершено. Следующее видео MrBeast может продолжить эту же сессию.",
-            watch_loading: "YouTube-плеер загружается. Подождите немного и нажмите на логотип снова.",
+            watch_loading: "YouTube-плеер загружается. Видео MrBeast откроется автоматически.",
             watch_playing: "Видео MrBeast воспроизводится. Время продолжает считаться между видео.",
             watch_wait: "Видео MrBeast засчитываются. Награда добавится, когда вы выйдете с этого экрана.",
             withdraw_closed_title: "Вывод закрыт",
@@ -5048,14 +5061,7 @@
 
         async function handleMainClick(e) {
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-            if (isGrowthWatchLocked()) {
-                const growth = currentGrowthLockStatus();
-                const message = growth.checkpoint_1499?.active ? t('growth_1499_locked_message') : t('growth_499_locked_message');
-                showCopyToast(message);
-                updateGrowthLockUi();
-                openModal('refModal');
-                return;
-            }
+            if (isGrowthWatchLocked()) updateGrowthLockUi();
             openWatchModal();
         }
 
@@ -5092,6 +5098,49 @@
             mrbeastPlayer.previousVideo();
         }
 
+        function startMrBeastPlayer() {
+            if (!youtubeApiReady || !window.YT || !window.YT.Player) {
+                shouldStartMrBeastWhenApiReady = true;
+                updateWatchSessionUi(t('watch_loading'));
+                return;
+            }
+
+            if (!mrbeastPlayer) {
+                mrbeastPlayer = new YT.Player('mrbeast-player', {
+                    width: '100%',
+                    height: '100%',
+                    playerVars: {
+                        listType: 'playlist',
+                        list: MRBEAST_UPLOADS_PLAYLIST,
+                        index: randomMrBeastIndex(),
+                        rel: 0,
+                        modestbranding: 1,
+                        playsinline: 1,
+                        fs: 1,
+                        iv_load_policy: 3,
+                        origin: window.location.origin
+                    },
+                    events: {
+                        onReady: event => event.target.playVideo(),
+                        onStateChange: onMrBeastPlayerStateChange
+                    }
+                });
+            } else {
+                playRandomMrBeastVideo();
+            }
+        }
+
+        function openWatchFullscreen() {
+            const target = document.getElementById('mrbeast-player') || document.getElementById('watchModal');
+            const request = target?.requestFullscreen || target?.webkitRequestFullscreen || target?.msRequestFullscreen;
+            if (request) {
+                request.call(target);
+                return;
+            }
+            tg.expand?.();
+            showCopyToast('Fullscreen mode is not available on this device.');
+        }
+
         function openWatchModal() {
             countedWatchSeconds = 0;
             watchAccumulatedMs = 0;
@@ -5108,35 +5157,7 @@
 
             openModal('watchModal');
             updateWatchSessionUi(t('watch_wait'));
-
-            if (!youtubeApiReady || !window.YT || !window.YT.Player) {
-                updateWatchSessionUi(t('watch_loading'));
-                return;
-            }
-
-            if (!mrbeastPlayer) {
-                mrbeastPlayer = new YT.Player('mrbeast-player', {
-                    width: '100%',
-                    height: '100%',
-                    playerVars: {
-                        listType: 'playlist',
-                        list: MRBEAST_UPLOADS_PLAYLIST,
-                        index: randomMrBeastIndex(),
-                        rel: 0,
-                        modestbranding: 1,
-                        playsinline: 1,
-                        fs: 0,
-                        iv_load_policy: 3,
-                        origin: window.location.origin
-                    },
-                    events: {
-                        onReady: event => event.target.playVideo(),
-                        onStateChange: onMrBeastPlayerStateChange
-                    }
-                });
-            } else {
-                playRandomMrBeastVideo();
-            }
+            startMrBeastPlayer();
         }
 
         async function closeWatchModal() {
