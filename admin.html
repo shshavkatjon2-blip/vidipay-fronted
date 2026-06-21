@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="vidipay-admin-build" content="admin-menu-v4-auto-scan-20260619">
+  <meta name="vidipay-admin-build" content="admin-menu-v5-reward-users-20260621">
   <title>VidiPay Boshqaruv Paneli</title>
-  <script src="./config.js?v=admin-menu-v4-auto-scan-20260619"></script>
+  <script src="./config.js?v=admin-menu-v5-reward-users-20260621"></script>
   <style>
     :root {
       --bg: #080d10;
@@ -244,6 +244,7 @@
 
     <section>
       <h2>Foydalanuvchilar</h2>
+      <div class="notice" id="users-count">Userlar token saqlangandan keyin yuklanadi.</div>
       <div class="grid"><table id="users-table"></table></div>
     </section>
 
@@ -377,7 +378,40 @@
   </main>
 
   <script>
-    const API_BASE_URL = window.VIDIPAY_API_BASE || 'https://vidipay-backend.onrender.com';
+    const ADMIN_API_FALLBACKS = [
+      'https://vidipay-backend.onrender.com',
+      'http://127.0.0.1:10000'
+    ];
+
+    function normalizeApiBaseUrl(value) {
+      const raw = String(value || '').trim().replace(/\/$/, '');
+      if (!raw) return '';
+      try {
+        const url = new URL(raw);
+        if (!['https:', 'http:'].includes(url.protocol)) return '';
+        if (url.hostname.endsWith('github.io')) return '';
+        return `${url.origin}${url.pathname}`.replace(/\/$/, '');
+      } catch (err) {
+        return '';
+      }
+    }
+
+    function getCurrentOriginApiBase() {
+      if (!/^https?:$/i.test(window.location.protocol)) return '';
+      if (window.location.hostname.endsWith('github.io')) return '';
+      return normalizeApiBaseUrl(window.location.origin);
+    }
+
+    function getAdminApiCandidates() {
+      return [...new Set([
+        window.VIDIPAY_API_BASE,
+        getCurrentOriginApiBase(),
+        localStorage.getItem('vidiPayAdminApiBase'),
+        ...ADMIN_API_FALLBACKS
+      ].map(normalizeApiBaseUrl).filter(Boolean))];
+    }
+
+    let API_BASE_URL = getAdminApiCandidates()[0] || 'https://vidipay-backend.onrender.com';
     const settingKeys = [
       'view_seconds_required',
       'view_reward_per_second',
@@ -482,8 +516,42 @@
       refreshAll();
     }
 
+    async function fetchApi(path, options = {}) {
+      const candidates = [...new Set([API_BASE_URL, ...getAdminApiCandidates()].map(normalizeApiBaseUrl).filter(Boolean))];
+      let lastError = null;
+
+      for (const baseUrl of candidates) {
+        try {
+          const res = await fetch(`${baseUrl}${path}`, options);
+          const text = await res.text();
+          let data = null;
+          if (text) {
+            try {
+              data = JSON.parse(text);
+            } catch (err) {
+              lastError = new Error(`Backend noto'g'ri javob qaytardi: ${baseUrl}`);
+              continue;
+            }
+          }
+          if (!res.ok) {
+            const error = new Error(data?.error || data?.message || 'So‘rov bajarilmadi');
+            error.data = data;
+            throw error;
+          }
+          API_BASE_URL = baseUrl;
+          localStorage.setItem('vidiPayAdminApiBase', baseUrl);
+          return data;
+        } catch (err) {
+          lastError = err;
+          if (err.data) throw err;
+        }
+      }
+
+      throw lastError || new Error('Backendga ulanib bo‘lmadi');
+    }
+
     async function api(path, options = {}) {
-      const res = await fetch(`${API_BASE_URL}${path}`, {
+      return fetchApi(path, {
         headers: {
           'Content-Type': 'application/json',
           'x-admin-token': token(),
@@ -491,10 +559,20 @@
         },
         ...options
       });
-      const text = await res.text();
-      const data = text ? JSON.parse(text) : null;
-      if (!res.ok) throw new Error(data?.error || data?.message || 'So‘rov bajarilmadi');
-      return data;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char]));
+    }
+
+    function formatMoney(value) {
+      return `$${Number(value || 0).toFixed(2)}`;
     }
 
     function renderTable(id, headers, rows) {
@@ -504,20 +582,11 @@
     }
 
     async function loadPublicSettings() {
-      return fetch(`${API_BASE_URL}/settings`).then(async (res) => {
-        const text = await res.text();
-        const data = text ? JSON.parse(text) : null;
-        if (!res.ok) throw new Error(data?.error || data?.message || 'Ochiq sozlamalarni olishda xatolik');
-        return data;
-      });
+      return fetchApi('/settings');
     }
 
     async function loadBackendStatus() {
-      const res = await fetch(`${API_BASE_URL}/`);
-      const text = await res.text();
-      const data = text ? JSON.parse(text) : null;
-      if (!res.ok) throw new Error(data?.error || data?.message || 'Backend holatini olishda xatolik');
-      return data;
+      return fetchApi('/');
     }
 
     async function setTelegramMenuButton() {
@@ -687,12 +756,16 @@
     }
 
     async function loadUsers() {
-      const users = await api('/admin/users');
-      renderTable('users-table', ['Baza ID', 'Telegram ID', 'Balans', 'Umumiy vaqt', 'Kunlik daromad', 'Qulf', 'Holat', 'Amal'], users.map(u => `
-        <tr id="user-row-${u.telegram_id}">
-          <td>${u.id}</td><td>${u.telegram_id}</td>
-          <td>${u.balance}</td><td>${u.total_watch_seconds || 0}s</td>
-          <td>${u.daily_income}</td><td>${u.withdraw_unlocked ? 'ha' : 'yoq'}</td>
+      const payload = await api('/admin/users?limit=10000');
+      const users = Array.isArray(payload) ? payload : (payload.users || []);
+      const countEl = document.getElementById('users-count');
+      if (countEl) countEl.innerText = `${users.length} ta user yuklandi. Real Telegram userlar ham, backendga sync bo'lgan guestlar ham shu ro'yxatda ko'rinadi.`;
+      renderTable('users-table', ['Baza ID', 'Telegram ID', 'Username', 'Ism', 'Balans', 'Umumiy vaqt', 'Kunlik daromad', 'Qulf', 'Holat', 'Amal'], users.map(u => `
+        <tr id="user-row-${escapeHtml(u.telegram_id)}">
+          <td>${escapeHtml(u.id)}</td><td>${escapeHtml(u.telegram_id)}</td>
+          <td>${escapeHtml(u.username || '-')}</td><td>${escapeHtml([u.first_name, u.last_name].filter(Boolean).join(' ') || '-')}</td>
+          <td>${formatMoney(u.balance)}</td><td>${Number(u.total_watch_seconds || 0)}s</td>
+          <td>${formatMoney(u.daily_income)}</td><td>${u.withdraw_unlocked ? 'ha' : 'yoq'}</td>
           ${renderUserControlCells(u)}
         </tr>
       `));

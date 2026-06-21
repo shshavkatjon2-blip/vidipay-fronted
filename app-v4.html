@@ -9,12 +9,12 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="wallet-toncoin-v7-growth-20260620">
+    <meta name="vidipay-build" content="wallet-toncoin-v8-reward-admin-20260621">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=wallet-toncoin-v7-growth-20260620"></script>
-    <script src="./qrcode.js?v=wallet-toncoin-v7-growth-20260620"></script>
+    <script src="./config.js?v=wallet-toncoin-v8-reward-admin-20260621"></script>
+    <script src="./qrcode.js?v=wallet-toncoin-v8-reward-admin-20260621"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -2707,7 +2707,6 @@
             localStorage.setItem('vidiPayApiBase', apiOverrideParam.replace(/\/$/, ''));
         }
         const FALLBACK_API_BASE_URLS = [
-            'https://ads-outside-interracial-twice.trycloudflare.com',
             'https://vidipay-backend.onrender.com',
             'http://127.0.0.1:10000'
         ];
@@ -5443,7 +5442,7 @@
             if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
             updateWatchDisplays();
             updateWatchSessionUi(err.message);
-            showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), err.message);
+            showWatchResult(watchSeconds, 0, `${err.message}. Reward backendga yozilmadi.`);
             addNotification('View reward', err.message);
         }
     }
