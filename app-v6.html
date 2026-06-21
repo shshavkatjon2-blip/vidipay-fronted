@@ -144,6 +144,26 @@
             border-collapse: collapse;
             margin: 0;
         }
+        .ton-qr-box table,
+        .ton-qr-box tbody,
+        .ton-qr-box tr,
+        .ton-qr-box td {
+            border: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+        }
+        .ton-qr-box td {
+            width: 4px !important;
+            height: 4px !important;
+            min-width: 4px !important;
+            min-height: 4px !important;
+        }
+        .ton-qr-box img,
+        .ton-qr-box svg {
+            display: block;
+            width: 158px;
+            height: 158px;
+        }
         .ton-address-box {
             color: #ffffff;
             font-size: 12px;
@@ -2616,8 +2636,33 @@
         window.addEventListener('pageshow', resetModalOverlays);
 
         const BOT_USERNAME = "magapatron_bot"; 
+        const pageParams = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
 
-        const user = tg.initDataUnsafe?.user;
+        function parseTelegramUserFromWebAppData(rawWebAppData) {
+            if (!rawWebAppData) return null;
+            try {
+                const webAppParams = new URLSearchParams(rawWebAppData);
+                const rawUser = webAppParams.get('user');
+                if (!rawUser) return null;
+                try {
+                    return JSON.parse(rawUser);
+                } catch (err) {
+                    return JSON.parse(decodeURIComponent(rawUser));
+                }
+            } catch (err) {
+                return null;
+            }
+        }
+
+        function resolveTelegramUser() {
+            return tg.initDataUnsafe?.user ||
+                parseTelegramUserFromWebAppData(hashParams.get('tgWebAppData')) ||
+                parseTelegramUserFromWebAppData(pageParams.get('tgWebAppData')) ||
+                null;
+        }
+
+        const user = resolveTelegramUser();
         if (user) {
             document.getElementById('user-display-name').innerText = user.first_name + (user.last_name ? " " + user.last_name : "");
             document.getElementById('user-display-id').innerText = user.id;
@@ -2626,11 +2671,9 @@
             document.getElementById('user-display-id').innerText = "Sandbox Mode";
         }
 
-        const referralUserId = user?.id || (localStorage.getItem('vidiPayGuestId') || ('guest_' + Math.random().toString(36).slice(2, 10)));
+        const referralUserId = user?.id ? String(user.id) : (localStorage.getItem('vidiPayGuestId') || ('guest_' + Math.random().toString(36).slice(2, 10)));
         if (!user?.id && !localStorage.getItem('vidiPayGuestId')) localStorage.setItem('vidiPayGuestId', referralUserId);
         const referralLink = `https://t.me/${BOT_USERNAME}?start=ref_${referralUserId}`;
-        const pageParams = new URLSearchParams(window.location.search);
-        const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
         const referralStartParam =
             pageParams.get('ref') ||
             pageParams.get('start') ||
@@ -2658,7 +2701,7 @@
             localStorage.setItem('vidiPayLang', 'en');
         }
         const TARGET_URL = "https://www.youtube.com/@MrBeast";
-        const apiOverrideParam = new URLSearchParams(window.location.search).get('api');
+        const apiOverrideParam = pageParams.get('api');
         if (apiOverrideParam && /^https:\/\/.+/i.test(apiOverrideParam)) {
             localStorage.setItem('vidiPayApiBase', apiOverrideParam.replace(/\/$/, ''));
         }
@@ -2851,6 +2894,9 @@
         async function syncBackendUser() {
             const payload = {
                 telegram_id: String(referralUserId),
+                username: user?.username || null,
+                first_name: user?.first_name || null,
+                last_name: user?.last_name || null,
                 referrer_id: referrerId && String(referrerId) !== String(referralUserId) ? String(referrerId) : null
             };
 
@@ -2921,9 +2967,25 @@
         async function detectClientCountryCode() {
             if (clientCountryCode) return clientCountryCode;
 
-            const cloudflareGeo = await fetchJsonWithTimeout('/geo');
-            clientCountryCode = normalizeClientCountryCode(cloudflareGeo?.country_code || cloudflareGeo?.country);
-            if (clientCountryCode) clientCountrySource = 'cloudflare_geo';
+            const urlCountry = normalizeClientCountryCode(
+                pageParams.get('country') ||
+                pageParams.get('country_code') ||
+                hashParams.get('country') ||
+                hashParams.get('country_code')
+            );
+            if (urlCountry) {
+                clientCountryCode = urlCountry;
+                clientCountrySource = 'url_country';
+                return clientCountryCode;
+            }
+
+            const backendGeo = await fetchJsonWithTimeout(`${API_BASE_URL}/tier/status`);
+            clientCountryCode = normalizeClientCountryCode(
+                backendGeo?.country_code ||
+                backendGeo?.detected_country_code ||
+                backendGeo?.country
+            );
+            if (clientCountryCode) clientCountrySource = backendGeo?.country_source || 'backend_geo';
 
             if (clientCountryCode) return clientCountryCode;
 
@@ -2937,6 +2999,8 @@
                     fetchJsonWithTimeout('https://ipwho.is/'),
                     fetchJsonWithTimeout('https://api.country.is/'),
                     fetchJsonWithTimeout('https://get.geojs.io/v1/ip/country.json'),
+                    fetchJsonWithTimeout('https://ipinfo.io/json'),
+                    fetchJsonWithTimeout('https://ifconfig.co/json'),
                     fetchTextWithTimeout('https://www.cloudflare.com/cdn-cgi/trace')
                 ]);
 
@@ -2947,6 +3011,8 @@
                     if (index === 1) return normalizeClientCountryCode(value?.country_code);
                     if (index === 2) return normalizeClientCountryCode(value?.country);
                     if (index === 3) return normalizeClientCountryCode(value?.country);
+                    if (index === 4) return normalizeClientCountryCode(value?.country);
+                    if (index === 5) return normalizeClientCountryCode(value?.country || value?.country_iso);
                     return countryCodeFromTrace(value);
                 }).filter(Boolean);
 
@@ -3125,7 +3191,7 @@
                 const qr = qrcode(0, 'M');
                 qr.addData(buildTonPaymentQrData(address));
                 qr.make();
-                qrBox.innerHTML = qr.createTableTag(4, 0);
+                qrBox.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true, alt: 'TON payment QR' });
             } catch (err) {
                 qrBox.innerHTML = '<div style="color:#05070a;font-weight:900;font-size:12px;">QR unavailable</div>';
             }
@@ -5037,7 +5103,7 @@
             lastWatchUiSnapshot = '';
             pendingWatch = {
                 startedAt: Date.now(),
-                requiredSeconds: Number(backendSettings.view_seconds_required || 15)
+                requiredSeconds: Number(backendSettings.view_seconds_required || 5)
             };
 
             openModal('watchModal');
@@ -5147,7 +5213,7 @@
             const watchSeconds = syncCountedWatchSeconds();
             const videoId = currentMrBeastVideoId || Array.from(watchSessionVideoIds)[0] || `mrbeast_session_${Date.now()}`;
 
-            if (watchSeconds < Number(backendSettings.view_seconds_required || 15)) {
+            if (watchSeconds < Number(backendSettings.view_seconds_required || 5)) {
                 closeModal('watchModal');
                 showWatchResult(watchSeconds, 0, t('not_enough_time'));
                 updateWatchDisplays();
@@ -5172,7 +5238,7 @@
                 return;
             }
 
-            if (watchSeconds < Number(backendSettings.view_seconds_required || 15)) {
+            if (watchSeconds < Number(backendSettings.view_seconds_required || 5)) {
                 updateWatchSessionUi(`Video ended, but watched time is too short: ${formatDuration(watchSeconds)}.`);
                 showWatchResult(watchSeconds, 0, t('not_enough_time'));
                 pendingWatch = null;
