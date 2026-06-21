@@ -2274,7 +2274,6 @@
                 <div style="text-align: center; margin-bottom: 15px;">
                     <i class="fas fa-user-astronaut" style="font-size: 50px; color: var(--accent-color); margin-bottom: 8px;"></i>
                     <div style="font-weight: bold; font-size: 18px; color: #fff;" id="user-display-name">Loading...</div>
-                    <div style="margin-top: 5px; color: var(--accent-color); font-weight: 800; font-size: 12px;" id="lbl-mdl-verified">STATUS: 100% ANONIM (NO-KYC)</div>
                 </div>
                 
                 <div class="profile-data-field">
@@ -3664,7 +3663,6 @@
                 withdraw: "Withdraw",
                 invite: "Add Friend",
                 mdl_profile: "Account Profile",
-                mdl_verified: "STATUS: 100% ANONYMOUS (NO-KYC)",
                 mdl_noti: "Notifications",
                 noti_alert: "System Alert:",
                 noti_msg: "Welcome to Vidi Pay! Start earning by clicking on the gold YouTube play coin asset. Daily caps reset at midnight GMT.",
@@ -3784,7 +3782,6 @@
                 withdraw: "Вывести",
                 invite: "Пригласить друга",
                 mdl_profile: "Профиль аккаунта",
-                mdl_verified: "СТАТУС: 100% АНОНИМ (NO-KYC)",
                 mdl_noti: "Уведомления",
                 noti_alert: "Системное оповещение:",
                 noti_msg: "Добро пожаловать в Vidi Pay! Начните зарабатывать, нажимая на золотую монету YouTube. Лимиты обновляются в полночь по Гринвичу.",
@@ -3818,7 +3815,6 @@
                 withdraw: "Retirer",
                 invite: "Ajouter un ami",
                 mdl_profile: "Profil du compte",
-                mdl_verified: "STATUT : 100% ANONYME (NO-KYC)",
                 mdl_noti: "Notifications",
                 noti_alert: "Alerte système :",
                 noti_msg: "Bienvenue sur Vidi Pay ! Commencez à gagner en regardant des vidéos.",
@@ -3842,7 +3838,6 @@
                 withdraw: "निकासी",
                 invite: "दोस्त जोड़ें",
                 mdl_profile: "अकाउंट प्रोफाइल",
-                mdl_verified: "स्थिति: 100% बेनाम (NO-KYC)",
                 mdl_noti: "सूचनाएं",
                 noti_alert: "सिस्टम अलर्ट:",
                 noti_msg: "Vidi Pay में आपका स्वागत है! वीडियो देखकर कमाई शुरू करें.",
@@ -3866,7 +3861,6 @@
                 withdraw: "Retirar",
                 invite: "Añadir amigo",
                 mdl_profile: "Perfil de cuenta",
-                mdl_verified: "ESTADO: 100% ANÓNIMO (NO-KYC)",
                 mdl_noti: "Notificaciones",
                 noti_alert: "Alerta del sistema:",
                 noti_msg: "¡Bienvenido a Vidi Pay! Empieza a ganar viendo videos.",
@@ -3890,7 +3884,6 @@
                 withdraw: "提现",
                 invite: "添加好友",
                 mdl_profile: "账户资料",
-                mdl_verified: "状态：100% 匿名 (NO-KYC)",
                 mdl_noti: "通知",
                 noti_alert: "系统提醒：",
                 noti_msg: "欢迎使用 Vidi Pay！观看视频即可开始赚取收益。",
@@ -3914,7 +3907,6 @@
                 withdraw: "Auszahlen",
                 invite: "Freund hinzufügen",
                 mdl_profile: "Kontoprofil",
-                mdl_verified: "STATUS: 100% ANONYM (NO-KYC)",
                 mdl_noti: "Benachrichtigungen",
                 noti_alert: "Systemmeldung:",
                 noti_msg: "Willkommen bei Vidi Pay! Verdiene Geld durch das Ansehen von Videos.",
@@ -4828,7 +4820,6 @@
             setText('lbl-total-watch-time', dict.total_watch_time);
             setText('lbl-earned-money', dict.earned_money);
             setText('lbl-mdl-profile', dict.mdl_profile);
-            setText('lbl-mdl-verified', dict.mdl_verified);
             setText('lbl-mdl-noti', dict.mdl_noti);
             setText('lbl-noti-alert', dict.noti_alert);
             setText('lbl-noti-msg', dict.noti_msg);
@@ -5231,12 +5222,16 @@
             startMrBeastPlayer();
         }
 
-        async function closeWatchModal() {
+        function closeWatchModal() {
             if (mrbeastPlayer && mrbeastPlayer.pauseVideo) {
                 mrbeastPlayer.pauseVideo();
             }
             clearInterval(watchTimerInterval);
-            await finalizeWatchSession();
+            closeModal('watchModal');
+            finalizeWatchSession().catch(err => {
+                const watchSeconds = syncCountedWatchSeconds();
+                showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), err.message || 'Reward could not be saved.');
+            });
         }
 
         function onMrBeastPlayerStateChange(event) {
@@ -5296,6 +5291,11 @@
             }, 1000);
         }
 
+        function estimateWatchReward(seconds) {
+            const rate = Number(currentTierStatus.reward_per_second || backendSettings.view_reward_per_second || 0.01);
+            return Number((Math.max(0, Number(seconds || 0)) * rate).toFixed(2));
+        }
+
         async function finalizeWatchSession() {
             if (watchSessionSubmitted) return;
             watchSessionSubmitted = true;
@@ -5312,6 +5312,7 @@
                 return;
             }
 
+            showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), 'Saving reward...');
             await finalizeWatchedVideo(watchSeconds, videoId);
         }
 
@@ -5374,7 +5375,7 @@
             if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
             updateWatchDisplays();
             updateWatchSessionUi(err.message);
-            showWatchResult(watchSeconds, 0, err.message);
+            showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), err.message);
             addNotification('View reward', err.message);
         }
     }
