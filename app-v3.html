@@ -2786,6 +2786,8 @@
         let lastWatchUiSnapshot = '';
         let rewardedMrBeastVideos = new Set();
         let shouldStartMrBeastWhenApiReady = false;
+        let watchFallbackTimer = null;
+        let usingFallbackPlayer = false;
         const MRBEAST_UPLOADS_PLAYLIST = 'UUX6OQ3DkcsbYNE6H8uQQuVA';
         let latestPaymentStatus = {};
         let currentTierStatus = {
@@ -5139,7 +5141,10 @@
         }
 
         function playMrBeastAt(index) {
-            if (!mrbeastPlayer || !mrbeastPlayer.playVideoAt) return;
+            if (!mrbeastPlayer || !mrbeastPlayer.playVideoAt) {
+                showMrBeastFallbackPlayer(t('watch_playing'), index);
+                return;
+            }
             resetWatchVideoState(t('watch_playing'));
             mrbeastPlayer.playVideoAt(Math.max(0, Number(index) || 0));
         }
@@ -5149,25 +5154,79 @@
         }
 
         function playNextMrBeastVideo() {
-            if (!mrbeastPlayer || !mrbeastPlayer.nextVideo) return;
+            if (!mrbeastPlayer || !mrbeastPlayer.nextVideo) {
+                showMrBeastFallbackPlayer(t('watch_playing'));
+                return;
+            }
             resetWatchVideoState(t('watch_playing'));
             mrbeastPlayer.nextVideo();
         }
 
         function playPreviousMrBeastVideo() {
-            if (!mrbeastPlayer || !mrbeastPlayer.previousVideo) return;
+            if (!mrbeastPlayer || !mrbeastPlayer.previousVideo) {
+                showMrBeastFallbackPlayer(t('watch_playing'));
+                return;
+            }
             resetWatchVideoState(t('watch_playing'));
             mrbeastPlayer.previousVideo();
+        }
+
+        function buildMrBeastEmbedUrl(index = randomMrBeastIndex()) {
+            const params = new URLSearchParams({
+                list: MRBEAST_UPLOADS_PLAYLIST,
+                autoplay: '1',
+                playsinline: '1',
+                rel: '0',
+                modestbranding: '1',
+                fs: '1',
+                iv_load_policy: '3',
+                index: String(Math.max(0, Number(index) || 0))
+            });
+            return `https://www.youtube.com/embed/videoseries?${params.toString()}`;
+        }
+
+        function showMrBeastFallbackPlayer(message = t('watch_playing'), index = randomMrBeastIndex()) {
+            const host = document.getElementById('mrbeast-player');
+            if (!host || !pendingWatch) return;
+
+            mrbeastPlayer = null;
+            usingFallbackPlayer = true;
+            currentMrBeastVideoId = currentMrBeastVideoId || `mrbeast_fallback_${Date.now()}`;
+            watchSessionVideoIds.add(currentMrBeastVideoId);
+            host.innerHTML = `<iframe src="${buildMrBeastEmbedUrl(index)}" title="MrBeast video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="width:100%;height:100%;border:0;display:block;background:#05070a;"></iframe>`;
+            updateWatchSessionUi(message);
+            startWatchTimerDisplay();
+        }
+
+        function clearWatchFallbackPlayer() {
+            clearTimeout(watchFallbackTimer);
+            watchFallbackTimer = null;
+            if (usingFallbackPlayer) {
+                const host = document.getElementById('mrbeast-player');
+                if (host) host.innerHTML = '';
+                usingFallbackPlayer = false;
+            }
         }
 
         function startMrBeastPlayer() {
             if (!youtubeApiReady || !window.YT || !window.YT.Player) {
                 shouldStartMrBeastWhenApiReady = true;
                 updateWatchSessionUi(t('watch_loading'));
+                clearTimeout(watchFallbackTimer);
+                watchFallbackTimer = setTimeout(() => {
+                    if (pendingWatch && !usingFallbackPlayer && !mrbeastPlayer) {
+                        showMrBeastFallbackPlayer(t('watch_playing'));
+                    }
+                }, 1200);
+                return;
+            }
+
+            if (usingFallbackPlayer) {
                 return;
             }
 
             if (!mrbeastPlayer) {
+                clearTimeout(watchFallbackTimer);
                 mrbeastPlayer = new YT.Player('mrbeast-player', {
                     width: '100%',
                     height: '100%',
@@ -5183,8 +5242,16 @@
                         origin: window.location.origin
                     },
                     events: {
-                        onReady: event => event.target.playVideo(),
-                        onStateChange: onMrBeastPlayerStateChange
+                        onReady: event => {
+                            const videoData = event.target?.getVideoData ? event.target.getVideoData() : {};
+                            currentMrBeastVideoId = videoData?.video_id || currentMrBeastVideoId || `mrbeast_api_${Date.now()}`;
+                            watchSessionVideoIds.add(currentMrBeastVideoId);
+                            updateWatchSessionUi(t('watch_playing'));
+                            startWatchTimerDisplay();
+                            event.target.playVideo();
+                        },
+                        onStateChange: onMrBeastPlayerStateChange,
+                        onError: () => showMrBeastFallbackPlayer(t('watch_playing'))
                     }
                 });
             } else {
@@ -5226,6 +5293,7 @@
             if (mrbeastPlayer && mrbeastPlayer.pauseVideo) {
                 mrbeastPlayer.pauseVideo();
             }
+            clearWatchFallbackPlayer();
             clearInterval(watchTimerInterval);
             closeModal('watchModal');
             finalizeWatchSession().catch(err => {
