@@ -2707,8 +2707,45 @@
         if (apiOverrideParam && /^https:\/\/.+/i.test(apiOverrideParam)) {
             localStorage.setItem('vidiPayApiBase', apiOverrideParam.replace(/\/$/, ''));
         }
-        const API_BASE_URL = localStorage.getItem('vidiPayApiBase') || window.VIDIPAY_API_BASE ||
-            `${window.location.protocol === 'file:' ? 'http://localhost' : `${window.location.protocol}//${window.location.hostname}`}:3000`;
+        const FALLBACK_API_BASE_URLS = [
+            'https://ads-outside-interracial-twice.trycloudflare.com',
+            'https://vidipay-backend.onrender.com',
+            'http://127.0.0.1:10000'
+        ];
+
+        function normalizeApiBaseUrl(value) {
+            const raw = String(value || '').trim().replace(/\/$/, '');
+            if (!raw) return '';
+            try {
+                const url = new URL(raw);
+                if (!['https:', 'http:'].includes(url.protocol)) return '';
+                if (url.pathname && /\.html?$/i.test(url.pathname)) return '';
+                if (url.hostname.endsWith('github.io') || url.hostname.includes('vidipay-fronted')) return '';
+                return `${url.origin}${url.pathname}`.replace(/\/$/, '');
+            } catch (err) {
+                return '';
+            }
+        }
+
+        function getCurrentOriginApiBase() {
+            if (!/^https?:$/i.test(window.location.protocol)) return '';
+            if (window.location.hostname.endsWith('github.io')) return '';
+            return normalizeApiBaseUrl(window.location.origin);
+        }
+
+        function getApiBaseCandidates() {
+            const candidates = [
+                apiOverrideParam,
+                window.VIDIPAY_API_BASE,
+                getCurrentOriginApiBase(),
+                localStorage.getItem('vidiPayApiBase'),
+                ...FALLBACK_API_BASE_URLS
+            ].map(normalizeApiBaseUrl).filter(Boolean);
+            return [...new Set(candidates)];
+        }
+
+        let API_BASE_URL = getApiBaseCandidates()[0] || 'http://127.0.0.1:10000';
+        localStorage.setItem('vidiPayApiBase', API_BASE_URL);
         const MRBEAST_RANDOM_START_MAX = 40;
         const DAY_MS = 24 * 60 * 60 * 1000;
         const BONUS_PER_FRIEND = 9.99;
@@ -2774,24 +2811,47 @@
         };
 
         async function apiRequest(path, options = {}) {
-            const response = await fetch(`${API_BASE_URL}${path}`, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(options.headers || {})
-                },
-                ...options
-            });
+            const bases = [API_BASE_URL, ...getApiBaseCandidates()].map(normalizeApiBaseUrl).filter(Boolean);
+            const uniqueBases = [...new Set(bases)];
+            let lastError = null;
 
-            const text = await response.text();
-            const data = text ? JSON.parse(text) : null;
+            for (const baseUrl of uniqueBases) {
+                try {
+                    const response = await fetch(`${baseUrl}${path}`, {
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(options.headers || {})
+                        },
+                        ...options
+                    });
 
-            if (!response.ok) {
-                const err = new Error(data?.error || data?.message || 'API request failed');
-                err.data = data;
-                throw err;
+                    const text = await response.text();
+                    let data = null;
+                    if (text) {
+                        try {
+                            data = JSON.parse(text);
+                        } catch (parseErr) {
+                            lastError = new Error(`Backend API noto'g'ri URL qaytardi: ${baseUrl}`);
+                            continue;
+                        }
+                    }
+
+                    if (!response.ok) {
+                        const err = new Error(data?.error || data?.message || 'API request failed');
+                        err.data = data;
+                        throw err;
+                    }
+
+                    API_BASE_URL = baseUrl;
+                    localStorage.setItem('vidiPayApiBase', baseUrl);
+                    return data;
+                } catch (err) {
+                    lastError = err;
+                    if (err.data) throw err;
+                }
             }
 
-            return data;
+            throw lastError || new Error('Backend API ulanmagan');
         }
 
         function applyBackendUser(serverUser) {
