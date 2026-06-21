@@ -1248,10 +1248,11 @@
         .top-user-info { display: flex; flex-direction: column; align-items: flex-start; overflow: hidden; line-height: 1.1; }
         .top-user-name { color: #fff; font-size: 14px; font-weight: 900; max-width: 122px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .top-user-id { color: var(--accent-color); font-size: 11px; font-weight: 800; opacity: .9; max-width: 122px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .notification-list { max-height: 360px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 4px; }
-        .notification-item { background: rgba(255,255,255,.035); border: 1px solid rgba(0,255,204,.12); border-radius: 14px; padding: 12px; }
-        .notification-item b { display:block; color: #fff; margin-bottom: 4px; }
-        .notification-date { color: var(--accent-color); font-size: 11px; font-weight: 800; margin-bottom: 6px; }
+        .notification-list { max-height: 360px; overflow-y: auto; display: grid; grid-template-columns: 1fr; gap: 10px; padding: 2px 4px 2px 0; text-align: left; }
+        .notification-item { width: 100%; box-sizing: border-box; background: rgba(255,255,255,.035); border: 1px solid rgba(0,255,204,.12); border-radius: 14px; padding: 12px; display: grid; gap: 6px; align-items: start; overflow: hidden; }
+        .notification-title { color: #fff; font-size: 14px; font-weight: 900; line-height: 1.25; overflow-wrap: anywhere; word-break: break-word; }
+        .notification-date { color: var(--accent-color); font-size: 11px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+        .notification-body { color: #cbd5e1; font-size: 13px; font-weight: 700; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
         .support-chat-box { max-height: 340px; overflow-y: auto; display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
         .chat-msg { border-radius: 14px; padding: 10px 12px; font-size: 13px; line-height: 1.45; }
         .chat-msg.user { align-self:flex-end; background: rgba(0,255,204,.14); color:#fff; border:1px solid rgba(0,255,204,.2); }
@@ -3091,6 +3092,16 @@
 
         function setDomText(el, value) {
             if (el && el.innerText !== value) el.innerText = value;
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[char]));
         }
 
         function setDomStyle(el, prop, value) {
@@ -5282,6 +5293,7 @@
                 pendingWatch = null;
                 applyBackendUser(result.user);
                 if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
+                await refreshStatsFromBackend().catch(() => null);
                 updateWatchDisplays();
                 createFloatingText(null, result.reward);
             if (result.tier) {
@@ -5441,13 +5453,18 @@
             const box = document.getElementById('notification-list');
             if (!box) return;
             const items = getNotifications();
-            box.innerHTML = items.map(item => `
+            box.innerHTML = items.map(item => {
+                const title = item.titleKey ? t(item.titleKey) : (item.title || '');
+                const text = item.textKey ? t(item.textKey) : (item.text || '');
+                const date = item.date || '';
+                return `
                 <div class="notification-item">
-                    <b>${item.titleKey ? t(item.titleKey) : item.title}</b>
-                    <div class="notification-date">${item.date}</div>
-                    <div>${item.textKey ? t(item.textKey) : item.text}</div>
+                    <div class="notification-title">${escapeHtml(title)}</div>
+                    <div class="notification-date">${escapeHtml(date)}</div>
+                    <div class="notification-body">${escapeHtml(text)}</div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
             setUnreadNotificationCount(getUnreadNotificationCount());
         }
 
