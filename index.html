@@ -2692,8 +2692,18 @@
             updateWatchDisplays();
         }
 
+        function isTonAddressLike(value) {
+            const address = String(value || '').trim();
+            return /^(EQ|UQ)[A-Za-z0-9_-]{40,}$/.test(address) || /^-?\d+:[a-fA-F0-9]{64}$/.test(address);
+        }
+
         function getPaymentWalletAddress(order = currentPaymentOrder) {
-            return order?.ton_wallet_address || order?.wallet_address || order?.to_wallet || order?.admin_wallet || '';
+            return [
+                order?.ton_wallet_address,
+                order?.wallet_address,
+                order?.to_wallet,
+                order?.admin_wallet
+            ].map(value => String(value || '').trim()).find(isTonAddressLike) || '';
         }
 
         function buildTonWalletLink(order) {
