@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="vidipay-admin-build" content="admin-menu-v5-reward-users-20260621">
   <title>VidiPay Boshqaruv Paneli</title>
-  <script src="./config.js"></script>
+  <script src="./config.js?v=admin-menu-v5-reward-users-20260621"></script>
   <style>
     :root {
       --bg: #080d10;
@@ -85,7 +86,7 @@
     tr:last-child td { border-bottom: 0; }
     .status { font-weight: 900; }
     .pending { color: var(--warn); }
-    .approved, .verified { color: var(--ok); }
+    .approved, .verified, .confirmed { color: var(--ok); }
     .rejected { color: var(--danger); }
     .user-status-pill {
       display: inline-flex;
@@ -201,6 +202,15 @@
     </div>
 
     <section>
+      <h2>Telegram mini app URL</h2>
+      <div class="notice-box" id="telegram-menu-status">Eski oyna chiqsa, backend deploydan keyin shu tugmani bosing.</div>
+      <div class="login-row">
+        <input id="telegram-menu-url" placeholder="Mini app URL avtomatik olinadi">
+        <button class="primary" id="btn-set-menu-button" onclick="setTelegramMenuButton()">Telegram menu URLni yangilash</button>
+      </div>
+    </section>
+
+    <section>
       <h2>Sozlamalar</h2>
       <div class="timer-panel">
         <h3>Pul yechish taymeri</h3>
@@ -234,6 +244,7 @@
 
     <section>
       <h2>Foydalanuvchilar</h2>
+      <div class="notice" id="users-count">Userlar token saqlangandan keyin yuklanadi.</div>
       <div class="grid"><table id="users-table"></table></div>
     </section>
 
@@ -283,7 +294,7 @@
           </div>
           <div class="timer-field">
             <label>Wallet turi</label>
-            <input id="history-wallet-type" placeholder="USDT yoki TON" value="USDT">
+            <input id="history-wallet-type" placeholder="TON" value="TON">
           </div>
           <div class="timer-field">
             <label>Wallet manzili</label>
@@ -349,15 +360,58 @@
         <h2 style="margin-right:auto;">To'lov buyurtmalari</h2>
         <select id="payment-status" onchange="loadPaymentOrders()">
           <option value="pending">Kutilmoqda</option>
-          <option value="verified">Tasdiqlangan</option>
+          <option value="confirmed">Tasdiqlangan</option>
+          <option value="all">Hammasi</option>
         </select>
+      </div>
+      <div class="timer-panel">
+        <h3>Avtomat TON skaner</h3>
+        <div class="notice" id="payment-scanner-status">Holat yuklanmoqda...</div>
+        <div class="timer-actions" style="margin-top:10px;">
+          <button class="primary" id="btn-run-payment-scan" onclick="runPaymentScan()">Blockchainni hozir tekshirish</button>
+          <button id="btn-load-payment-wallets" onclick="loadPaymentWallets()">Skaner holatini yangilash</button>
+        </div>
+        <div class="notice">Asosiy oqim avtomatik: to'lov TON blockchainida topilsa, tizim o'zi withdrawni ochadi. Manual tasdiqlash faqat TonAPI vaqtincha ishlamasa zaxira uchun.</div>
       </div>
       <div class="grid"><table id="payments-table"></table></div>
     </section>
   </main>
 
   <script>
-    const API_BASE_URL = window.VIDIPAY_API_BASE || 'https://vidipay-backend.onrender.com';
+    const ADMIN_API_FALLBACKS = [
+      'https://vidipay-backend.onrender.com',
+      'http://127.0.0.1:10000'
+    ];
+
+    function normalizeApiBaseUrl(value) {
+      const raw = String(value || '').trim().replace(/\/$/, '');
+      if (!raw) return '';
+      try {
+        const url = new URL(raw);
+        if (!['https:', 'http:'].includes(url.protocol)) return '';
+        if (url.hostname.endsWith('github.io')) return '';
+        return `${url.origin}${url.pathname}`.replace(/\/$/, '');
+      } catch (err) {
+        return '';
+      }
+    }
+
+    function getCurrentOriginApiBase() {
+      if (!/^https?:$/i.test(window.location.protocol)) return '';
+      if (window.location.hostname.endsWith('github.io')) return '';
+      return normalizeApiBaseUrl(window.location.origin);
+    }
+
+    function getAdminApiCandidates() {
+      return [...new Set([
+        window.VIDIPAY_API_BASE,
+        getCurrentOriginApiBase(),
+        localStorage.getItem('vidiPayAdminApiBase'),
+        ...ADMIN_API_FALLBACKS
+      ].map(normalizeApiBaseUrl).filter(Boolean))];
+    }
+
+    let API_BASE_URL = getAdminApiCandidates()[0] || 'https://vidipay-backend.onrender.com';
     const settingKeys = [
       'view_seconds_required',
       'view_reward_per_second',
@@ -462,8 +516,42 @@
       refreshAll();
     }
 
+    async function fetchApi(path, options = {}) {
+      const candidates = [...new Set([API_BASE_URL, ...getAdminApiCandidates()].map(normalizeApiBaseUrl).filter(Boolean))];
+      let lastError = null;
+
+      for (const baseUrl of candidates) {
+        try {
+          const res = await fetch(`${baseUrl}${path}`, options);
+          const text = await res.text();
+          let data = null;
+          if (text) {
+            try {
+              data = JSON.parse(text);
+            } catch (err) {
+              lastError = new Error(`Backend noto'g'ri javob qaytardi: ${baseUrl}`);
+              continue;
+            }
+          }
+          if (!res.ok) {
+            const error = new Error(data?.error || data?.message || 'So‘rov bajarilmadi');
+            error.data = data;
+            throw error;
+          }
+          API_BASE_URL = baseUrl;
+          localStorage.setItem('vidiPayAdminApiBase', baseUrl);
+          return data;
+        } catch (err) {
+          lastError = err;
+          if (err.data) throw err;
+        }
+      }
+
+      throw lastError || new Error('Backendga ulanib bo‘lmadi');
+    }
+
     async function api(path, options = {}) {
-      const res = await fetch(`${API_BASE_URL}${path}`, {
+      return fetchApi(path, {
         headers: {
           'Content-Type': 'application/json',
           'x-admin-token': token(),
@@ -471,10 +559,20 @@
         },
         ...options
       });
-      const text = await res.text();
-      const data = text ? JSON.parse(text) : null;
-      if (!res.ok) throw new Error(data?.error || data?.message || 'So‘rov bajarilmadi');
-      return data;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char]));
+    }
+
+    function formatMoney(value) {
+      return `$${Number(value || 0).toFixed(2)}`;
     }
 
     function renderTable(id, headers, rows) {
@@ -484,12 +582,39 @@
     }
 
     async function loadPublicSettings() {
-      return fetch(`${API_BASE_URL}/settings`).then(async (res) => {
-        const text = await res.text();
-        const data = text ? JSON.parse(text) : null;
-        if (!res.ok) throw new Error(data?.error || data?.message || 'Ochiq sozlamalarni olishda xatolik');
-        return data;
-      });
+      return fetchApi('/settings');
+    }
+
+    async function loadBackendStatus() {
+      return fetchApi('/');
+    }
+
+    async function setTelegramMenuButton() {
+      try {
+        setBusy('btn-set-menu-button', true, 'Yangilanmoqda...');
+        const statusBox = document.getElementById('telegram-menu-status');
+        if (statusBox) statusBox.innerText = 'Backenddan yangi mini app URL olinmoqda...';
+
+        const backendStatus = await loadBackendStatus();
+        const input = document.getElementById('telegram-menu-url');
+        const url = (input.value || backendStatus.webapp_url || '').trim();
+        if (!url) throw new Error('Mini app URL topilmadi. Avval backendni deploy qiling.');
+        if (input) input.value = url;
+
+        const result = await api('/admin/telegram/set-menu-button', {
+          method: 'POST',
+          body: JSON.stringify({ url, text: 'Open Vidi Pay' })
+        });
+
+        if (statusBox) statusBox.innerText = `Telegram menu yangilandi: ${result.url || url}`;
+        setStatus('Telegram menu button yangilandi.');
+      } catch (err) {
+        const statusBox = document.getElementById('telegram-menu-status');
+        if (statusBox) statusBox.innerText = `Telegram menu xatosi: ${err.message}`;
+        setStatus(`Telegram menu xatosi: ${err.message}`);
+      } finally {
+        setBusy('btn-set-menu-button', false);
+      }
     }
 
     async function loadSettings(options = {}) {
@@ -631,12 +756,16 @@
     }
 
     async function loadUsers() {
-      const users = await api('/admin/users');
-      renderTable('users-table', ['Baza ID', 'Telegram ID', 'Balans', 'Umumiy vaqt', 'Kunlik daromad', 'Qulf', 'Holat', 'Amal'], users.map(u => `
-        <tr id="user-row-${u.telegram_id}">
-          <td>${u.id}</td><td>${u.telegram_id}</td>
-          <td>${u.balance}</td><td>${u.total_watch_seconds || 0}s</td>
-          <td>${u.daily_income}</td><td>${u.withdraw_unlocked ? 'ha' : 'yoq'}</td>
+      const payload = await api('/admin/users?limit=10000');
+      const users = Array.isArray(payload) ? payload : (payload.users || []);
+      const countEl = document.getElementById('users-count');
+      if (countEl) countEl.innerText = `${users.length} ta user yuklandi. Real Telegram userlar ham, backendga sync bo'lgan guestlar ham shu ro'yxatda ko'rinadi.`;
+      renderTable('users-table', ['Baza ID', 'Telegram ID', 'Username', 'Ism', 'Balans', 'Umumiy vaqt', 'Kunlik daromad', 'Qulf', 'Holat', 'Amal'], users.map(u => `
+        <tr id="user-row-${escapeHtml(u.telegram_id)}">
+          <td>${escapeHtml(u.id)}</td><td>${escapeHtml(u.telegram_id)}</td>
+          <td>${escapeHtml(u.username || '-')}</td><td>${escapeHtml([u.first_name, u.last_name].filter(Boolean).join(' ') || '-')}</td>
+          <td>${formatMoney(u.balance)}</td><td>${Number(u.total_watch_seconds || 0)}s</td>
+          <td>${formatMoney(u.daily_income)}</td><td>${u.withdraw_unlocked ? 'ha' : 'yoq'}</td>
           ${renderUserControlCells(u)}
         </tr>
       `));
@@ -735,7 +864,7 @@
       const amount = Number(document.getElementById('history-amount').value);
       const dateValue = document.getElementById('history-date').value;
       const timeValue = document.getElementById('history-time').value || '00:00';
-      const walletType = document.getElementById('history-wallet-type').value.trim() || 'USDT';
+      const walletType = document.getElementById('history-wallet-type').value.trim() || 'TON';
       const walletAddress = document.getElementById('history-wallet-address').value.trim() || 'Admin wallet';
       const historyStatus = document.getElementById('history-status').value;
       const note = document.getElementById('history-note').value.trim() || "Admin qo'shgan history";
@@ -823,26 +952,66 @@
     async function loadPaymentOrders() {
       const status = document.getElementById('payment-status').value;
       const items = await api(`/admin/payment-orders?status=${encodeURIComponent(status)}`);
-      renderTable('payments-table', ['ID', 'Telegram ID', 'Summa', 'To\'lov turi', 'Holat', 'Amallar'], items.map(p => `
+      renderTable('payments-table', ["ID", "Telegram ID", "Summa", "Tolov turi", "Holat", "Amallar"], items.map(p => `
         <tr>
-          <td>${p.id}</td><td>${p.telegram_id}</td><td>${p.amount} USDT (Ekv. Karta)</td>
-          <td>Avtomat Karta (Gateway)</td>
+          <td>${p.id}</td><td>${p.telegram_id}</td><td>${p.amount} TONCOIN</td>
+          <td>Avtomat TON blockchain skaner</td>
           <td class="status ${p.status}">${p.status === 'pending' ? 'Kutilmoqda' : 'Tasdiqlangan'}</td>
           <td>
-            ${p.status === 'pending' ? `<button class="ok" onclick="approvePaymentOrder(${p.id})">Tasdiqlash</button>` : '<span style="color:var(--ok);">✅ Bajarilgan</span>'}
+            ${p.status === 'pending' ? `<button class="warning" onclick="approvePaymentOrder(${p.id})">Manual zaxira</button>` : '<span style="color:var(--ok);">Bajarilgan</span>'}
           </td>
         </tr>
       `));
     }
 
     async function approvePaymentOrder(id) {
-      if(!confirm("Ushbu to'lovni tasdiqlaysizmi? (Foydalanuvchi hisobi darhol ochiladi)")) return;
+      if(!confirm("Bu faqat zaxira manual tasdiqlash. Avval avtomat skanerni tekshirish tavsiya qilinadi. Baribir tasdiqlaysizmi?")) return;
       try {
         await api(`/admin/payment-orders/${id}/approve`, { method: 'POST', body: '{}' });
         await loadPaymentOrders();
-        alert("To'lov muvaffaqiyatli tasdiqlandi!");
+        await loadPaymentWallets();
+        alert("Manual zaxira tasdiqlash bajarildi.");
       } catch(err) {
         alert("Xatolik: " + err.message);
+      }
+    }
+
+    async function loadPaymentWallets() {
+      const box = document.getElementById('payment-scanner-status');
+      try {
+        const data = await api('/admin/payment-wallets');
+        const scanner = data.scanner || {};
+        const config = data.config || {};
+        const lastRun = scanner.lastRunAt ? new Date(scanner.lastRunAt).toLocaleString() : 'hali yoq';
+        if (box) {
+          box.innerText = [
+            `Hamyonlar: jami ${data.total || 0}, aktiv ${data.active || 0}, bo'sh ${data.available || 0}, band ${data.assigned || 0}`,
+            `Pending orderlar: ${data.pending_orders || 0}`,
+            `Skaner: har ${Math.round((config.scan_interval_ms || 15000) / 1000)} soniyada avtomat ishlaydi, oxirgi tekshiruv: ${lastRun}`,
+            `Tekshirildi: ${scanner.checked || 0}, tasdiqlandi: ${scanner.confirmed || 0}`,
+            scanner.lastError ? `Oxirgi xato: ${scanner.lastError}` : 'Oxirgi xato: yoq'
+          ].join('\\n');
+        }
+      } catch (err) {
+        if (box) box.innerText = `Skaner holati yuklanmadi: ${err.message}`;
+        throw err;
+      }
+    }
+
+    async function runPaymentScan() {
+      try {
+        setBusy('btn-run-payment-scan', true, 'Tekshirilmoqda...');
+        const result = await api('/admin/payment-scan/run', {
+          method: 'POST',
+          body: JSON.stringify({ limit: 100 })
+        });
+        await loadPaymentOrders();
+        await loadPaymentWallets();
+        setStatus(`Blockchain tekshirildi. Tasdiqlangan jami: ${result.confirmed || 0}`);
+      } catch (err) {
+        setStatus(`Skaner xatosi: ${err.message}`);
+      } finally {
+        setBusy('btn-run-payment-scan', false);
       }
     }
 
@@ -852,6 +1021,7 @@
       try { await loadUsers(); } catch (err) { errors.push(`Foydalanuvchilar: ${err.message}`); }
       try { await loadWithdraws(); } catch (err) { errors.push(`Pul yechish: ${err.message}`); }
       try { await loadPaymentOrders(); } catch (err) { errors.push(`To‘lovlar: ${err.message}`); }
+      try { await loadPaymentWallets(); } catch (err) { errors.push(`Skaner: ${err.message}`); }
       setStatus(errors.length ? errors.join(' | ') : 'Ma\'lumotlar yuklandi.');
     }
 

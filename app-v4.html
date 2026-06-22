@@ -14,7 +14,6 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <script src="./config.js?v=wallet-toncoin-v8-reward-admin-20260621"></script>
-    <script src="./qrcode.js?v=wallet-toncoin-v8-reward-admin-20260621"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -127,42 +126,6 @@
             padding: 14px;
             margin-bottom: 16px;
             text-align: center;
-        }
-        .ton-qr-box {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 12px auto;
-            padding: 10px;
-            width: 178px;
-            min-height: 178px;
-            border-radius: 14px;
-            background: #ffffff;
-            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
-        }
-        .ton-qr-box table {
-            border-collapse: collapse;
-            margin: 0;
-        }
-        .ton-qr-box table,
-        .ton-qr-box tbody,
-        .ton-qr-box tr,
-        .ton-qr-box td {
-            border: 0 !important;
-            padding: 0 !important;
-            box-shadow: none !important;
-        }
-        .ton-qr-box td {
-            width: 4px !important;
-            height: 4px !important;
-            min-width: 4px !important;
-            min-height: 4px !important;
-        }
-        .ton-qr-box img,
-        .ton-qr-box svg {
-            display: block;
-            width: 158px;
-            height: 158px;
         }
         .ton-address-box {
             color: #ffffff;
@@ -2439,11 +2402,10 @@
             <div class="info-sub-block">
                 <div class="wallet-pay-card">
                     <div class="wallet-pay-heading">
-                        <span><i class="fas fa-qrcode"></i> TON deposit address</span>
+                        <span><i class="fas fa-wallet"></i> TON deposit address</span>
                         <span class="wallet-network-pill">TON</span>
                     </div>
                     <div class="wallet-help-text" id="ton-deposit-warning">Send exactly 6.99 TONCOIN to this address. Less or more than 6.99 TONCOIN will not be confirmed automatically.</div>
-                    <div class="ton-qr-box" id="ton-qr-box"></div>
                     <div id="payment-address-box" style="display:none; margin-top:10px; padding:12px; border:1px solid rgba(0,255,204,.24); border-radius:14px; background:rgba(0,255,204,.06);">
                         <div id="payment-amount-text" style="color:#00ffcc; font-size:13px; font-weight:900; margin-bottom:8px;"></div>
                         <div class="wallet-address-label" id="payment-address-label">Unique TON deposit address</div>
@@ -3258,20 +3220,11 @@
             return `ton://transfer/${address}?amount=${tonAmountToNano(getTonActivationAmount())}`;
         }
 
-        function renderTonPaymentQr(address) {
-            const qrBox = document.getElementById('ton-qr-box');
-            if (!qrBox) return;
-            qrBox.innerHTML = '';
-            if (!address) return;
+        function renderTonPaymentQr() {}
 
-            try {
-                const qr = qrcode(0, 'M');
-                qr.addData(buildTonPaymentQrData(address));
-                qr.make();
-                qrBox.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true, alt: 'TON payment QR' });
-            } catch (err) {
-                qrBox.innerHTML = '<div style="color:#05070a;font-weight:900;font-size:12px;">QR unavailable</div>';
-            }
+        function findPaymentOrderWithWallet(orders = []) {
+            return (Array.isArray(orders) ? orders : [])
+                .find(order => getPaymentWalletAddress(order));
         }
 
         function isActiveLocalCardMethod() {
@@ -3306,7 +3259,7 @@
         }
 
         function renderPaymentOrder(order, statusData) {
-            currentPaymentOrder = order || currentPaymentOrder;
+            currentPaymentOrder = order || findPaymentOrderWithWallet(statusData?.orders) || currentPaymentOrder;
 
             const box = document.getElementById('payment-unlock-box');
             const statusEl = document.getElementById('payment-status-text');
@@ -3320,12 +3273,18 @@
 
             updateWalletLockUi();
 
+            const walletAddress = getPaymentWalletAddress(currentPaymentOrder);
+            const amount = Number(currentPaymentOrder?.required_amount || currentPaymentOrder?.amount || backendSettings.activation_deposit_amount || TON_ACTIVATION_AMOUNT || 6.99);
+
             if (statusData?.withdraw_unlocked) {
                 box.style.display = 'block';
-                if (addressBox) addressBox.style.display = 'none';
+                if (addressBox) addressBox.style.display = 'block';
+                if (amountEl) amountEl.innerText = amount ? `${amount.toFixed(2)} TONCOIN` : `${getTonActivationAmount().toFixed(2)} TONCOIN`;
+                if (addressEl) addressEl.innerText = walletAddress || t('card_order_loading');
+                if (expiryEl) expiryEl.innerText = '';
                 renderTonPaymentQr('');
-                if (statusEl) statusEl.innerText = t('payment_verified_wallet');
-                if (depositStatusEl) depositStatusEl.innerText = t('payment_verified_wallet');
+                if (statusEl) statusEl.innerText = walletAddress ? t('payment_verified_wallet') : t('card_order_loading');
+                if (depositStatusEl) depositStatusEl.innerText = walletAddress ? t('payment_verified_wallet') : t('card_order_loading');
                 updateLocalCardMethodUi();
                 return;
             }
@@ -3340,8 +3299,6 @@
             }
 
             box.style.display = 'block';
-            const walletAddress = getPaymentWalletAddress(currentPaymentOrder);
-            const amount = Number(currentPaymentOrder.required_amount || currentPaymentOrder.amount || 0);
             if (addressBox) addressBox.style.display = walletAddress ? 'block' : 'none';
             if (amountEl) amountEl.innerText = amount ? `${amount.toFixed(2)} TONCOIN` : `${getTonActivationAmount().toFixed(2)} TONCOIN`;
             if (addressEl) addressEl.innerText = walletAddress || '';
@@ -3350,7 +3307,7 @@
                     ? `Valid until: ${new Date(currentPaymentOrder.expires_at).toLocaleString()}`
                     : '';
             }
-            renderTonPaymentQr(walletAddress);
+            renderTonPaymentQr('');
             if (statusEl) {
                 const depositAmount = Number(backendSettings.activation_deposit_amount || amount || TON_ACTIVATION_AMOUNT);
                 statusEl.innerText = walletAddress
@@ -3385,7 +3342,7 @@
                 const status = await apiRequest(`/payment/status/${encodeURIComponent(referralUserId)}`);
                 if (status.user) applyBackendUser(status.user);
                 if (status.growth_lock) setGrowthLockStatus(status.growth_lock);
-                const latestOrder = status.orders && status.orders.length ? status.orders[0] : null;
+                const latestOrder = findPaymentOrderWithWallet(status.orders) || (status.orders && status.orders.length ? status.orders[0] : null);
                 renderPaymentOrder(latestOrder, status);
                 updateWithdrawUi(status);
             } catch (err) {
@@ -3403,7 +3360,7 @@
 
             if (result.user) applyBackendUser(result.user);
             if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
-            renderPaymentOrder(result.order, { withdraw_unlocked: result.withdraw_unlocked });
+            renderPaymentOrder(result.order || findPaymentOrderWithWallet(result.orders), result);
             return result.order;
         }
 
