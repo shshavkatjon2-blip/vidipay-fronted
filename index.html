@@ -7,7 +7,6 @@
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
     <script src="./config.js"></script>
-    <script src="./qrcode.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -120,22 +119,6 @@
             padding: 14px;
             margin-bottom: 16px;
             text-align: center;
-        }
-        .ton-qr-box {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 12px auto;
-            padding: 10px;
-            width: 178px;
-            min-height: 178px;
-            border-radius: 14px;
-            background: #ffffff;
-            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
-        }
-        .ton-qr-box table {
-            border-collapse: collapse;
-            margin: 0;
         }
         .ton-address-box {
             color: #ffffff;
@@ -328,6 +311,7 @@
         .hamster-clicker-btn.activation-locked {
             filter: saturate(.45) brightness(.72);
             box-shadow: 0 14px 0 #4a1010, 0 20px 30px rgba(0,0,0,0.6);
+            cursor: not-allowed;
         }
 
         .hamster-clicker-btn.activation-locked::before {
@@ -351,6 +335,11 @@
         .hamster-clicker-btn:active {
             transform: translateY(10px);
             box-shadow: 0 4px 0 var(--clicker-shadow), 0 10px 20px rgba(0,0,0,0.6);
+        }
+
+        .hamster-clicker-btn.activation-locked:active {
+            transform: none;
+            box-shadow: 0 14px 0 #4a1010, 0 20px 30px rgba(0,0,0,0.6);
         }
 
         /* FLOATING TEXT ANIMATION */
@@ -2125,13 +2114,13 @@
                 <div id="withdraw-form-box" style="margin-top:14px; display:none;">
                     <div style="font-weight:900; color:var(--accent-color); margin-bottom:8px;" data-i18n="withdraw_form_title">Create withdrawal request</div>
                     <input id="withdraw-amount-input" type="number" min="10" step="0.01" placeholder="Withdrawal amount (Example, 10$)" data-i18n-placeholder="withdraw_amount_placeholder" style="width:100%; box-sizing:border-box; padding:14px; border-radius:14px; border:1px solid rgba(0,255,204,.18); background:#05070a; color:#fff; font-weight:800; margin-bottom:10px;">
-                    <div id="withdraw-ton-warning" style="color:#facc15; font-size:12px; font-weight:900; margin:0 0 8px 2px;" data-i18n="withdraw_ton_warning">Diqqat: faqat TON adres</div>
+                    <div id="withdraw-ton-warning" style="color:#facc15; font-size:12px; font-weight:900; margin:0 0 8px 2px;" data-i18n="withdraw_ton_warning">Attention: TON address only</div>
                     <input id="withdraw-address-input" type="text" placeholder="Your TON wallet address" data-i18n-placeholder="withdraw_card_placeholder" style="width:100%; box-sizing:border-box; padding:14px; border-radius:14px; border:1px solid rgba(0,255,204,.18); background:#05070a; color:#fff; font-weight:800; margin-bottom:10px;">
                     <select id="withdraw-method-input" style="width:100%; box-sizing:border-box; padding:14px; border-radius:14px; border:1px solid rgba(0,255,204,.18); background:#05070a; color:#fff; font-weight:800; margin-bottom:10px;">
                         <option value="USDT_TON">TON Wallet</option>
                     </select>
                     <button class="copy-link-btn" onclick="submitWithdrawRequest()">
-                        <i class="fas fa-paper-plane" style="margin-right:8px;"></i><span id="request-withdrawal-label" data-i18n="request_withdrawal">REQUEST WITHDRAWAL</span>
+                        <span id="request-withdrawal-label" data-i18n="request_withdrawal">REQUEST WITHDRAWAL</span>
                     </button>
                     <div id="withdraw-form-status" style="margin-top:10px; color:#a0a5b5; font-size:12px; font-weight:800;"></div>
                 </div>
@@ -2192,7 +2181,7 @@
                     <span class="profile-data-value" id="wallet-method-value" style="color: var(--accent-color);">TON Wallet</span>
                 </div>
                 <div class="withdraw-locked-row" id="wallet-lock-row">Wallet locked until withdrawal time</div>
-                <div class="withdraw-extra-row" id="wallet-lock-extra">Your unique TON wallet address and QR code will appear here.</div>
+                <div class="withdraw-extra-row" id="wallet-lock-extra">Your unique TON wallet address will appear here.</div>
                 
                 <div id="payment-unlock-box" style="margin-top:14px; display:none;">
                     <div style="font-weight:900; color:var(--accent-color); margin-bottom:12px; font-size:16px; text-align:center;" id="lbl-unlock-title">Account unlock activation</div>
@@ -2200,7 +2189,6 @@
                     <div class="ton-payment-panel">
                         <div style="color: #60a5fa; font-weight: 900; margin-bottom: 6px; font-size: 13px;" id="lbl-fastest-method"><i class="fas fa-wallet"></i> TON WALLET</div>
                         <div style="color: #cbd5e1; font-size: 12px; margin-bottom: 12px; line-height: 1.4;" id="lbl-fiat-desc">Send TON to your unique wallet address. The wallet opens after confirmed payment.</div>
-                        <div class="ton-qr-box" id="ton-qr-box"></div>
                         <div class="ton-payment-actions">
                             <button type="button" onclick="copyTonPaymentAddress()"><i class="fas fa-copy"></i> <span id="lbl-copy-ton-address">COPY</span></button>
                             <button type="button" id="fiat-pay-btn" onclick="openTonWalletPayment()"><i class="fas fa-wallet"></i> <span id="lbl-pay-fiat">OPEN WALLET</span></button>
@@ -2550,7 +2538,10 @@
         function updateActivationLockUi() {
             const btn = document.querySelector('.hamster-clicker-btn');
             if (!btn) return;
-            btn.classList.toggle('activation-locked', isWalletActivationRequiredForBalance());
+            const locked = isWalletActivationRequiredForBalance();
+            btn.classList.toggle('activation-locked', locked);
+            btn.disabled = locked;
+            btn.setAttribute('aria-disabled', String(locked));
         }
 
         function showWalletActivationRequired() {
@@ -2781,21 +2772,7 @@
             return `ton://transfer/${encodeURIComponent(address)}`;
         }
 
-        function renderTonPaymentQr(address) {
-            const qrBox = document.getElementById('ton-qr-box');
-            if (!qrBox) return;
-            qrBox.innerHTML = '';
-            if (!address) return;
-
-            try {
-                const qr = qrcode(0, 'M');
-                qr.addData(address);
-                qr.make();
-                qrBox.innerHTML = qr.createTableTag(4, 0);
-            } catch (err) {
-                qrBox.innerHTML = '<div style="color:#05070a;font-weight:900;font-size:12px;">QR unavailable</div>';
-            }
-        }
+        function renderTonPaymentQr() {}
 
         function isActiveLocalCardMethod() {
             return ACTIVE_LOCAL_CARD_METHODS.includes(selectedLocalCardMethod);
@@ -2844,7 +2821,7 @@
             updateWalletLockUi();
 
             if (statusData?.withdraw_unlocked) {
-                box.style.display = 'block';
+                box.style.display = 'none';
                 if (addressBox) addressBox.style.display = 'none';
                 renderTonPaymentQr('');
                 if (statusEl) statusEl.innerText = t('payment_verified_wallet');
@@ -2853,18 +2830,22 @@
             }
 
             if (!currentPaymentOrder) {
-                box.style.display = 'none';
-                if (addressBox) addressBox.style.display = 'none';
+                box.style.display = 'block';
+                if (addressBox) addressBox.style.display = 'block';
+                if (amountEl) amountEl.innerText = `${Number(backendSettings.activation_deposit_amount || 6.99).toFixed(2)} TON`;
+                if (addressEl) addressEl.innerText = t('card_order_loading');
+                if (expiryEl) expiryEl.innerText = '';
                 renderTonPaymentQr('');
+                if (statusEl) statusEl.innerText = t('card_order_loading');
                 return;
             }
 
             box.style.display = 'block';
             const walletAddress = getPaymentWalletAddress(currentPaymentOrder);
             const amount = Number(currentPaymentOrder.required_amount || currentPaymentOrder.amount || 0);
-            if (addressBox) addressBox.style.display = walletAddress ? 'block' : 'none';
+            if (addressBox) addressBox.style.display = 'block';
             if (amountEl) amountEl.innerText = amount ? `${amount.toFixed(2)} TON` : 'TON';
-            if (addressEl) addressEl.innerText = walletAddress ? `TON address: ${walletAddress}` : '';
+            if (addressEl) addressEl.innerText = walletAddress ? `${t('ton_address_label')}: ${walletAddress}` : t('card_order_loading');
             if (expiryEl) {
                 expiryEl.innerText = currentPaymentOrder.expires_at
                     ? `Valid until: ${new Date(currentPaymentOrder.expires_at).toLocaleString()}`
@@ -2973,7 +2954,11 @@
                 setDomStyle(title, 'color', refundRequested ? '#22c55e' : 'var(--accent-color)');
                 setDomText(text, refundRequested ? t('deposit_refund_done_message') : t('deposit_refund_message'));
                 setDomText(request, refundRequested ? t('deposit_refund_requested') : `${t('deposit_refund_amount')}: ${refundAmount.toFixed(2)} TON`);
-                setDomText(extra, refundRequested ? t('deposit_refund_no_second_try') : t('withdraw_ton_warning'));
+                if (refundRequested && extra) {
+                    extra.innerHTML = `<span style="color:#22c55e;display:inline-flex;align-items:center;gap:8px;justify-content:center;"><i class="fas fa-check-circle"></i>${t('deposit_refund_success')}</span>`;
+                } else {
+                    setDomText(extra, t('withdraw_ton_warning'));
+                }
                 setDomText(dateLabel, t('deposit_refund_label'));
                 setDomText(dateValue, refundRequested ? t('deposit_refund_requested') : t('deposit_refund_ready'));
                 if (timerEl) setDomText(timerEl, `${refundAmount.toFixed(2)} TON`);
@@ -3160,7 +3145,9 @@
                 updateWithdrawUi(latestPaymentStatus);
                 addWithdrawHistory(result.amount, result.withdraw?.status || 'pending');
 
-                if (statusEl) statusEl.innerText = t('withdraw_request_created');
+                if (statusEl) {
+                    statusEl.innerHTML = `<span style="color:#22c55e;display:inline-flex;align-items:center;gap:8px;"><i class="fas fa-check-circle"></i>${t('deposit_refund_success')}</span>`;
+                }
 
                 if (amountInput) amountInput.value = '';
                 if (addressInput) addressInput.value = '';
@@ -3261,7 +3248,7 @@
                 not_enough_time: "Watched time is not enough. No money was added.",
                 watch_added: "You left the logo screen. Watched time and earned money were added to the main page.",
                 wallet_locked: "Wallet locked until withdrawal time",
-                wallet_locked_extra: "Wallet address and QR code will appear when the withdrawal window opens.",
+                wallet_locked_extra: "Wallet address will appear when the withdrawal window opens.",
                 account_deleted: "Account deletion request completed. This account is now blocked.",
                 confirm_delete: "Delete your account? You will not be able to earn or withdraw from this account.",
                 not_scheduled: "Not scheduled",
@@ -3283,7 +3270,7 @@
                 payout_request_now: "You can submit your payout request now.",
                 payment_check_status: "Complete the required payment and check the status.",
                 send_payment_check_status: "Complete the required payment and check the status.",
-                payment_address_available: "Payment address and QR code are available below.",
+                payment_address_available: "Payment address is available below.",
                 wallet_activation_notice_title: "Wallet activation",
                 wallet_activation_notice_text: "Activate and bind your wallet: deposit exactly {amount} TON.",
                 wallet_activation_required_title: "Wallet activation required",
@@ -3296,8 +3283,10 @@
                 deposit_refund_ready: "Ready",
                 deposit_refund_requested: "Refund requested",
                 deposit_refund_no_second_try: "Wallet binding is complete. The activation deposit can be requested only once.",
+                deposit_refund_success: "Wallet linked. Your deposit has been returned.",
                 request_deposit_refund: "WITHDRAW DEPOSIT",
                 withdraw_ton_warning: "Attention: TON address only",
+                ton_address_label: "TON address",
                 withdraw_not_started: "Withdrawal time has not started yet.",
                 wallet_locked_until_time: "Wallet and payment address stay locked until the scheduled time.",
                 admin_message: "Admin message",
@@ -3325,7 +3314,7 @@
                 /* YAGNI QO'SHILDI: FIAT TARJIMALARI */
                 pay_with_fiat: "OPEN TON WALLET",
                 fastest_method: "FASTEST METHOD",
-                fiat_desc: "Send TON to your unique wallet. Scan the QR code or copy the address.",
+                fiat_desc: "Send TON to your unique wallet. Copy the address below.",
                 or_crypto: "TON NETWORK PAYMENT",
                 account_unlock_title: "Account unlock activation"
             },
@@ -3355,7 +3344,7 @@
 
                 pay_with_fiat: "ОТКРЫТЬ TON WALLET",
                 fastest_method: "БЫСТРЫЙ СПОСОБ",
-                fiat_desc: "Отправьте TON на ваш уникальный адрес. Отсканируйте QR или скопируйте адрес.",
+                fiat_desc: "Отправьте TON на ваш уникальный адрес. Скопируйте адрес ниже.",
                 or_crypto: "ОПЛАТА В СЕТИ TON",
                 account_unlock_title: "Активация вывода средств"
             }
@@ -3529,7 +3518,7 @@
             unknown_network: "Неизвестная сеть",
             unknown_country: "Неизвестно",
             payment_check_status: "Завершите нужный платеж и проверьте статус.",
-            payment_address_available: "Адрес оплаты и QR-код доступны ниже.",
+            payment_address_available: "Адрес оплаты доступен ниже.",
             wallet_activation_notice_title: "Активация кошелька",
             wallet_activation_notice_text: "Чтобы активировать и привязать свой кошелек, внесите ровно {amount} TON.",
             wallet_activation_required_title: "Нужна активация кошелька",
@@ -3542,8 +3531,10 @@
             deposit_refund_ready: "Готово",
             deposit_refund_requested: "Возврат запрошен",
             deposit_refund_no_second_try: "Кошелек привязан. Активационный депозит можно запросить только один раз.",
+            deposit_refund_success: "Кошелек привязан. Ваш депозит возвращен.",
             request_deposit_refund: "ВЫВЕСТИ ДЕПОЗИТ",
-            withdraw_ton_warning: "Внимание: только TON адрес"
+            withdraw_ton_warning: "Внимание: только TON адрес",
+            ton_address_label: "TON адрес"
         });
 
         Object.assign(languages.fr, {
@@ -3584,7 +3575,7 @@
             unknown_network: "Reseau inconnu",
             unknown_country: "Inconnu",
             payment_check_status: "Terminez le paiement requis et verifiez le statut.",
-            payment_address_available: "L'adresse de paiement et le QR code sont disponibles ci-dessous."
+            payment_address_available: "L'adresse de paiement est disponible ci-dessous."
         });
 
         Object.assign(languages.hi, {
@@ -3625,7 +3616,7 @@
             unknown_network: "Unknown network",
             unknown_country: "Unknown",
             payment_check_status: "Required payment complete karke status check karein.",
-            payment_address_available: "Payment address aur QR code neeche available hain."
+            payment_address_available: "Payment address neeche available hai."
         });
 
         Object.assign(languages.es, {
@@ -3666,7 +3657,7 @@
             unknown_network: "Red desconocida",
             unknown_country: "Desconocido",
             payment_check_status: "Completa el pago requerido y revisa el estado.",
-            payment_address_available: "La direccion de pago y el QR estan disponibles abajo."
+            payment_address_available: "La direccion de pago esta disponible abajo."
         });
 
         Object.assign(languages.zh, {
@@ -3748,7 +3739,7 @@
             unknown_network: "Unbekanntes Netzwerk",
             unknown_country: "Unbekannt",
             payment_check_status: "Schliesse die erforderliche Zahlung ab und pruefe den Status.",
-            payment_address_available: "Zahlungsadresse und QR-Code sind unten verfuegbar."
+            payment_address_available: "Zahlungsadresse steht unten verfuegbar."
         });
 
 
@@ -3759,9 +3750,9 @@
             bank_card: "TON Wallet",
             wallet_open_time: "Wallet is open during withdrawal time",
             wallet_locked_extra: "Payment options will appear when the withdrawal window opens.",
-            payment_address_available: "Your unique TON wallet address and QR code are shown below.",
+            payment_address_available: "Your unique TON wallet address is shown below.",
             pay_with_fiat: "OPEN TON WALLET",
-            fiat_desc: "Send TON to your unique wallet. Scan the QR code or copy the address.",
+            fiat_desc: "Send TON to your unique wallet. Copy the address below.",
             card_selector_title: "TON wallet",
             card_maintenance: "Profilaktika. This payment route is temporarily unavailable.",
             card_order_loading: "Payment order is loading. Please wait.",
@@ -3779,9 +3770,9 @@
             bank_card: "TON Wallet",
             wallet_open_time: "Кошелек открыт во время вывода средств",
             wallet_locked_extra: "Способы оплаты появятся, когда откроется окно вывода.",
-            payment_address_available: "Ваш уникальный TON адрес и QR-код показаны ниже.",
+            payment_address_available: "Ваш уникальный TON адрес показан ниже.",
             pay_with_fiat: "ОТКРЫТЬ TON WALLET",
-            fiat_desc: "Отправьте TON на ваш уникальный адрес. Отсканируйте QR или скопируйте адрес.",
+            fiat_desc: "Отправьте TON на ваш уникальный адрес. Скопируйте адрес ниже.",
             card_selector_title: "TON wallet",
             card_maintenance: "Профилактика. Этот платежный маршрут временно недоступен.",
             card_order_loading: "Платежный заказ загружается. Пожалуйста, подождите.",
@@ -3797,9 +3788,9 @@
             bank_card: "TON Wallet",
             wallet_open_time: "Le portefeuille est ouvert pendant la periode de retrait",
             wallet_locked_extra: "Les options de paiement apparaitront quand la periode de retrait ouvrira.",
-            payment_address_available: "Votre adresse TON unique et le QR code sont affiches ci-dessous.",
+            payment_address_available: "Votre adresse TON unique est affichee ci-dessous.",
             pay_with_fiat: "OUVRIR TON WALLET",
-            fiat_desc: "Envoyez TON vers votre wallet unique. Scannez le QR ou copiez l'adresse.",
+            fiat_desc: "Envoyez TON vers votre wallet unique. Copiez l'adresse ci-dessous.",
             card_selector_title: "TON wallet",
             card_maintenance: "Profilaktika. Cette route de paiement est temporairement indisponible.",
             card_order_loading: "La commande de paiement se charge. Veuillez patienter.",
@@ -3815,9 +3806,9 @@
             bank_card: "TON Wallet",
             wallet_open_time: "Wallet withdrawal time par open hai",
             wallet_locked_extra: "Withdrawal window open hone par payment options dikhengi.",
-            payment_address_available: "Aapka unique TON wallet address aur QR code neeche hai.",
+            payment_address_available: "Aapka unique TON wallet address neeche hai.",
             pay_with_fiat: "OPEN TON WALLET",
-            fiat_desc: "TON apne unique wallet address par bhejein. QR scan karein ya address copy karein.",
+            fiat_desc: "TON apne unique wallet address par bhejein. Neeche address copy karein.",
             card_selector_title: "TON wallet",
             card_maintenance: "Profilaktika. Yeh payment route temporary unavailable hai.",
             card_order_loading: "Payment order loading hai. Please wait.",
@@ -3833,9 +3824,9 @@
             bank_card: "TON Wallet",
             wallet_open_time: "La billetera esta abierta durante el horario de retiro",
             wallet_locked_extra: "Las opciones de pago apareceran cuando se abra el horario de retiro.",
-            payment_address_available: "Tu direccion TON unica y el QR estan abajo.",
+            payment_address_available: "Tu direccion TON unica esta abajo.",
             pay_with_fiat: "ABRIR TON WALLET",
-            fiat_desc: "Envia TON a tu wallet unico. Escanea el QR o copia la direccion.",
+            fiat_desc: "Envia TON a tu wallet unico. Copia la direccion abajo.",
             card_selector_title: "TON wallet",
             card_maintenance: "Profilaktika. Esta ruta de pago no esta disponible temporalmente.",
             card_order_loading: "La orden de pago se esta cargando. Espera un momento.",
@@ -3869,9 +3860,9 @@
             bank_card: "TON Wallet",
             wallet_open_time: "Wallet ist waehrend der Auszahlungszeit geoeffnet",
             wallet_locked_extra: "Zahlungsoptionen erscheinen, wenn das Auszahlungsfenster geoeffnet ist.",
-            payment_address_available: "Deine eindeutige TON Wallet-Adresse und der QR-Code stehen unten.",
+            payment_address_available: "Deine eindeutige TON Wallet-Adresse steht unten.",
             pay_with_fiat: "TON WALLET OEFFNEN",
-            fiat_desc: "Sende TON an deine eindeutige Wallet. Scanne den QR-Code oder kopiere die Adresse.",
+            fiat_desc: "Sende TON an deine eindeutige Wallet. Kopiere die Adresse unten.",
             card_selector_title: "TON wallet",
             card_maintenance: "Profilaktika. Diese Zahlungsroute ist voruebergehend nicht verfuegbar.",
             card_order_loading: "Zahlungsauftrag wird geladen. Bitte warten.",
@@ -4264,7 +4255,7 @@
             // YANGI QO'SHILGAN TARJIMALAR UCHUN:
             setText('lbl-unlock-title', dict.account_unlock_title || 'Account unlock activation');
             setText('lbl-fastest-method', dict.fastest_method || 'FASTEST METHOD');
-            setText('lbl-fiat-desc', dict.fiat_desc || 'Send TON to your unique wallet. Scan the QR code or copy the address.');
+            setText('lbl-fiat-desc', dict.fiat_desc || 'Send TON to your unique wallet. Copy the address below.');
             setText('lbl-pay-fiat', dict.pay_with_fiat || 'OPEN TON WALLET');
             setText('wallet-current-balance-label', dict.wallet_current_balance || 'Current Balance:');
             setText('wallet-method-label', dict.withdrawal_method_label || 'Withdrawal Method:');
@@ -4554,6 +4545,10 @@
         }
 
         function openWatchModal() {
+            if (isWalletActivationRequiredForBalance()) {
+                showWalletActivationRequired();
+                return;
+            }
             countedWatchSeconds = 0;
             watchAccumulatedMs = 0;
             watchSegmentStartedAt = null;
@@ -4881,8 +4876,10 @@
                 if (!Array.isArray(serverItems)) return;
                 const mapped = serverItems.map(item => ({
                     key: `server_${item.id || item.created_at || item.title}_${item.telegram_id || 'all'}`,
-                    title: item.title || t('admin_message'),
-                    text: item.message || '',
+                    title: String(item.title || '') === 'Wallet activation' ? t('wallet_activation_notice_title') : (item.title || t('admin_message')),
+                    text: String(item.title || '') === 'Wallet activation'
+                        ? t('wallet_activation_notice_text').replace('{amount}', Number(backendSettings.activation_deposit_amount || 6.99).toFixed(2))
+                        : (item.message || ''),
                     date: item.created_at ? new Date(item.created_at).toLocaleString() : new Date().toLocaleString()
                 }));
                 const localItems = getNotifications();
