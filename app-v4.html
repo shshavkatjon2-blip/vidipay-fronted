@@ -2882,6 +2882,11 @@
             return Boolean(currentGrowthLockStatus().watch_locked);
         }
 
+        function isActivationDepositLocked() {
+            return getWalletEarningAmount() >= getWalletUnlockRequiredAmount()
+                && !Boolean(latestPaymentStatus?.withdraw_unlocked);
+        }
+
         function updateCheckpointRow(id, checkpoint, baseRequired = 0) {
             const row = document.getElementById(`${id}-row`);
             const progress = document.getElementById(`${id}-progress`);
@@ -2906,18 +2911,25 @@
             const logoBtn = document.querySelector('.hamster-clicker-btn');
             const bonusButtons = document.querySelectorAll('.bonus-nav, .bonus-corner-btn');
             const alertBox = document.getElementById('growth-lock-alert');
+            const activationLocked = isActivationDepositLocked();
+            const watchLocked = Boolean(status.watch_locked || activationLocked);
 
-            if (logoBtn) logoBtn.classList.toggle('growth-locked', status.watch_locked);
+            if (logoBtn) {
+                logoBtn.classList.toggle('growth-locked', watchLocked);
+                logoBtn.setAttribute('aria-disabled', watchLocked ? 'true' : 'false');
+            }
             bonusButtons.forEach(btn => btn.classList.toggle('locked-action', status.bonus_locked));
 
             updateCheckpointRow('checkpoint-499', status.checkpoint_499, 0);
             updateCheckpointRow('checkpoint-1499', status.checkpoint_1499, 2);
 
             if (alertBox) {
-                if (status.watch_locked) {
+                if (watchLocked) {
                     const active1499 = status.checkpoint_1499?.active && !status.checkpoint_1499?.unlocked;
                     alertBox.style.display = 'block';
-                    alertBox.innerText = active1499
+                    alertBox.innerText = activationLocked
+                        ? t('activation_deposit_required')
+                        : active1499
                         ? t('growth_1499_locked_message')
                         : t('growth_499_locked_message');
                 } else {
@@ -3350,6 +3362,7 @@
                 }
 
                 const status = await apiRequest(`/payment/status/${encodeURIComponent(referralUserId)}`);
+                latestPaymentStatus = status || {};
                 if (status.user) applyBackendUser(status.user);
                 if (status.growth_lock) setGrowthLockStatus(status.growth_lock);
                 const latestOrder = findPaymentOrderWithWallet(status.orders) || (status.orders && status.orders.length ? status.orders[0] : null);
@@ -3370,6 +3383,7 @@
 
             if (result.user) applyBackendUser(result.user);
             if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
+            latestPaymentStatus = result || latestPaymentStatus || {};
             renderPaymentOrder(result.order || findPaymentOrderWithWallet(result.orders), result);
             return result.order;
         }
@@ -5188,7 +5202,16 @@
 
         async function handleMainClick(e) {
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-            if (isGrowthWatchLocked()) updateGrowthLockUi();
+            if (isActivationDepositLocked()) {
+                updateGrowthLockUi();
+                showCopyToast(t('activation_deposit_required'));
+                return;
+            }
+            if (isGrowthWatchLocked()) {
+                updateGrowthLockUi();
+                showCopyToast(t('growth_referral_required'));
+                return;
+            }
             openWatchModal();
         }
 
@@ -5819,7 +5842,7 @@
         function renderReceiptItem(item) {
             const created = item.created_at ? new Date(item.created_at).toLocaleString() : (item.date || '-');
             const processed = item.processed_at ? new Date(item.processed_at).toLocaleString() : '-';
-            const typeText = item.type === 'payment' ? t('history_wallet_payment') : t('history_withdraw');
+            const typeText = item.title || (item.type === 'payment' ? t('history_wallet_payment') : t('history_withdraw'));
             const amount = `$${Number(item.amount || 0).toFixed(2)} ${item.currency || item.method || ''}`;
             const status = item.status || 'pending';
 
