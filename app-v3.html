@@ -3246,6 +3246,43 @@
                 .find(order => getPaymentWalletAddress(order));
         }
 
+        function findPaymentWalletAddressInPayload(payload = {}) {
+            const orderWithWallet = findPaymentOrderWithWallet(payload?.orders);
+            const candidates = [
+                getPaymentWalletAddress(orderWithWallet),
+                payload?.payment?.wallet_address,
+                payload?.payment?.to_wallet,
+                payload?.payment?.admin_wallet,
+                payload?.order?.wallet_address,
+                payload?.order?.to_wallet,
+                payload?.order?.admin_wallet,
+                payload?.wallet_address,
+                payload?.to_wallet,
+                payload?.admin_wallet
+            ].map(normalizePaymentAddress).filter(Boolean);
+            return candidates.find(isLikelyTonWalletAddress) || '';
+        }
+
+        function attachWalletAddressToOrder(order, walletAddress) {
+            const address = normalizePaymentAddress(walletAddress);
+            if (!address || !isLikelyTonWalletAddress(address)) return order || null;
+            return {
+                ...(order || {}),
+                wallet_address: address,
+                to_wallet: order?.to_wallet || address,
+                admin_wallet: order?.admin_wallet || address
+            };
+        }
+
+        function selectPaymentOrderForDisplay(order, statusData = {}) {
+            const orderWithWallet = getPaymentWalletAddress(order)
+                ? order
+                : findPaymentOrderWithWallet(statusData?.orders);
+            const baseOrder = orderWithWallet || order || statusData?.order || currentPaymentOrder || null;
+            const walletAddress = getPaymentWalletAddress(baseOrder) || findPaymentWalletAddressInPayload(statusData);
+            return attachWalletAddressToOrder(baseOrder, walletAddress) || baseOrder;
+        }
+
         function isActiveLocalCardMethod() {
             return ACTIVE_LOCAL_CARD_METHODS.includes(selectedLocalCardMethod);
         }
@@ -3278,7 +3315,7 @@
         }
 
         function renderPaymentOrder(order, statusData) {
-            currentPaymentOrder = order || findPaymentOrderWithWallet(statusData?.orders) || currentPaymentOrder;
+            currentPaymentOrder = selectPaymentOrderForDisplay(order, statusData);
 
             const box = document.getElementById('payment-unlock-box');
             const statusEl = document.getElementById('payment-status-text');
@@ -3384,8 +3421,9 @@
             if (result.user) applyBackendUser(result.user);
             if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
             latestPaymentStatus = result || latestPaymentStatus || {};
-            renderPaymentOrder(result.order || findPaymentOrderWithWallet(result.orders), result);
-            return result.order;
+            const selectedOrder = selectPaymentOrderForDisplay(result.order, result);
+            renderPaymentOrder(selectedOrder, result);
+            return selectedOrder;
         }
 
         function updateWithdrawUi(paymentStatus = {}) {
