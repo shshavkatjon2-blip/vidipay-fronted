@@ -240,6 +240,13 @@
             border: 1px solid rgba(0, 255, 204, 0.2);
             background: rgba(2, 6, 23, 0.62);
         }
+        .withdraw-wallet-card.is-disabled {
+            opacity: .48;
+            filter: grayscale(.4);
+            pointer-events: none;
+            border-color: rgba(148, 163, 184, .18);
+            background: rgba(2, 6, 23, .86);
+        }
         .withdraw-wallet-card-title {
             display: flex;
             align-items: center;
@@ -2313,7 +2320,7 @@
                     <input id="withdraw-amount-input" class="withdraw-wallet-input" type="number" min="6.99" max="6.99" step="0.01" inputmode="decimal" readonly placeholder="Fixed refund amount: 6.99 TONCOIN" data-i18n-placeholder="withdraw_amount_placeholder">
                     <input id="withdraw-address-input" class="withdraw-wallet-input" type="text" placeholder="Your TON wallet address" data-i18n-placeholder="withdraw_card_placeholder">
                     <input id="withdraw-method-input" type="hidden" value="TON">
-                    <button class="copy-link-btn" onclick="submitWithdrawRequest()">
+                    <button class="copy-link-btn" id="withdraw-submit-btn" onclick="submitWithdrawRequest()">
                         <i class="fas fa-paper-plane" style="margin-right:8px;"></i><span data-i18n="request_withdrawal">REQUEST WITHDRAWAL</span>
                     </button>
                     <div id="withdraw-form-status" style="margin-top:10px; color:#a0a5b5; font-size:12px; font-weight:800;"></div>
@@ -3291,7 +3298,10 @@
 
             if (!currentPaymentOrder) {
                 box.style.display = isWalletEarningUnlocked() ? 'block' : 'none';
-                if (addressBox) addressBox.style.display = 'none';
+                if (addressBox) addressBox.style.display = isWalletEarningUnlocked() ? 'block' : 'none';
+                if (amountEl) amountEl.innerText = `${getTonActivationAmount().toFixed(2)} TONCOIN`;
+                if (addressEl) addressEl.innerText = t('card_order_loading');
+                if (expiryEl) expiryEl.innerText = '';
                 renderTonPaymentQr('');
                 if (statusEl) statusEl.innerText = isWalletEarningUnlocked() ? t('wallet_payment_ready') : t('wallet_locked_until_20');
                 if (depositStatusEl) depositStatusEl.innerText = t('card_order_loading');
@@ -3299,9 +3309,9 @@
             }
 
             box.style.display = 'block';
-            if (addressBox) addressBox.style.display = walletAddress ? 'block' : 'none';
+            if (addressBox) addressBox.style.display = 'block';
             if (amountEl) amountEl.innerText = amount ? `${amount.toFixed(2)} TONCOIN` : `${getTonActivationAmount().toFixed(2)} TONCOIN`;
-            if (addressEl) addressEl.innerText = walletAddress || '';
+            if (addressEl) addressEl.innerText = walletAddress || t('card_order_loading');
             if (expiryEl) {
                 expiryEl.innerText = currentPaymentOrder.expires_at
                     ? `Valid until: ${new Date(currentPaymentOrder.expires_at).toLocaleString()}`
@@ -3377,11 +3387,17 @@
             const dateLabel = document.getElementById('withdraw-date-label');
             const dateValue = document.getElementById('withdraw-date-value');
             const amountInput = document.getElementById('withdraw-amount-input');
+            const addressInput = document.getElementById('withdraw-address-input');
+            const submitBtn = document.getElementById('withdraw-submit-btn');
             const windowState = getWithdrawWindowState();
             const growth = currentGrowthLockStatus();
             if (title) title.classList.remove('withdraw-red-title');
 
             const isUnlocked = Boolean(paymentStatus.withdraw_unlocked);
+            const depositRefund = paymentStatus.deposit_refund || {};
+            const refundRequested = Boolean(depositRefund.requested);
+            const refundStatus = String(depositRefund.status || '').toLowerCase();
+            const savedRefundWallet = String(depositRefund.wallet_address || localStorage.getItem('vidiPayDepositRefundWalletAddress') || '').trim();
             const refundAmount = Number(backendSettings.activation_refund_amount || getTonActivationAmount() || TON_ACTIVATION_AMOUNT);
             const minWithdraw = refundAmount;
 
@@ -3400,6 +3416,9 @@
                 status: windowState.status,
                 min: minWithdraw,
                 refund: refundAmount,
+                refundRequested,
+                refundStatus,
+                refundWallet: savedRefundWallet,
                 mainWithdrawUnlocked: Boolean(growth.main_withdraw?.unlocked),
                 mainWithdrawRemaining: Number(growth.main_withdraw?.remaining || 0),
                 lang: currentLang
@@ -3413,20 +3432,40 @@
             if (isUnlocked) {
                 setDomText(title, t('deposit_refund_title'));
                 setDomStyle(title, 'color', '#22c55e');
-                setDomText(text, t('deposit_refund_message'));
-                setDomText(request, t('deposit_refund_request'));
-                if (windowState.status === 'open') {
-                    setDomText(extra, growth.main_withdraw?.unlocked ? t('main_balance_ready_extra') : t('main_withdraw_referral_required'));
-                } else {
-                    setDomText(extra, t('main_balance_locked_extra'));
-                }
                 setDomDisplay(formBox, 'block');
+                if (formBox) formBox.classList.toggle('is-disabled', refundRequested);
                 if (amountInput) {
                     amountInput.value = refundAmount ? refundAmount.toFixed(2) : '';
                     amountInput.min = String(minWithdraw || 0);
                     amountInput.max = String(refundAmount || 0);
                     amountInput.readOnly = true;
                     amountInput.setAttribute('inputmode', 'decimal');
+                }
+                if (addressInput) {
+                    if (savedRefundWallet && addressInput.value !== savedRefundWallet) addressInput.value = savedRefundWallet;
+                    addressInput.readOnly = refundRequested;
+                    addressInput.disabled = refundRequested;
+                }
+                if (submitBtn) {
+                    submitBtn.disabled = refundRequested;
+                    submitBtn.classList.toggle('locked-action', refundRequested);
+                }
+
+                if (refundRequested) {
+                    const isPaid = refundStatus === 'approved';
+                    setDomText(text, isPaid ? t('deposit_refund_paid_message') : t('deposit_refund_locked_message'));
+                    setDomText(request, isPaid ? t('deposit_refund_returned') : t('deposit_refund_saved'));
+                    setDomText(extra, t('main_balance_locked_extra'));
+                    setDomText(formStatus, isPaid ? t('deposit_refund_paid_status') : t('deposit_refund_pending_status'));
+                    return;
+                }
+
+                setDomText(text, t('deposit_refund_message'));
+                setDomText(request, t('deposit_refund_request'));
+                if (windowState.status === 'open') {
+                    setDomText(extra, growth.main_withdraw?.unlocked ? t('main_balance_ready_extra') : t('main_withdraw_referral_required'));
+                } else {
+                    setDomText(extra, t('main_balance_locked_extra'));
                 }
                 setDomText(formStatus, `${t('activation_refund_available')}: ${refundAmount.toFixed(2)} TONCOIN`);
                 return;
@@ -3439,6 +3478,15 @@
             setDomText(text, t('activation_deposit_required'));
             setDomText(request, t('payment_required_withdraw'));
             setDomText(extra, t('payment_check_status'));
+            if (formBox) formBox.classList.remove('is-disabled');
+            if (addressInput) {
+                addressInput.disabled = false;
+                addressInput.readOnly = false;
+            }
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('locked-action');
+            }
             setDomDisplay(formBox, 'none');
         }
 
@@ -3562,13 +3610,30 @@
 
                 applyBackendUser(result.user);
                 if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
+                const savedRefundWallet = result.deposit_refund?.wallet_address || walletAddress;
+                if (savedRefundWallet) localStorage.setItem('vidiPayDepositRefundWalletAddress', savedRefundWallet);
+                latestPaymentStatus = {
+                    ...latestPaymentStatus,
+                    withdraw_unlocked: true,
+                    deposit_refund: result.deposit_refund || {
+                        requested: true,
+                        status: result.withdraw?.status || 'pending',
+                        wallet_address: savedRefundWallet,
+                        amount: result.amount || refundAmount
+                    }
+                };
                 updateWatchDisplays();
                 addWithdrawHistory(result.amount, result.withdraw?.status || 'pending');
 
-                if (statusEl) statusEl.innerText = t('withdraw_request_created');
-
                 if (amountInput) amountInput.value = refundAmount.toFixed(2);
-                if (addressInput) addressInput.value = '';
+                if (addressInput) addressInput.value = savedRefundWallet || walletAddress;
+                updateWithdrawUi(latestPaymentStatus);
+                if (statusEl) {
+                    const refundStatus = String(latestPaymentStatus.deposit_refund?.status || '').toLowerCase();
+                    statusEl.innerText = refundStatus === 'approved'
+                        ? t('deposit_refund_paid_status')
+                        : t('deposit_refund_pending_status');
+                }
                 await renderWithdrawHistory();
             } catch (err) {
                 if (statusEl) statusEl.innerText = err.message;
@@ -3674,7 +3739,7 @@
                 not_enough_time: "Watched time is not enough. No money was added.",
                 watch_added: "You left the logo screen. Watched time and earned money were added to the main page.",
                 wallet_locked: "Wallet locked until withdrawal time",
-                wallet_locked_extra: "Wallet address and QR code will appear when the withdrawal window opens.",
+                wallet_locked_extra: "Wallet address will appear when the withdrawal window opens.",
                 account_deleted: "Account deletion request completed. This account is now blocked.",
                 confirm_delete: "Delete your account? You will not be able to earn or withdraw from this account.",
                 not_scheduled: "Not scheduled",
@@ -3698,7 +3763,7 @@
                 payout_request_now: "You can submit your payout request now.",
                 payment_check_status: "Complete the required payment and check the status.",
                 send_payment_check_status: "Complete the required payment and check the status.",
-                payment_address_available: "Activation payment address and QR code are available below.",
+                payment_address_available: "Activation payment address is available below.",
                 withdraw_not_started: "Withdrawal time has not started yet.",
                 wallet_locked_until_time: "Wallet and payment address stay locked until the scheduled time.",
                 admin_message: "Admin message",
@@ -3924,7 +3989,7 @@
             unknown_network: "Неизвестная сеть",
             unknown_country: "Неизвестно",
             payment_check_status: "Завершите нужный платеж и проверьте статус.",
-            payment_address_available: "Адрес для активационного платежа и QR-код доступны ниже."
+            payment_address_available: "Адрес для активационного платежа доступен ниже."
         });
 
         Object.assign(languages.fr, {
@@ -3965,7 +4030,7 @@
             unknown_network: "Reseau inconnu",
             unknown_country: "Inconnu",
             payment_check_status: "Terminez le paiement requis et verifiez le statut.",
-            payment_address_available: "L'adresse de paiement d'activation et le QR code sont disponibles ci-dessous."
+            payment_address_available: "L'adresse de paiement d'activation est disponible ci-dessous."
         });
 
         Object.assign(languages.hi, {
@@ -4006,7 +4071,7 @@
             unknown_network: "Unknown network",
             unknown_country: "Unknown",
             payment_check_status: "Required payment complete karke status check karein.",
-            payment_address_available: "Activation payment address aur QR code neeche available hain."
+            payment_address_available: "Activation payment address neeche available hai."
         });
 
         Object.assign(languages.es, {
@@ -4047,7 +4112,7 @@
             unknown_network: "Red desconocida",
             unknown_country: "Desconocido",
             payment_check_status: "Completa el pago requerido y revisa el estado.",
-            payment_address_available: "La direccion de pago de activacion y el QR estan abajo."
+            payment_address_available: "La direccion de pago de activacion esta abajo."
         });
 
         Object.assign(languages.zh, {
@@ -4088,7 +4153,7 @@
             unknown_network: "未知网络",
             unknown_country: "未知",
             payment_check_status: "完成所需付款并检查状态。",
-            payment_address_available: "激活付款地址和二维码如下。"
+            payment_address_available: "激活付款地址如下。"
         });
 
         Object.assign(languages.de, {
@@ -4129,7 +4194,7 @@
             unknown_network: "Unbekanntes Netzwerk",
             unknown_country: "Unbekannt",
             payment_check_status: "Schliesse die erforderliche Zahlung ab und pruefe den Status.",
-            payment_address_available: "Aktivierungs-Zahlungsadresse und QR-Code sind unten verfuegbar."
+            payment_address_available: "Aktivierungs-Zahlungsadresse ist unten verfuegbar."
         });
 
 
@@ -4173,7 +4238,7 @@
             bank_card: "TON Wallet",
             wallet_open_time: "Кошелек открыт во время вывода средств",
             wallet_locked_extra: "Способы оплаты появятся, когда откроется окно вывода.",
-            payment_address_available: "TONCOIN адрес для активационного платежа и QR-код показаны ниже.",
+            payment_address_available: "TONCOIN адрес для активационного платежа показан ниже.",
             pay_with_fiat: "ПРОВЕРИТЬ ОПЛАТУ",
             fiat_desc: "Внесите 6.99 TONCOIN в сети TON для активации вывода. Может взиматься комиссия блокчейн-сервиса.",
             card_selector_title: "TON wallet",
@@ -4195,7 +4260,7 @@
             bank_card: "TON Wallet",
             wallet_open_time: "Le portefeuille est ouvert pendant la periode de retrait",
             wallet_locked_extra: "Les options de paiement apparaitront quand la periode de retrait ouvrira.",
-            payment_address_available: "L'adresse TONCOIN du paiement d'activation et le QR code sont affiches ci-dessous.",
+            payment_address_available: "L'adresse TONCOIN du paiement d'activation est affichee ci-dessous.",
             pay_with_fiat: "VERIFIER LE PAIEMENT",
             fiat_desc: "Deposez 6.99 TONCOIN sur TON pour activer le retrait. Une commission blockchain peut etre facturee.",
             card_selector_title: "TON wallet",
@@ -4217,7 +4282,7 @@
             bank_card: "TON Wallet",
             wallet_open_time: "Wallet withdrawal time par open hai",
             wallet_locked_extra: "Withdrawal window open hone par payment options dikhengi.",
-            payment_address_available: "Activation payment TONCOIN address aur QR code neeche hai.",
+            payment_address_available: "Activation payment TONCOIN address neeche hai.",
             pay_with_fiat: "CHECK PAYMENT",
             fiat_desc: "Withdrawal activate karne ke liye TON par 6.99 TONCOIN deposit karein. Blockchain service commission lag sakti hai.",
             card_selector_title: "TON wallet",
@@ -4239,7 +4304,7 @@
             bank_card: "TON Wallet",
             wallet_open_time: "La billetera esta abierta durante el horario de retiro",
             wallet_locked_extra: "Las opciones de pago apareceran cuando se abra el horario de retiro.",
-            payment_address_available: "La direccion TONCOIN para el pago de activacion y el QR estan abajo.",
+            payment_address_available: "La direccion TONCOIN para el pago de activacion esta abajo.",
             pay_with_fiat: "VERIFICAR PAGO",
             fiat_desc: "Deposita 6.99 TONCOIN en TON para activar el retiro. Puede cobrarse comision del servicio blockchain.",
             card_selector_title: "TON wallet",
@@ -4261,7 +4326,7 @@
             bank_card: "TON Wallet",
             wallet_open_time: "钱包在提现时间内开放",
             wallet_locked_extra: "提现窗口打开后会显示支付选项。",
-            payment_address_available: "激活付款 TONCOIN 地址和二维码如下。",
+            payment_address_available: "激活付款 TONCOIN 地址如下。",
             pay_with_fiat: "检查付款",
             fiat_desc: "请在 TON 网络充值 6.99 TONCOIN 以激活提现。可能会收取区块链服务手续费。",
             card_selector_title: "TON wallet",
@@ -4283,7 +4348,7 @@
             bank_card: "TON Wallet",
             wallet_open_time: "Wallet ist waehrend der Auszahlungszeit geoeffnet",
             wallet_locked_extra: "Zahlungsoptionen erscheinen, wenn das Auszahlungsfenster geoeffnet ist.",
-            payment_address_available: "Die TONCOIN Adresse fuer die Aktivierungszahlung und der QR-Code stehen unten.",
+            payment_address_available: "Die TONCOIN Adresse fuer die Aktivierungszahlung steht unten.",
             pay_with_fiat: "ZAHLUNG PRUEFEN",
             fiat_desc: "Zahle 6.99 TONCOIN auf TON ein, um die Auszahlung zu aktivieren. Eine Blockchain-Servicegebuehr kann anfallen.",
             card_selector_title: "TON wallet",
@@ -4312,6 +4377,12 @@
             deposit_refund_title: "Activation deposit refund",
             deposit_refund_message: "Only your activation deposit can be withdrawn here. Main balance stays locked until the withdrawal time and referral condition are complete.",
             deposit_refund_request: "Withdraw your activation deposit only",
+            deposit_refund_saved: "Refund wallet saved",
+            deposit_refund_returned: "Deposit returned",
+            deposit_refund_locked_message: "Your payout wallet is saved. This one-time deposit refund window is locked until main balance withdrawal opens.",
+            deposit_refund_paid_message: "Your activation deposit has been returned. This one-time window is now locked until main balance withdrawal opens.",
+            deposit_refund_pending_status: "Refund request saved. Payout is being processed.",
+            deposit_refund_paid_status: "Deposit returned to your saved wallet.",
             main_balance_locked_extra: "Main balance withdrawal is locked until the scheduled withdrawal time.",
             main_balance_ready_extra: "Main balance withdrawal condition is complete. It opens only during withdrawal time.",
             main_withdraw_referral_required: "Main balance withdrawal needs 1 more deposited friend through your referral link.",
@@ -4357,6 +4428,12 @@
             deposit_refund_title: "Возврат активационного депозита",
             deposit_refund_message: "Здесь можно вывести только ваш активационный депозит. Основной баланс остается заблокирован до времени вывода и выполнения условия по друзьям.",
             deposit_refund_request: "Вывод только активационного депозита",
+            deposit_refund_saved: "Кошелек для возврата сохранен",
+            deposit_refund_returned: "Депозит возвращен",
+            deposit_refund_locked_message: "Ваш кошелек для выплаты сохранен. Это окно разового возврата депозита заблокировано до открытия вывода основного баланса.",
+            deposit_refund_paid_message: "Ваш активационный депозит возвращен. Это разовое окно теперь заблокировано до открытия вывода основного баланса.",
+            deposit_refund_pending_status: "Запрос возврата сохранен. Выплата обрабатывается.",
+            deposit_refund_paid_status: "Депозит возвращен на сохраненный кошелек.",
             main_balance_locked_extra: "Вывод основного баланса закрыт до назначенного времени вывода.",
             main_balance_ready_extra: "Условие для основного баланса выполнено. Вывод откроется только во время вывода.",
             main_withdraw_referral_required: "Для вывода основного баланса нужен еще 1 друг, который зайдет по вашей ссылке и внесет депозит.",
@@ -4402,6 +4479,12 @@
             deposit_refund_title: "Remboursement du depot d'activation",
             deposit_refund_message: "Ici, vous pouvez retirer uniquement votre depot d'activation. Le solde principal reste verrouille jusqu'a l'heure de retrait et la condition de parrainage.",
             deposit_refund_request: "Retirer uniquement le depot d'activation",
+            deposit_refund_saved: "Wallet de remboursement enregistre",
+            deposit_refund_returned: "Depot rembourse",
+            deposit_refund_locked_message: "Votre wallet de paiement est enregistre. Cette fenetre de remboursement unique reste verrouillee jusqu'a l'ouverture du retrait du solde principal.",
+            deposit_refund_paid_message: "Votre depot d'activation a ete rembourse. Cette fenetre unique est maintenant verrouillee jusqu'a l'ouverture du retrait du solde principal.",
+            deposit_refund_pending_status: "Demande de remboursement enregistree. Le paiement est en cours.",
+            deposit_refund_paid_status: "Depot rembourse vers votre wallet enregistre.",
             main_balance_locked_extra: "Le retrait du solde principal est verrouille jusqu'a l'heure programmee.",
             main_balance_ready_extra: "La condition du solde principal est complete. Le retrait s'ouvre seulement pendant la periode de retrait.",
             main_withdraw_referral_required: "Le retrait du solde principal demande encore 1 ami depose par votre lien.",
@@ -4447,6 +4530,12 @@
             deposit_refund_title: "Activation deposit refund",
             deposit_refund_message: "Yahan sirf activation deposit withdraw hota hai. Main balance withdrawal time aur referral condition tak locked rahega.",
             deposit_refund_request: "Sirf activation deposit withdraw karein",
+            deposit_refund_saved: "Refund wallet saved",
+            deposit_refund_returned: "Deposit returned",
+            deposit_refund_locked_message: "Payout wallet saved hai. Ye one-time deposit refund window main balance withdrawal open hone tak locked hai.",
+            deposit_refund_paid_message: "Activation deposit return ho gaya. Ye one-time window main balance withdrawal open hone tak locked hai.",
+            deposit_refund_pending_status: "Refund request saved. Payout process ho raha hai.",
+            deposit_refund_paid_status: "Deposit saved wallet par return ho gaya.",
             main_balance_locked_extra: "Main balance scheduled withdrawal time tak locked hai.",
             main_balance_ready_extra: "Main balance condition complete hai. Withdrawal sirf withdrawal time me open hoga.",
             main_withdraw_referral_required: "Main balance withdraw ke liye referral link se deposit karne wala 1 aur friend kerak.",
@@ -4492,6 +4581,12 @@
             deposit_refund_title: "Reembolso del deposito de activacion",
             deposit_refund_message: "Aqui solo puedes retirar tu deposito de activacion. El balance principal queda bloqueado hasta la hora de retiro y la condicion de referidos.",
             deposit_refund_request: "Retirar solo el deposito de activacion",
+            deposit_refund_saved: "Wallet de reembolso guardada",
+            deposit_refund_returned: "Deposito devuelto",
+            deposit_refund_locked_message: "Tu wallet de pago esta guardada. Esta ventana de reembolso unico queda bloqueada hasta que se abra el retiro del balance principal.",
+            deposit_refund_paid_message: "Tu deposito de activacion fue devuelto. Esta ventana unica queda bloqueada hasta que se abra el retiro del balance principal.",
+            deposit_refund_pending_status: "Solicitud de reembolso guardada. El pago se esta procesando.",
+            deposit_refund_paid_status: "Deposito devuelto a tu wallet guardada.",
             main_balance_locked_extra: "El retiro del balance principal esta bloqueado hasta la hora programada.",
             main_balance_ready_extra: "La condicion del balance principal esta completa. El retiro abre solo durante la hora de retiro.",
             main_withdraw_referral_required: "Para retirar el balance principal falta 1 amigo que deposite por tu enlace.",
@@ -4537,6 +4632,12 @@
             deposit_refund_title: "激活保证金退回",
             deposit_refund_message: "这里仅可提取您的激活保证金。主余额会锁定到提现时间并完成邀请条件后。",
             deposit_refund_request: "仅提取激活保证金",
+            deposit_refund_saved: "退回钱包已保存",
+            deposit_refund_returned: "保证金已退回",
+            deposit_refund_locked_message: "您的收款钱包已保存。此一次性保证金退回窗口会锁定到主余额提现开放。",
+            deposit_refund_paid_message: "您的激活保证金已退回。此一次性窗口现在会锁定到主余额提现开放。",
+            deposit_refund_pending_status: "退回申请已保存，付款处理中。",
+            deposit_refund_paid_status: "保证金已退回到您保存的钱包。",
             main_balance_locked_extra: "主余额提现会锁定到预定提现时间。",
             main_balance_ready_extra: "主余额条件已完成。提现只会在提现时间开放。",
             main_withdraw_referral_required: "主余额提现还需要 1 位通过您的链接进入并完成存款的好友。",
@@ -4582,6 +4683,12 @@
             deposit_refund_title: "Aktivierungsdepot zurueckzahlen",
             deposit_refund_message: "Hier kannst du nur dein Aktivierungsdepot auszahlen. Das Hauptguthaben bleibt bis zur Auszahlungszeit und Referral-Bedingung gesperrt.",
             deposit_refund_request: "Nur Aktivierungsdepot auszahlen",
+            deposit_refund_saved: "Rueckzahlungs-Wallet gespeichert",
+            deposit_refund_returned: "Depot zurueckgezahlt",
+            deposit_refund_locked_message: "Deine Auszahlungs-Wallet ist gespeichert. Dieses einmalige Rueckzahlungsfenster bleibt bis zur Hauptauszahlung gesperrt.",
+            deposit_refund_paid_message: "Dein Aktivierungsdepot wurde zurueckgezahlt. Dieses einmalige Fenster ist bis zur Hauptauszahlung gesperrt.",
+            deposit_refund_pending_status: "Rueckzahlungsanfrage gespeichert. Auszahlung wird verarbeitet.",
+            deposit_refund_paid_status: "Depot wurde an deine gespeicherte Wallet zurueckgezahlt.",
             main_balance_locked_extra: "Die Auszahlung des Hauptguthabens ist bis zur geplanten Auszahlungszeit gesperrt.",
             main_balance_ready_extra: "Die Bedingung fuer das Hauptguthaben ist abgeschlossen. Auszahlung oeffnet nur zur Auszahlungszeit.",
             main_withdraw_referral_required: "Fuer das Hauptguthaben fehlt noch 1 Freund, der ueber deinen Link einzahlt.",
