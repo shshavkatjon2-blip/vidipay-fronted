@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="wallet-toncoin-v8-reward-admin-20260621">
+    <meta name="vidipay-build" content="wallet-toncoin-v20-lock-wallet-fix-20260625">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=wallet-toncoin-v8-reward-admin-20260621"></script>
+    <script src="./config.js?v=wallet-toncoin-v20-lock-wallet-fix-20260625"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -2421,7 +2421,7 @@
                     </div>
                     <div class="ton-payment-actions">
                         <button type="button" onclick="copyTonPaymentAddress()"><i class="fas fa-copy"></i> <span id="lbl-copy-ton-address">COPY ADDRESS</span></button>
-                        <button type="button" onclick="refreshPaymentStatus()"><i class="fas fa-sync-alt"></i> <span id="lbl-check-ton-payment">CHECK PAYMENT</span></button>
+                        <button type="button" onclick="refreshPaymentStatus(true)"><i class="fas fa-sync-alt"></i> <span id="lbl-check-ton-payment">CHECK PAYMENT</span></button>
                     </div>
                     <div id="ton-deposit-status-text" style="margin-top:8px; color:#a0a5b5; font-size:12px; font-weight:800;"></div>
                 </div>
@@ -3390,11 +3390,11 @@
             return String(template || '').replace(/\{amount\}/g, safeAmount);
         }
 
-        async function refreshPaymentStatus() {
+        async function refreshPaymentStatus(checkPayment = false) {
             try {
                 await loadBackendSettings();
 
-                if (currentPaymentOrder && currentPaymentOrder.status === 'pending') {
+                if (checkPayment && currentPaymentOrder && currentPaymentOrder.status === 'pending') {
                     const checkResult = await apiRequest('/payment/check', {
                         method: 'POST',
                         body: JSON.stringify({
@@ -5595,6 +5595,7 @@
         }
 
         function buildMrBeastEmbedUrl(index = randomMrBeastIndex()) {
+            const youtubeLang = getYouTubeLangCode();
             const params = new URLSearchParams({
                 list: MRBEAST_UPLOADS_PLAYLIST,
                 autoplay: '1',
@@ -5603,9 +5604,23 @@
                 modestbranding: '1',
                 fs: '1',
                 iv_load_policy: '3',
+                hl: youtubeLang,
+                cc_lang_pref: youtubeLang,
                 index: String(Math.max(0, Number(index) || 0))
             });
             return `https://www.youtube.com/embed/videoseries?${params.toString()}`;
+        }
+
+        function getYouTubeLangCode() {
+            return ({
+                en: 'en',
+                ru: 'ru',
+                fr: 'fr',
+                hi: 'hi',
+                es: 'es',
+                zh: 'zh-CN',
+                de: 'de'
+            })[currentLang] || 'en';
         }
 
         function showMrBeastFallbackPlayer(message = t('watch_playing'), index = randomMrBeastIndex()) {
@@ -5650,6 +5665,7 @@
 
             if (!mrbeastPlayer) {
                 clearTimeout(watchFallbackTimer);
+                const youtubeLang = getYouTubeLangCode();
                 mrbeastPlayer = new YT.Player('mrbeast-player', {
                     width: '100%',
                     height: '100%',
@@ -5662,6 +5678,8 @@
                         playsinline: 1,
                         fs: 1,
                         iv_load_policy: 3,
+                        hl: youtubeLang,
+                        cc_lang_pref: youtubeLang,
                         origin: window.location.origin
                     },
                     events: {
@@ -5779,24 +5797,67 @@
 
                 syncCountedWatchSeconds();
                 updateWatchSessionUi(t('watch_counting'));
+                if (shouldFinishWatchForActivationLimit(countedWatchSeconds)) {
+                    finalizeWatchAtActivationLimit();
+                }
             }, 1000);
         }
 
+        function getCurrentWatchRewardRate() {
+            return Number(currentTierStatus.reward_per_second || backendSettings.view_reward_per_second || 0.01);
+        }
+
+        function getActivationRewardRemaining() {
+            if (latestPaymentStatus?.withdraw_unlocked) return Infinity;
+            const required = getWalletUnlockRequiredAmount();
+            return Math.max(0, Number((required - getWalletEarningAmount()).toFixed(2)));
+        }
+
+        function getCreditableWatchSeconds(seconds) {
+            const safeSeconds = Math.max(0, Number(seconds || 0));
+            const remaining = getActivationRewardRemaining();
+            const rate = getCurrentWatchRewardRate();
+            if (!Number.isFinite(remaining) || remaining <= 0 || rate <= 0) return safeSeconds;
+            return Math.min(safeSeconds, Math.ceil(remaining / rate));
+        }
+
         function estimateWatchReward(seconds) {
-            const rate = Number(currentTierStatus.reward_per_second || backendSettings.view_reward_per_second || 0.01);
-            return Number((Math.max(0, Number(seconds || 0)) * rate).toFixed(2));
+            const rate = getCurrentWatchRewardRate();
+            const rawReward = Number((getCreditableWatchSeconds(seconds) * rate).toFixed(2));
+            const remaining = getActivationRewardRemaining();
+            return Number(Math.min(rawReward, Number.isFinite(remaining) ? remaining : rawReward).toFixed(2));
+        }
+
+        function shouldFinishWatchForActivationLimit(seconds) {
+            if (!pendingWatch || watchSessionSubmitted || latestPaymentStatus?.withdraw_unlocked) return false;
+            const remaining = getActivationRewardRemaining();
+            if (!Number.isFinite(remaining) || remaining <= 0) return true;
+            return estimateWatchReward(seconds) >= remaining;
+        }
+
+        function finalizeWatchAtActivationLimit() {
+            if (watchSessionSubmitted) return;
+            if (mrbeastPlayer && mrbeastPlayer.pauseVideo) {
+                try { mrbeastPlayer.pauseVideo(); } catch (e) {}
+            }
+            finalizeWatchSession().catch(err => {
+                const watchSeconds = getCreditableWatchSeconds(syncCountedWatchSeconds());
+                showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), err.message || t('reward_not_saved'));
+            });
         }
 
         async function finalizeWatchSession() {
             if (watchSessionSubmitted) return;
             watchSessionSubmitted = true;
             stopWatchTimerDisplay();
-            pendingWatch = null;
 
-            const watchSeconds = syncCountedWatchSeconds();
+            const rawWatchSeconds = syncCountedWatchSeconds();
+            const watchSeconds = getCreditableWatchSeconds(rawWatchSeconds);
             const videoId = currentMrBeastVideoId || Array.from(watchSessionVideoIds)[0] || `mrbeast_session_${Date.now()}`;
 
-            if (watchSeconds < Number(backendSettings.view_seconds_required || 5)) {
+            const activationLimitReached = shouldFinishWatchForActivationLimit(rawWatchSeconds) || estimateWatchReward(watchSeconds) >= getActivationRewardRemaining();
+            pendingWatch = null;
+            if (watchSeconds < Number(backendSettings.view_seconds_required || 5) && !activationLimitReached) {
                 closeModal('watchModal');
                 showWatchResult(watchSeconds, 0, t('not_enough_time'));
                 updateWatchDisplays();
@@ -5848,6 +5909,7 @@
                 await refreshStatsFromBackend().catch(() => null);
                 updateWatchDisplays();
                 createFloatingText(null, result.reward);
+            const creditedWatchSeconds = Number(result.watch_seconds || watchSeconds);
             if (result.tier) {
                 currentTierStatus = {
                     ...currentTierStatus,
@@ -5858,16 +5920,18 @@
                 };
                 updateTierCards();
             }
-            updateWatchSessionUi(`Reward added after ${formatDuration(watchSeconds)}: $${Number(result.reward || 0).toFixed(2)}`);
-            showWatchResult(watchSeconds, result.reward, t('watch_added'));
-            addNotification('View reward', `Reward added after ${watchSeconds}s: $${Number(result.reward || 0).toFixed(2)}`);
+            updateWatchSessionUi(`Reward added after ${formatDuration(creditedWatchSeconds)}: $${Number(result.reward || 0).toFixed(2)}`);
+            showWatchResult(creditedWatchSeconds, result.reward, t('watch_added'));
+            addNotification('View reward', `Reward added after ${creditedWatchSeconds}s: $${Number(result.reward || 0).toFixed(2)}`);
         } catch (err) {
             pendingWatch = null;
+            if (err.data?.user) applyBackendUser(err.data.user);
             if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
             updateWatchDisplays();
-            updateWatchSessionUi(err.message);
-            showWatchResult(watchSeconds, 0, `${err.message}. ${t('reward_not_saved')}`);
-            addNotification('View reward', err.message);
+            const friendlyMessage = err.data?.wallet_activation_required ? t('activation_deposit_required') : err.message;
+            updateWatchSessionUi(friendlyMessage);
+            showWatchResult(watchSeconds, 0, `${friendlyMessage}. ${t('reward_not_saved')}`);
+            if (!err.data?.wallet_activation_required) addNotification('View reward', err.message);
         }
     }
 
@@ -5883,9 +5947,9 @@
             const timeEl = document.getElementById('watch-session-time');
             const rewardEl = document.getElementById('watch-session-reward');
             const statusEl = document.getElementById('watch-session-status');
-            const rate = Number(currentTierStatus.reward_per_second || backendSettings.view_reward_per_second || 0);
-            const timeText = formatDuration(countedWatchSeconds);
-            const rewardText = `$${(countedWatchSeconds * rate).toFixed(2)}`;
+            const creditedSeconds = getCreditableWatchSeconds(countedWatchSeconds);
+            const timeText = formatDuration(creditedSeconds);
+            const rewardText = `$${estimateWatchReward(countedWatchSeconds).toFixed(2)}`;
             const snapshot = `${timeText}|${rewardText}|${message}`;
 
             if (snapshot === lastWatchUiSnapshot) return;
@@ -6308,7 +6372,7 @@
                 renderNotifications();
                 scheduleLiveTierRefresh();
             } catch (err) {
-                addNotification('Backend connection', err.message);
+                console.warn('Backend connection', err);
             }
         }
 
