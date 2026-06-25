@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="wallet-toncoin-v20-lock-wallet-fix-20260625">
+    <meta name="vidipay-build" content="wallet-toncoin-v21-watch-balance-lock-20260625">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=wallet-toncoin-v20-lock-wallet-fix-20260625"></script>
+    <script src="./config.js?v=wallet-toncoin-v21-watch-balance-lock-20260625"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -5857,7 +5857,7 @@
 
             const activationLimitReached = shouldFinishWatchForActivationLimit(rawWatchSeconds) || estimateWatchReward(watchSeconds) >= getActivationRewardRemaining();
             pendingWatch = null;
-            if (watchSeconds < Number(backendSettings.view_seconds_required || 5) && !activationLimitReached) {
+            if (watchSeconds <= 0 && !activationLimitReached) {
                 closeModal('watchModal');
                 showWatchResult(watchSeconds, 0, t('not_enough_time'));
                 updateWatchDisplays();
@@ -5883,13 +5883,6 @@
                 return;
             }
 
-            if (watchSeconds < Number(backendSettings.view_seconds_required || 5)) {
-                updateWatchSessionUi(`Video ended, but watched time is too short: ${formatDuration(watchSeconds)}.`);
-                showWatchResult(watchSeconds, 0, t('not_enough_time'));
-                pendingWatch = null;
-                return;
-            }
-
                 const result = await apiRequest('/view/add', {
                     method: 'POST',
                     body: JSON.stringify({
@@ -5905,9 +5898,18 @@
                 rewardedMrBeastVideos.add(videoId);
                 pendingWatch = null;
                 applyBackendUser(result.user);
+                if (result.wallet_activation_required) {
+                    latestPaymentStatus = {
+                        ...latestPaymentStatus,
+                        withdraw_unlocked: false,
+                        wallet_earning_amount: Number(result.user?.balance || appState.balance || 0),
+                        wallet_unlock_required_amount: Number(result.wallet_unlock_required_amount || getWalletUnlockRequiredAmount())
+                    };
+                }
                 if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
                 await refreshStatsFromBackend().catch(() => null);
                 updateWatchDisplays();
+                updateGrowthLockUi();
                 createFloatingText(null, result.reward);
             const creditedWatchSeconds = Number(result.watch_seconds || watchSeconds);
             if (result.tier) {
