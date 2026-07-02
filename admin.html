@@ -1,4 +1,4 @@
-https://vidipay-backend-1.onrender.comhttps://vidipay-backend-1.onrender.com<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -379,7 +379,7 @@ https://vidipay-backend-1.onrender.comhttps://vidipay-backend-1.onrender.com<!DO
 
   <script>
     const ADMIN_API_FALLBACKS = [
-      'https://vidipay-backend.onrender.com',
+      'https://vidipay-backend-1.onrender.com',
       'http://127.0.0.1:10000'
     ];
 
@@ -411,7 +411,7 @@ https://vidipay-backend-1.onrender.comhttps://vidipay-backend-1.onrender.com<!DO
       ].map(normalizeApiBaseUrl).filter(Boolean))];
     }
 
-    let API_BASE_URL = getAdminApiCandidates()[0] || 'https://vidipay-backend.onrender.com';
+    let API_BASE_URL = getAdminApiCandidates()[0] || 'https://vidipay-backend-1.onrender.com';
     const settingKeys = [
       'view_seconds_required',
       'view_reward_per_second',
