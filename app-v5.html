@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -2822,7 +2822,7 @@
                 }
             }
 
-            throw lastError || new Error('Backend API ulanmagan');
+            throw lastError || new Error('Backend API is not connected');
         }
 
         function applyBackendUser(serverUser) {
@@ -5047,7 +5047,7 @@
 
         // MUTLOQ YANGI OYNA OCHISH VA ESKILARINI BERKITIY LOGIKASI
         function openModal(id) { 
-            // Avval ochiq bo'lishi mumkin bo'lgan barcha modal oynalarni to'liq yopamiz
+            // Close any modal that may already be open before switching tabs
             const overlays = document.querySelectorAll('.modal-overlay');
             overlays.forEach(modal => {
                 modal.classList.remove('is-open');
