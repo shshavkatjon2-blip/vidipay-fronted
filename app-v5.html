@@ -3364,8 +3364,18 @@
             if (amountEl) amountEl.innerText = amount ? `${amount.toFixed(2)} TONCOIN` : `${getTonActivationAmount().toFixed(2)} TONCOIN`;
             if (addressEl) addressEl.innerText = walletAddress || t('card_order_loading');
             if (expiryEl) {
+                const paymentValidUntilLabels = {
+                    en: 'Valid until',
+                    ru: '\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0442\u0435\u043b\u044c\u043d\u043e \u0434\u043e',
+                    fr: "Valable jusqu'a",
+                    hi: 'Valid until',
+                    es: 'Valido hasta',
+                    zh: '\u6709\u6548\u671f\u81f3',
+                    de: 'Gueltig bis'
+                };
+                const validUntilLabel = paymentValidUntilLabels[currentLang] || paymentValidUntilLabels.en;
                 expiryEl.innerText = currentPaymentOrder.expires_at
-                    ? `Valid until: ${new Date(currentPaymentOrder.expires_at).toLocaleString()}`
+                    ? `${validUntilLabel}: ${new Date(currentPaymentOrder.expires_at).toLocaleString()}`
                     : '';
             }
             renderTonPaymentQr('');
@@ -5402,7 +5412,7 @@
                 [/hamyoningiz/gi, 'your wallet'],
                 [/hamyon/gi, 'wallet'],
                 [/depozit/gi, 'deposit'],
-                [/to[‘']?lov/gi, 'payment'],
+                [/to['\u2018\u2019\u0060\u00b4\u02bc]?lov/gi, 'payment'],
                 [/tasdiqlandi/gi, 'confirmed'],
                 [/aktivlashtirildi|faollashtirildi/gi, 'activated'],
                 [/pul yechish/gi, 'withdrawal'],
@@ -5415,8 +5425,8 @@
                 [/bildirishnoma/gi, 'notification'],
                 [/iltimos/gi, 'please'],
                 [/tekshiring/gi, 'check'],
-                [/do[‘']st/gi, 'friend'],
-                [/qo[‘']shing/gi, 'add'],
+                [/do['\u2018\u2019\u0060\u00b4\u02bc]?st/gi, 'friend'],
+                [/qo['\u2018\u2019\u0060\u00b4\u02bc]?shing/gi, 'add'],
                 [/balans/gi, 'balance'],
                 [/qulf/gi, 'lock']
             ],
@@ -5424,7 +5434,7 @@
                 [/hamyoningiz/gi, 'ваш кошелек'],
                 [/hamyon/gi, 'кошелек'],
                 [/depozit/gi, 'депозит'],
-                [/to[‘']?lov/gi, 'платеж'],
+                [/to['\u2018\u2019\u0060\u00b4\u02bc]?lov/gi, 'платеж'],
                 [/tasdiqlandi/gi, 'подтвержден'],
                 [/aktivlashtirildi|faollashtirildi/gi, 'активирован'],
                 [/pul yechish/gi, 'вывод средств'],
@@ -5437,8 +5447,8 @@
                 [/bildirishnoma/gi, 'уведомление'],
                 [/iltimos/gi, 'пожалуйста'],
                 [/tekshiring/gi, 'проверьте'],
-                [/do[‘']st/gi, 'друг'],
-                [/qo[‘']shing/gi, 'добавьте'],
+                [/do['\u2018\u2019\u0060\u00b4\u02bc]?st/gi, 'друг'],
+                [/qo['\u2018\u2019\u0060\u00b4\u02bc]?shing/gi, 'добавьте'],
                 [/balans/gi, 'баланс'],
                 [/qulf/gi, 'блокировка']
             ],
@@ -5446,7 +5456,7 @@
                 [/hamyoningiz/gi, 'votre portefeuille'],
                 [/hamyon/gi, 'portefeuille'],
                 [/depozit/gi, 'depot'],
-                [/to[‘']?lov/gi, 'paiement'],
+                [/to['\u2018\u2019\u0060\u00b4\u02bc]?lov/gi, 'paiement'],
                 [/tasdiqlandi/gi, 'confirme'],
                 [/aktivlashtirildi|faollashtirildi/gi, 'active'],
                 [/pul yechish/gi, 'retrait'],
@@ -5459,8 +5469,8 @@
                 [/bildirishnoma/gi, 'notification'],
                 [/iltimos/gi, 's’il vous plait'],
                 [/tekshiring/gi, 'verifiez'],
-                [/do[‘']st/gi, 'ami'],
-                [/qo[‘']shing/gi, 'ajoutez'],
+                [/do['\u2018\u2019\u0060\u00b4\u02bc]?st/gi, 'ami'],
+                [/qo['\u2018\u2019\u0060\u00b4\u02bc]?shing/gi, 'ajoutez'],
                 [/balans/gi, 'solde'],
                 [/qulf/gi, 'verrou']
             ],
@@ -5468,7 +5478,7 @@
                 [/hamyoningiz/gi, 'aapka wallet'],
                 [/hamyon/gi, 'wallet'],
                 [/depozit/gi, 'deposit'],
-                [/to[‘']?lov/gi, 'payment'],
+                [/to['\u2018\u2019\u0060\u00b4\u02bc]?lov/gi, 'payment'],
                 [/tasdiqlandi/gi, 'confirm ho gaya'],
                 [/aktivlashtirildi|faollashtirildi/gi, 'activate ho gaya'],
                 [/pul yechish/gi, 'withdrawal'],
@@ -5481,8 +5491,8 @@
                 [/bildirishnoma/gi, 'notification'],
                 [/iltimos/gi, 'please'],
                 [/tekshiring/gi, 'check karein'],
-                [/do[‘']st/gi, 'friend'],
-                [/qo[‘']shing/gi, 'add karein'],
+                [/do['\u2018\u2019\u0060\u00b4\u02bc]?st/gi, 'friend'],
+                [/qo['\u2018\u2019\u0060\u00b4\u02bc]?shing/gi, 'add karein'],
                 [/balans/gi, 'balance'],
                 [/qulf/gi, 'lock']
             ],
@@ -5490,7 +5500,7 @@
                 [/hamyoningiz/gi, 'tu billetera'],
                 [/hamyon/gi, 'billetera'],
                 [/depozit/gi, 'deposito'],
-                [/to[‘']?lov/gi, 'pago'],
+                [/to['\u2018\u2019\u0060\u00b4\u02bc]?lov/gi, 'pago'],
                 [/tasdiqlandi/gi, 'confirmado'],
                 [/aktivlashtirildi|faollashtirildi/gi, 'activado'],
                 [/pul yechish/gi, 'retiro'],
@@ -5503,8 +5513,8 @@
                 [/bildirishnoma/gi, 'notificacion'],
                 [/iltimos/gi, 'por favor'],
                 [/tekshiring/gi, 'revise'],
-                [/do[‘']st/gi, 'amigo'],
-                [/qo[‘']shing/gi, 'agregue'],
+                [/do['\u2018\u2019\u0060\u00b4\u02bc]?st/gi, 'amigo'],
+                [/qo['\u2018\u2019\u0060\u00b4\u02bc]?shing/gi, 'agregue'],
                 [/balans/gi, 'balance'],
                 [/qulf/gi, 'bloqueo']
             ],
@@ -5512,7 +5522,7 @@
                 [/hamyoningiz/gi, '您的钱包'],
                 [/hamyon/gi, '钱包'],
                 [/depozit/gi, '存款'],
-                [/to[‘']?lov/gi, '付款'],
+                [/to['\u2018\u2019\u0060\u00b4\u02bc]?lov/gi, '付款'],
                 [/tasdiqlandi/gi, '已确认'],
                 [/aktivlashtirildi|faollashtirildi/gi, '已激活'],
                 [/pul yechish/gi, '提现'],
@@ -5525,8 +5535,8 @@
                 [/bildirishnoma/gi, '通知'],
                 [/iltimos/gi, '请'],
                 [/tekshiring/gi, '检查'],
-                [/do[‘']st/gi, '朋友'],
-                [/qo[‘']shing/gi, '添加'],
+                [/do['\u2018\u2019\u0060\u00b4\u02bc]?st/gi, '朋友'],
+                [/qo['\u2018\u2019\u0060\u00b4\u02bc]?shing/gi, '添加'],
                 [/balans/gi, '余额'],
                 [/qulf/gi, '锁定']
             ],
@@ -5534,7 +5544,7 @@
                 [/hamyoningiz/gi, 'Ihre Wallet'],
                 [/hamyon/gi, 'Wallet'],
                 [/depozit/gi, 'Einzahlung'],
-                [/to[‘']?lov/gi, 'Zahlung'],
+                [/to['\u2018\u2019\u0060\u00b4\u02bc]?lov/gi, 'Zahlung'],
                 [/tasdiqlandi/gi, 'bestatigt'],
                 [/aktivlashtirildi|faollashtirildi/gi, 'aktiviert'],
                 [/pul yechish/gi, 'Auszahlung'],
@@ -5547,17 +5557,26 @@
                 [/bildirishnoma/gi, 'Benachrichtigung'],
                 [/iltimos/gi, 'bitte'],
                 [/tekshiring/gi, 'prufen'],
-                [/do[‘']st/gi, 'Freund'],
-                [/qo[‘']shing/gi, 'hinzufugen'],
+                [/do['\u2018\u2019\u0060\u00b4\u02bc]?st/gi, 'Freund'],
+                [/qo['\u2018\u2019\u0060\u00b4\u02bc]?shing/gi, 'hinzufugen'],
                 [/balans/gi, 'Guthaben'],
                 [/qulf/gi, 'Sperre']
             ]
         };
 
+        function normalizeAdminNotificationText(text) {
+            return String(text || '')
+                .trim()
+                .toLowerCase()
+                .replace(/[\u2018\u2019\u0060\u00b4\u02bc]/g, "'")
+                .replace(/\s+/g, ' ')
+                .replace(/[.!?]+$/g, '');
+        }
+
         function translateAdminNotificationText(text) {
             const raw = String(text || '').trim();
             if (!raw) return '';
-            const exactKey = raw.toLowerCase().replace(/[‘’]/g, "'");
+            const exactKey = normalizeAdminNotificationText(raw);
             const exact = adminNotificationExactTranslations[exactKey];
             if (exact && exact[currentLang]) return exact[currentLang];
             const replacements = adminNotificationReplacements[currentLang] || adminNotificationReplacements.en;
