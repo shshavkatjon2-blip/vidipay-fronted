@@ -2956,7 +2956,7 @@
             applyBackendUser(result.user);
             if (result.referral?.applied) {
                 localStorage.removeItem('vidiPayPendingReferrerId');
-                addNotification('Referral bonus', 'Your friend joined successfully. Referral bonus was added.');
+                addNotification(t('bonus_title'), t('referral_bonus_added'));
             }
             updateWatchDisplays();
         }
@@ -3370,13 +3370,13 @@
             if (statusEl) {
                 const depositAmount = Number(backendSettings.activation_deposit_amount || amount || TON_ACTIVATION_AMOUNT);
                 statusEl.innerText = walletAddress
-                    ? `Send exactly ${depositAmount.toFixed(2)} TONCOIN. Other amounts are not confirmed automatically.`
+                    ? (t('ton_deposit_send_status') || languages.en.ton_deposit_send_status).replace('{amount}', depositAmount.toFixed(2))
                     : t('payment_address_unavailable');
             }
             if (depositStatusEl) {
                 const depositAmount = Number(backendSettings.activation_deposit_amount || amount || TON_ACTIVATION_AMOUNT);
                 depositStatusEl.innerText = walletAddress
-                    ? `Waiting for exactly ${depositAmount.toFixed(2)} TONCOIN on TON network.`
+                    ? (t('ton_deposit_waiting_status') || languages.en.ton_deposit_waiting_status).replace('{amount}', depositAmount.toFixed(2))
                     : t('payment_address_unavailable');
             }
             updateLocalCardMethodUi();
@@ -3718,11 +3718,11 @@
                 updateWatchDisplays();
                 const bonusText = Number(result.bonus || 0).toFixed(2);
                 setDomText(statusEl, `${t('bonus_claimed')} $${bonusText}`);
-                addNotification('Bonus claimed', `${t('bonus_claimed')} $${bonusText}`);
+                addNotification(t('bonus_title'), `${t('bonus_claimed')} ${bonusText}`);
             } catch (err) {
                 if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
                 setDomText(statusEl, err.message);
-                addNotification('Bonus', err.message);
+                addNotification(t('bonus_title'), err.message);
             }
         }
 
@@ -4277,6 +4277,8 @@
             fastest_method: "Security confirmation",
             ton_deposit_title: "6.99 TONCOIN payment",
             ton_deposit_warning: "Send exactly 6.99 TONCOIN to this address. Less or more than 6.99 TONCOIN will not be confirmed automatically.",
+            ton_deposit_send_status: "Send exactly {amount} TONCOIN. Other amounts are not confirmed automatically.",
+            ton_deposit_waiting_status: "Waiting for exactly {amount} TONCOIN on TON network.",
             payment_address_label: "Unique TON deposit address",
             wallet_method_value: "TONCOIN"
         });
@@ -4464,7 +4466,19 @@
             status_label: "Status",
             history_wallet_payment: "Wallet payment",
             history_withdraw: "Withdraw",
-            receipt_wallet_label: "Wallet"
+            receipt_wallet_label: "Wallet",
+            fullscreen_unavailable: "Fullscreen mode is not available on this device.",
+            watch_reward_save_failed: "Reward could not be saved.",
+            watch_reward_saving: "Saving reward...",
+            watch_video_missing: "Video id was not detected. Please start the MrBeast video again.",
+            watch_video_duplicate: "This video was already counted in this session. Choose another MrBeast video.",
+            watch_too_short_detail: "Video ended, but watched time is too short: {time}.",
+            watch_reward_added_detail: "Reward added after {time}: ${amount}",
+            watch_reward_backend_failed: "Reward was not saved to the backend.",
+            view_reward_title: "View reward",
+            view_reward_added: "Reward added after {seconds}s: ${amount}",
+            referral_bonus_added: "Your friend joined successfully. Referral bonus was added."
+
         });
 
         Object.assign(languages.ru, {
@@ -4515,7 +4529,19 @@
             status_label: "Статус",
             history_wallet_payment: "Оплата кошелька",
             history_withdraw: "Вывод",
-            receipt_wallet_label: "Кошелек"
+            receipt_wallet_label: "Кошелек",
+            fullscreen_unavailable: "Полноэкранный режим недоступен на этом устройстве.",
+            watch_reward_save_failed: "Награду не удалось сохранить.",
+            watch_reward_saving: "Награда сохраняется...",
+            watch_video_missing: "ID видео не определен. Запустите видео MrBeast снова.",
+            watch_video_duplicate: "Это видео уже засчитано в этой сессии. Выберите другое видео MrBeast.",
+            watch_too_short_detail: "Видео завершено, но время просмотра слишком короткое: {time}.",
+            watch_reward_added_detail: "Награда добавлена после {time}: ${amount}",
+            watch_reward_backend_failed: "Награда не сохранена на сервере.",
+            view_reward_title: "Награда за просмотр",
+            view_reward_added: "Награда добавлена после {seconds}с: ${amount}",
+            referral_bonus_added: "Ваш друг успешно присоединился. Реферальный бонус добавлен."
+
         });
 
         Object.assign(languages.fr, {
@@ -4566,7 +4592,19 @@
             status_label: "Statut",
             history_wallet_payment: "Paiement wallet",
             history_withdraw: "Retrait",
-            receipt_wallet_label: "Wallet"
+            receipt_wallet_label: "Wallet",
+            fullscreen_unavailable: "Le mode plein ecran n'est pas disponible sur cet appareil.",
+            watch_reward_save_failed: "La recompense n'a pas pu etre enregistree.",
+            watch_reward_saving: "Enregistrement de la recompense...",
+            watch_video_missing: "ID video non detecte. Relancez la video MrBeast.",
+            watch_video_duplicate: "Cette video a deja ete comptee dans cette session. Choisissez une autre video MrBeast.",
+            watch_too_short_detail: "La video est terminee, mais le temps regarde est trop court : {time}.",
+            watch_reward_added_detail: "Recompense ajoutee apres {time} : ${amount}",
+            watch_reward_backend_failed: "La recompense n'a pas ete enregistree sur le serveur.",
+            view_reward_title: "Recompense de visionnage",
+            view_reward_added: "Recompense ajoutee apres {seconds}s : ${amount}",
+            referral_bonus_added: "Votre ami a rejoint avec succes. Le bonus de parrainage a ete ajoute."
+
         });
 
         Object.assign(languages.hi, {
@@ -4617,7 +4655,19 @@
             status_label: "Status",
             history_wallet_payment: "Wallet payment",
             history_withdraw: "Withdraw",
-            receipt_wallet_label: "Wallet"
+            receipt_wallet_label: "Wallet",
+            fullscreen_unavailable: "Is device par fullscreen mode available nahi hai.",
+            watch_reward_save_failed: "Reward save nahi ho saka.",
+            watch_reward_saving: "Reward save ho raha hai...",
+            watch_video_missing: "Video id detect nahi hua. MrBeast video dobara start karein.",
+            watch_video_duplicate: "Ye video is session me pehle hi count ho chuka hai. Dusra MrBeast video choose karein.",
+            watch_too_short_detail: "Video end ho gaya, lekin watched time bahut kam hai: {time}.",
+            watch_reward_added_detail: "{time} ke baad reward add hua: ${amount}",
+            watch_reward_backend_failed: "Reward backend par save nahi hua.",
+            view_reward_title: "View reward",
+            view_reward_added: "{seconds}s ke baad reward add hua: ${amount}",
+            referral_bonus_added: "Aapka friend successfully join hua. Referral bonus add ho gaya."
+
         });
 
         Object.assign(languages.es, {
@@ -4668,7 +4718,19 @@
             status_label: "Estado",
             history_wallet_payment: "Pago de wallet",
             history_withdraw: "Retiro",
-            receipt_wallet_label: "Wallet"
+            receipt_wallet_label: "Wallet",
+            fullscreen_unavailable: "El modo pantalla completa no esta disponible en este dispositivo.",
+            watch_reward_save_failed: "La recompensa no se pudo guardar.",
+            watch_reward_saving: "Guardando recompensa...",
+            watch_video_missing: "No se detecto el ID del video. Inicia el video MrBeast otra vez.",
+            watch_video_duplicate: "Este video ya fue contado en esta sesion. Elige otro video MrBeast.",
+            watch_too_short_detail: "El video termino, pero el tiempo visto es muy corto: {time}.",
+            watch_reward_added_detail: "Recompensa agregada despues de {time}: ${amount}",
+            watch_reward_backend_failed: "La recompensa no se guardo en el servidor.",
+            view_reward_title: "Recompensa de vista",
+            view_reward_added: "Recompensa agregada despues de {seconds}s: ${amount}",
+            referral_bonus_added: "Tu amigo se unio correctamente. El bono de referido fue agregado."
+
         });
 
         Object.assign(languages.zh, {
@@ -4719,7 +4781,19 @@
             status_label: "状态",
             history_wallet_payment: "钱包付款",
             history_withdraw: "提现",
-            receipt_wallet_label: "钱包"
+            receipt_wallet_label: "钱包",
+            fullscreen_unavailable: "此设备不支持全屏模式。",
+            watch_reward_save_failed: "奖励无法保存。",
+            watch_reward_saving: "正在保存奖励...",
+            watch_video_missing: "未检测到视频 ID。请重新启动 MrBeast 视频。",
+            watch_video_duplicate: "此视频已在本次会话中计数。请选择另一个 MrBeast 视频。",
+            watch_too_short_detail: "视频已结束，但观看时间太短：{time}。",
+            watch_reward_added_detail: "观看 {time} 后已添加奖励：${amount}",
+            watch_reward_backend_failed: "奖励未保存到服务器。",
+            view_reward_title: "观看奖励",
+            view_reward_added: "观看 {seconds}s 后已添加奖励：${amount}",
+            referral_bonus_added: "您的好友已成功加入。邀请奖励已添加。"
+
         });
 
         Object.assign(languages.de, {
@@ -4770,7 +4844,19 @@
             status_label: "Status",
             history_wallet_payment: "Wallet-Zahlung",
             history_withdraw: "Auszahlung",
-            receipt_wallet_label: "Wallet"
+            receipt_wallet_label: "Wallet",
+            fullscreen_unavailable: "Vollbildmodus ist auf diesem Geraet nicht verfuegbar.",
+            watch_reward_save_failed: "Belohnung konnte nicht gespeichert werden.",
+            watch_reward_saving: "Belohnung wird gespeichert...",
+            watch_video_missing: "Video-ID wurde nicht erkannt. Starte das MrBeast-Video erneut.",
+            watch_video_duplicate: "Dieses Video wurde in dieser Sitzung bereits gezaehlt. Waehle ein anderes MrBeast-Video.",
+            watch_too_short_detail: "Video beendet, aber die Watch-Zeit ist zu kurz: {time}.",
+            watch_reward_added_detail: "Belohnung nach {time} hinzugefuegt: ${amount}",
+            watch_reward_backend_failed: "Belohnung wurde nicht auf dem Server gespeichert.",
+            view_reward_title: "View-Belohnung",
+            view_reward_added: "Belohnung nach {seconds}s hinzugefuegt: ${amount}",
+            referral_bonus_added: "Dein Freund ist erfolgreich beigetreten. Referral-Bonus wurde hinzugefuegt."
+
         });
 
 
@@ -4888,6 +4974,8 @@
             ton_deposit_title: "Платеж 6.99 TONCOIN",
             ton_deposit_address_title: "TON адрес депозита",
             ton_deposit_warning: "Отправьте ровно 6.99 TONCOIN на этот адрес. Меньше или больше 6.99 TONCOIN автоматически не подтверждается.",
+            ton_deposit_send_status: "Send exactly {amount} TONCOIN. Other amounts are not confirmed automatically.",
+            ton_deposit_waiting_status: "Waiting for exactly {amount} TONCOIN on TON network.",
             payment_address_label: "Уникальный TON адрес депозита"
         });
 
@@ -4909,6 +4997,8 @@
             ton_deposit_title: "Paiement 6.99 TONCOIN",
             ton_deposit_address_title: "Adresse de depot TON",
             ton_deposit_warning: "Envoyez exactement 6.99 TONCOIN a cette adresse. Moins ou plus que 6.99 TONCOIN ne sera pas confirme automatiquement.",
+            ton_deposit_send_status: "Envoyez exactement {amount} TONCOIN. Les autres montants ne sont pas confirmes automatiquement.",
+            ton_deposit_waiting_status: "En attente de exactement {amount} TONCOIN sur le reseau TON.",
             payment_address_label: "Adresse unique de depot TON"
         });
 
@@ -4930,6 +5020,8 @@
             ton_deposit_title: "6.99 TONCOIN payment",
             ton_deposit_address_title: "TON deposit address",
             ton_deposit_warning: "Is address par exactly 6.99 TONCOIN bhejein. 6.99 TONCOIN se kam ya zyada automatic confirm nahi hoga.",
+            ton_deposit_send_status: "Exactly {amount} TONCOIN bhejein. Dusri amount automatic confirm nahi hogi.",
+            ton_deposit_waiting_status: "TON network par exactly {amount} TONCOIN ka wait ho raha hai.",
             payment_address_label: "Unique TON deposit address"
         });
 
@@ -4951,6 +5043,8 @@
             ton_deposit_title: "Pago de 6.99 TONCOIN",
             ton_deposit_address_title: "Direccion de deposito TON",
             ton_deposit_warning: "Envia exactamente 6.99 TONCOIN a esta direccion. Menos o mas de 6.99 TONCOIN no se confirma automaticamente.",
+            ton_deposit_send_status: "Envia exactamente {amount} TONCOIN. Otros montos no se confirman automaticamente.",
+            ton_deposit_waiting_status: "Esperando exactamente {amount} TONCOIN en la red TON.",
             payment_address_label: "Direccion unica de deposito TON"
         });
 
@@ -4972,6 +5066,8 @@
             ton_deposit_title: "6.99 TONCOIN 付款",
             ton_deposit_address_title: "TON 存款地址",
             ton_deposit_warning: "请向此地址准确发送 6.99 TONCOIN。少于或多于 6.99 TONCOIN 将不会自动确认。",
+            ton_deposit_send_status: "????? {amount} TONCOIN????????????",
+            ton_deposit_waiting_status: "???? TON ???? {amount} TONCOIN?",
             payment_address_label: "唯一 TON 存款地址"
         });
 
@@ -4993,6 +5089,8 @@
             ton_deposit_title: "6.99 TONCOIN Zahlung",
             ton_deposit_address_title: "TON Einzahlungsadresse",
             ton_deposit_warning: "Sende exakt 6.99 TONCOIN an diese Adresse. Weniger oder mehr als 6.99 TONCOIN wird nicht automatisch bestaetigt.",
+            ton_deposit_send_status: "Sende exakt {amount} TONCOIN. Andere Betraege werden nicht automatisch bestaetigt.",
+            ton_deposit_waiting_status: "Warte auf exakt {amount} TONCOIN im TON-Netzwerk.",
             payment_address_label: "Einmalige TON Einzahlungsadresse"
         });
 
@@ -5097,17 +5195,17 @@
             setText('lbl-mark-all-read', dict.mark_all_read);
 
             // YANGI QO'SHILGAN TARJIMALAR UCHUN:
-            setText('lbl-unlock-title', dict.account_unlock_title || 'Wallet activation');
+            setText('lbl-unlock-title', dict.account_unlock_title || languages.en.account_unlock_title);
             setText('lbl-fastest-method', dict.fastest_method || 'Security confirmation');
             setText('lbl-fiat-desc', dict.fiat_desc || languages.en.fiat_desc);
             setText('lbl-pay-fiat', dict.top_up_toncoin || 'TOP UP 6.99 TONCOIN');
-            setText('ton-deposit-title', dict.ton_deposit_title || '6.99 TONCOIN payment');
-            setText('ton-deposit-address-title', dict.ton_deposit_address_title || 'TON deposit address');
-            setText('ton-deposit-warning', dict.ton_deposit_warning || 'Send exactly 6.99 TONCOIN to this address. Less or more than 6.99 TONCOIN will not be confirmed automatically.');
-            setText('payment-address-label', dict.payment_address_label || 'Unique TON deposit address');
+            setText('ton-deposit-title', dict.ton_deposit_title || languages.en.ton_deposit_title);
+            setText('ton-deposit-address-title', dict.ton_deposit_address_title || languages.en.ton_deposit_address_title);
+            setText('ton-deposit-warning', dict.ton_deposit_warning || languages.en.ton_deposit_warning);
+            setText('payment-address-label', dict.payment_address_label || languages.en.payment_address_label);
             setText('lbl-check-ton-payment', dict.pay_with_fiat || 'CHECK PAYMENT');
-            setText('wallet-current-balance-label', dict.wallet_current_balance || 'Current Balance:');
-            setText('wallet-method-label', dict.withdrawal_method_label || 'Activation network:');
+            setText('wallet-current-balance-label', dict.wallet_current_balance || languages.en.wallet_current_balance);
+            setText('wallet-method-label', dict.withdrawal_method_label || languages.en.withdrawal_method_label);
             setText('wallet-method-value', dict.wallet_method_value || 'TONCOIN');
             setText('lbl-card-method-title', dict.card_selector_title || 'TON wallet');
             setText('lbl-or-crypto', dict.or_crypto || 'TON NETWORK PAYMENT');
@@ -5122,7 +5220,7 @@
             document.querySelectorAll('.wallet-nav span').forEach(el => el.innerText = dict.wallet || 'WALLET');
             document.querySelectorAll('.history-nav span').forEach(el => el.innerText = dict.history || 'HISTORY');
             const walletTitle = document.querySelector('#walletModal .modal-title');
-            if (walletTitle) walletTitle.innerText = dict.wallet_title || 'Wallet activation';
+            if (walletTitle) walletTitle.innerText = dict.wallet_title || languages.en.wallet_title || languages.en.account_unlock_title;
             const historyTitle = document.querySelector('#withdrawHistoryModal .modal-title');
             if (historyTitle) historyTitle.innerText = dict.withdraw_history || 'Withdrawal History';
             const watchTitle = document.querySelector('#watchModal .modal-title');
@@ -5519,7 +5617,7 @@
                 return;
             }
             tg.expand?.();
-            showCopyToast('Fullscreen mode is not available on this device.');
+            showCopyToast(t('fullscreen_unavailable'));
         }
 
         function openWatchModal() {
@@ -5550,7 +5648,7 @@
             closeModal('watchModal');
             finalizeWatchSession().catch(err => {
                 const watchSeconds = syncCountedWatchSeconds();
-                showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), err.message || 'Reward could not be saved.');
+                showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), err.message || t('watch_reward_save_failed'));
             });
         }
 
@@ -5632,27 +5730,27 @@
                 return;
             }
 
-            showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), 'Saving reward...');
+            showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), t('watch_reward_saving'));
             await finalizeWatchedVideo(watchSeconds, videoId);
         }
 
         async function finalizeWatchedVideo(watchSeconds, videoId) {
             try {
                 if (!videoId) {
-                    updateWatchSessionUi('Video id was not detected. Please start the MrBeast video again.');
+                    updateWatchSessionUi(t('watch_video_missing'));
                     pendingWatch = null;
                     return;
                 }
 
             if (rewardedMrBeastVideos.has(videoId)) {
-                updateWatchSessionUi('This video was already counted in this session. Choose another MrBeast video.');
-                showWatchResult(watchSeconds, 0, 'This video was already counted in this session. Choose another MrBeast video.');
+                updateWatchSessionUi(t('watch_video_duplicate'));
+                showWatchResult(watchSeconds, 0, t('watch_video_duplicate'));
                 pendingWatch = null;
                 return;
             }
 
             if (watchSeconds < Number(backendSettings.view_seconds_required || 5)) {
-                updateWatchSessionUi(`Video ended, but watched time is too short: ${formatDuration(watchSeconds)}.`);
+                updateWatchSessionUi(t('watch_too_short_detail').replace('{time}', formatDuration(watchSeconds)));
                 showWatchResult(watchSeconds, 0, t('not_enough_time'));
                 pendingWatch = null;
                 return;
@@ -5687,16 +5785,16 @@
                 };
                 updateTierCards();
             }
-            updateWatchSessionUi(`Reward added after ${formatDuration(watchSeconds)}: $${Number(result.reward || 0).toFixed(2)}`);
+            updateWatchSessionUi(t('watch_reward_added_detail').replace('{time}', formatDuration(watchSeconds)).replace('{amount}', Number(result.reward || 0).toFixed(2)));
             showWatchResult(watchSeconds, result.reward, t('watch_added'));
-            addNotification('View reward', `Reward added after ${watchSeconds}s: $${Number(result.reward || 0).toFixed(2)}`);
+            addNotification(t('view_reward_title'), t('view_reward_added').replace('{seconds}', watchSeconds).replace('{amount}', Number(result.reward || 0).toFixed(2)));
         } catch (err) {
             pendingWatch = null;
             if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
             updateWatchDisplays();
             updateWatchSessionUi(err.message);
-            showWatchResult(watchSeconds, 0, `${err.message}. Reward was not saved to the backend.`);
-            addNotification('View reward', err.message);
+            showWatchResult(watchSeconds, 0, `${err.message}. ${t('watch_reward_backend_failed')}`);
+            addNotification(t('view_reward_title'), err.message);
         }
     }
 
