@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="vidipay-admin-build" content="admin-menu-v5-reward-users-20260621">
-  <title>VidiPay Boshqaruv Paneli</title>
+  <title>VidiPay Admin Panel</title>
   <script src="./config.js?v=admin-menu-v5-reward-users-20260621"></script>
   <style>
     :root {
@@ -191,7 +191,7 @@
 </head>
 <body>
   <header>
-    <h1>VidiPay Boshqaruv Paneli</h1>
+    <h1>VidiPay Admin Panel</h1>
     <button onclick="refreshAll()">Refresh</button>
   </header>
   <main>
@@ -238,7 +238,7 @@
       </div>
       <div class="settings-grid" id="settings-form"></div>
       <div class="toolbar">
-        <button onclick="saveSettings()">Settingsni saqlash</button>
+        <button onclick="saveSettings()">Save settings</button>
       </div>
     </section>
 
@@ -335,7 +335,7 @@
         </div>
         <div class="timer-field">
           <label>Message text</label>
-          <input id="notify-message" placeholder="Usersga ko'rinadigan xabar">
+          <input id="notify-message" placeholder="Message visible to users">
         </div>
         <div class="timer-actions" style="margin-top:10px;">
           <button class="primary" id="btn-send-notify" onclick="sendNotification()">Send message</button>
