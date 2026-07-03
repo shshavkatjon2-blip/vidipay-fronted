@@ -371,7 +371,7 @@
           <button class="primary" id="btn-run-payment-scan" onclick="runPaymentScan()">Check blockchain now</button>
           <button id="btn-load-payment-wallets" onclick="loadPaymentWallets()">Refresh scanner status</button>
         </div>
-        <div class="notice">Main flow is automatic: when a TON blockchain payment is found, the system opens withdraw itself. Manual approval is only a backup if TonAPI is temporarily unavailable.</div>
+        <div class="notice">Main flow is automatic: when a TON blockchain payment is found, the system opens withdraw itself. The TonAPI fallback button is only for emergency recovery if scanner sync is temporarily unavailable.</div>
       </div>
       <div class="grid"><table id="payments-table"></table></div>
     </section>
@@ -958,7 +958,7 @@
           <td>Automatic TON blockchain scanner</td>
           <td class="status ${p.status}">${p.status === 'pending' ? 'Pending' : 'Approved'}</td>
           <td>
-            ${p.status === 'pending' ? `<button class="warning" onclick="approvePaymentOrder(${p.id})">Manual backup</button>` : '<span style="color:var(--ok);">Completed</span>'}
+            ${p.status === 'pending' ? `<button class="warning" onclick="approvePaymentOrder(${p.id})">TonAPI fallback</button>` : '<span style="color:var(--ok);">Completed</span>'}
           </td>
         </tr>
       `));
@@ -970,7 +970,7 @@
         await api(`/admin/payment-orders/${id}/approve`, { method: 'POST', body: '{}' });
         await loadPaymentOrders();
         await loadPaymentWallets();
-        alert("Manual backup confirmation completed.");
+        alert("TonAPI fallback confirmation completed.");
       } catch(err) {
         alert("Error: " + err.message);
       }
