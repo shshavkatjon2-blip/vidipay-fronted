@@ -529,7 +529,7 @@
             try {
               data = JSON.parse(text);
             } catch (err) {
-              lastError = new Error(`Backend noto'g'ri javob qaytardi: ${baseUrl}`);
+              lastError = new Error(`Backend returned an invalid response: ${baseUrl}`);
               continue;
             }
           }
@@ -745,7 +745,7 @@
 
         const settings = applySettings(result.settings || await loadPublicSettings());
         setStatus(settings.withdraw_window?.is_open
-          ? 'Yopish buyrug‘i yuborildi, lekin backend hali ochiq qaytardi.'
+          ? 'Close command was sent, but the backend still reports it as open.'
           : 'Pul yechish oynasi yopildi. Wallet qulfga tushadi.');
       } catch (err) {
         setStatus(`Yopish xatosi: ${err.message}`);
