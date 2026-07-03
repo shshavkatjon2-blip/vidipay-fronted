@@ -2800,7 +2800,7 @@
                         try {
                             data = JSON.parse(text);
                         } catch (parseErr) {
-                            lastError = new Error(`Backend API noto'g'ri URL qaytardi: ${baseUrl}`);
+                            lastError = new Error(`Backend API returned an invalid response: ${baseUrl}`);
                             continue;
                         }
                     }
@@ -5567,7 +5567,7 @@
             if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
             updateWatchDisplays();
             updateWatchSessionUi(err.message);
-            showWatchResult(watchSeconds, 0, `${err.message}. Reward backendga yozilmadi.`);
+            showWatchResult(watchSeconds, 0, `${err.message}. Reward was not saved to the backend.`);
             addNotification('View reward', err.message);
         }
     }
