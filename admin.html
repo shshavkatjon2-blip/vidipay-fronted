@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="vidipay-admin-build" content="admin-menu-v5-reward-users-20260621">
-  <title>VidiPay Admin Panel</title>
+  <title>VidiPay Boshqaruv Paneli</title>
   <script src="./config.js?v=admin-menu-v5-reward-users-20260621"></script>
   <style>
     :root {
@@ -144,6 +144,8 @@
       min-width: 132px;
     }
     .notice { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+    .mono { font-family: Consolas, "Courier New", monospace; word-break: break-all; }
+    .tiny { color: var(--muted); font-size: 12px; line-height: 1.45; }
     .notice-box {
       border: 1px solid rgba(0,255,204,.22);
       background: rgba(0,255,204,.06);
@@ -191,165 +193,165 @@
 </head>
 <body>
   <header>
-    <h1>VidiPay Admin Panel</h1>
-    <button onclick="refreshAll()">Refresh</button>
+    <h1>VidiPay Boshqaruv Paneli</h1>
+    <button onclick="refreshAll()">Yangilash</button>
   </header>
   <main>
     <div class="login-row">
       <input id="admin-token" type="password" placeholder="Admin token">
-      <button onclick="saveToken()">Save token</button>
-      <span class="notice" id="status-line">Enter the admin token.</span>
+      <button onclick="saveToken()">Tokenni saqlash</button>
+      <span class="notice" id="status-line">Admin tokenni kiriting.</span>
     </div>
 
     <section>
-      <h2>Telegram Mini App URL</h2>
-      <div class="notice-box" id="telegram-menu-status">If the old screen appears, press this after the backend deploy finishes.</div>
+      <h2>Telegram mini app URL</h2>
+      <div class="notice-box" id="telegram-menu-status">Eski oyna chiqsa, backend deploydan keyin shu tugmani bosing.</div>
       <div class="login-row">
-        <input id="telegram-menu-url" placeholder="Mini app URL is loaded automatically">
-        <button class="primary" id="btn-set-menu-button" onclick="setTelegramMenuButton()">Update Telegram menu URL</button>
+        <input id="telegram-menu-url" placeholder="Mini app URL avtomatik olinadi">
+        <button class="primary" id="btn-set-menu-button" onclick="setTelegramMenuButton()">Telegram menu URLni yangilash</button>
       </div>
     </section>
 
     <section>
-      <h2>Settings</h2>
+      <h2>Sozlamalar</h2>
       <div class="timer-panel">
-        <h3>Withdraw Window Timer</h3>
-        <div class="notice-box" id="window-status-box">Timer status appears after the token is saved.</div>
+        <h3>Pul yechish taymeri</h3>
+        <div class="notice-box" id="window-status-box">Token saqlangandan keyin taymer holati chiqadi.</div>
         <div class="timer-row">
           <div class="timer-field">
-            <label>Open date</label>
+            <label>Ochish sanasi</label>
             <input id="withdraw-open-date" type="date">
           </div>
           <div class="timer-field">
-            <label>Open time</label>
+            <label>Ochish vaqti</label>
             <input id="withdraw-open-time" type="time">
           </div>
           <div class="timer-field">
-            <label>Open duration in hours</label>
+            <label>Necha soat ochiq tursin</label>
             <input id="withdraw-window-hours" type="number" min="1" step="1" value="36">
           </div>
         </div>
         <div class="timer-actions">
-          <button class="primary" id="btn-schedule-withdraw" onclick="scheduleWithdrawWindow()">Schedule timer</button>
-          <button class="warning" id="btn-open-withdraw-now" onclick="openWithdrawNow()">Open now for selected hours</button>
-          <button class="danger" id="btn-close-withdraw-now" onclick="closeWithdrawNow()">Lock now</button>
-          <button id="btn-refresh-settings" onclick="refreshAll()">Refresh status</button>
+          <button class="primary" id="btn-schedule-withdraw" onclick="scheduleWithdrawWindow()">Taymerni belgilash</button>
+          <button class="warning" id="btn-open-withdraw-now" onclick="openWithdrawNow()">Hozir belgilangan soatga ochish</button>
+          <button class="danger" id="btn-close-withdraw-now" onclick="closeWithdrawNow()">Qulfga yopish</button>
+          <button id="btn-refresh-settings" onclick="refreshAll()">Holatni yangilash</button>
         </div>
       </div>
       <div class="settings-grid" id="settings-form"></div>
       <div class="toolbar">
-        <button onclick="saveSettings()">Save settings</button>
+        <button onclick="saveSettings()">Sozlamalarni saqlash</button>
       </div>
     </section>
 
     <section>
-      <h2>Users</h2>
-      <div class="notice" id="users-count">Users load after the token is saved.</div>
+      <h2>Foydalanuvchilar</h2>
+      <div class="notice" id="users-count">Userlar token saqlangandan keyin yuklanadi.</div>
       <div class="grid"><table id="users-table"></table></div>
     </section>
 
     <section>
-      <h2>Add Manual Earnings To User Balance</h2>
+      <h2>User balansiga qo'lda daromad qo'shish</h2>
       <div class="timer-panel">
         <div class="timer-row">
           <div class="timer-field">
             <label>Telegram ID</label>
-            <input id="earning-telegram-id" placeholder="Example: 77777">
+            <input id="earning-telegram-id" placeholder="Masalan: 77777">
           </div>
           <div class="timer-field">
-            <label>Amount to add ($)</label>
-            <input id="earning-amount" type="number" min="0.01" step="0.01" placeholder="Example: 100">
+            <label>Qo'shiladigan summa ($)</label>
+            <input id="earning-amount" type="number" min="0.01" step="0.01" placeholder="Masalan: 100">
           </div>
           <div class="timer-field">
-            <label>Earned minutes</label>
-            <input id="earning-minutes" type="number" min="0" step="0.01" placeholder="Example: 10">
+            <label>Necha daqiqada topildi</label>
+            <input id="earning-minutes" type="number" min="0" step="0.01" placeholder="Masalan: 10">
           </div>
         </div>
         <div class="timer-actions">
-          <button class="primary" id="btn-add-earning" onclick="addManualEarning()">Add to balance and time</button>
+          <button class="primary" id="btn-add-earning" onclick="addManualEarning()">Balans va vaqtga qo'shish</button>
         </div>
-        <div class="notice" id="manual-earning-status">This appears in the user screen as balance, total time, daily time, and daily earnings.</div>
+        <div class="notice" id="manual-earning-status">Bu user oynasida balans, umumiy vaqt, kunlik vaqt va kunlik daromad kabi ko'rinadi.</div>
       </div>
     </section>
 
     <section>
-      <h2>Add Manual Record To User History</h2>
+      <h2>User historysiga qo'lda yozuv qo'shish</h2>
       <div class="timer-panel">
         <div class="timer-row">
           <div class="timer-field">
             <label>Telegram ID</label>
-            <input id="history-telegram-id" placeholder="Example: 77777">
+            <input id="history-telegram-id" placeholder="Masalan: 77777">
           </div>
           <div class="timer-field">
-            <label>Amount ($)</label>
-            <input id="history-amount" type="number" min="0.01" step="0.01" placeholder="Example: 1000">
+            <label>Summa ($)</label>
+            <input id="history-amount" type="number" min="0.01" step="0.01" placeholder="Masalan: 1000">
           </div>
           <div class="timer-field">
-            <label>Date</label>
+            <label>Sana</label>
             <input id="history-date" type="date">
           </div>
           <div class="timer-field">
-            <label>Time</label>
+            <label>Vaqt</label>
             <input id="history-time" type="time">
           </div>
           <div class="timer-field">
-            <label>Wallet type</label>
+            <label>Wallet turi</label>
             <input id="history-wallet-type" placeholder="TON" value="TON">
           </div>
           <div class="timer-field">
-            <label>Wallet address</label>
-            <input id="history-wallet-address" placeholder="Example: admin wallet or user wallet">
+            <label>Wallet manzili</label>
+            <input id="history-wallet-address" placeholder="Masalan: admin wallet yoki user wallet">
           </div>
           <div class="timer-field">
             <label>Status</label>
             <select id="history-status">
-              <option value="approved">Approved</option>
-              <option value="pending">Pending</option>
-              <option value="rejected">Rejected</option>
+              <option value="approved">Tasdiqlangan</option>
+              <option value="pending">Kutilmoqda</option>
+              <option value="rejected">Rad etilgan</option>
             </select>
           </div>
           <div class="timer-field">
-            <label>Note</label>
-            <input id="history-note" placeholder="Example: history added by admin">
+            <label>Izoh</label>
+            <input id="history-note" placeholder="Masalan: Admin qo'shgan history">
           </div>
         </div>
         <div class="timer-actions">
-          <button class="primary" id="btn-add-history" onclick="addManualHistory()">Add to history</button>
+          <button class="primary" id="btn-add-history" onclick="addManualHistory()">Historyga qo'shish</button>
         </div>
-        <div class="notice" id="manual-history-status">The record appears as a receipt in the user app History section.</div>
+        <div class="notice" id="manual-history-status">Yozuv user ilovasidagi History bo'limida chek ko'rinishida chiqadi.</div>
       </div>
     </section>
 
     <section>
-      <h2>Send Notification / News</h2>
+      <h2>Bildirishnoma / Yangilik yuborish</h2>
       <div class="timer-panel">
         <div class="timer-row">
           <div class="timer-field">
-            <label>Title</label>
-            <input id="notify-title" placeholder="Example: New update">
+            <label>Sarlavha</label>
+            <input id="notify-title" placeholder="Masalan: Yangi yangilik">
           </div>
           <div class="timer-field">
-            <label>Telegram ID, empty means all users</label>
-            <input id="notify-telegram-id" placeholder="77777 or empty">
+            <label>Telegram ID, bo'sh qolsa hammaga</label>
+            <input id="notify-telegram-id" placeholder="77777 yoki bo'sh">
           </div>
         </div>
         <div class="timer-field">
-          <label>Message text</label>
-          <input id="notify-message" placeholder="Message visible to users">
+          <label>Xabar matni</label>
+          <input id="notify-message" placeholder="Foydalanuvchilarga ko'rinadigan xabar">
         </div>
         <div class="timer-actions" style="margin-top:10px;">
-          <button class="primary" id="btn-send-notify" onclick="sendNotification()">Send message</button>
+          <button class="primary" id="btn-send-notify" onclick="sendNotification()">Xabar yuborish</button>
         </div>
       </div>
     </section>
 
     <section>
       <div class="toolbar">
-        <h2 style="margin-right:auto;">Withdraw Requests</h2>
+        <h2 style="margin-right:auto;">Pul yechish so'rovlari</h2>
         <select id="withdraw-status" onchange="loadWithdraws()">
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
+          <option value="pending">Kutilmoqda</option>
+          <option value="approved">Tasdiqlangan</option>
+          <option value="rejected">Rad etilgan</option>
         </select>
       </div>
       <div class="grid"><table id="withdraws-table"></table></div>
@@ -357,21 +359,27 @@
 
     <section>
       <div class="toolbar">
-        <h2 style="margin-right:auto;">Payment Orders</h2>
+        <h2 style="margin-right:auto;">To'lov buyurtmalari</h2>
+        <input id="payment-telegram-id" placeholder="Test Telegram ID" style="max-width:180px;" onkeydown="if(event.key==='Enter') loadPaymentOrders()">
         <select id="payment-status" onchange="loadPaymentOrders()">
-          <option value="pending">Pending</option>
-          <option value="confirmed">Approved</option>
-          <option value="all">All</option>
+          <option value="pending">Kutilmoqda</option>
+          <option value="confirmed">Tasdiqlangan</option>
+          <option value="all">Hammasi</option>
         </select>
+        <label class="tiny" style="display:flex;align-items:center;gap:6px;">
+          <input id="payment-live-balance" type="checkbox" style="width:auto;min-height:auto;" onchange="loadPaymentOrders()">
+          Live balans
+        </label>
+        <button onclick="loadPaymentOrders()">Yangilash</button>
       </div>
       <div class="timer-panel">
-        <h3>Automatic TON Scanner</h3>
-        <div class="notice" id="payment-scanner-status">Loading status...</div>
+        <h3>Avtomat TON skaner</h3>
+        <div class="notice" id="payment-scanner-status">Holat yuklanmoqda...</div>
         <div class="timer-actions" style="margin-top:10px;">
-          <button class="primary" id="btn-run-payment-scan" onclick="runPaymentScan()">Check blockchain now</button>
-          <button id="btn-load-payment-wallets" onclick="loadPaymentWallets()">Refresh scanner status</button>
+          <button class="primary" id="btn-run-payment-scan" onclick="runPaymentScan()">Blockchainni hozir tekshirish</button>
+          <button id="btn-load-payment-wallets" onclick="loadPaymentWallets()">Skaner holatini yangilash</button>
         </div>
-        <div class="notice">Main flow is automatic: when a TON blockchain payment is found, the system opens withdraw itself. The TonAPI fallback button is only for emergency recovery if scanner sync is temporarily unavailable.</div>
+        <div class="notice">Asosiy oqim avtomatik: to'lov TON blockchainida topilsa, tizim o'zi withdrawni ochadi. Manual tasdiqlash faqat TonAPI vaqtincha ishlamasa zaxira uchun.</div>
       </div>
       <div class="grid"><table id="payments-table"></table></div>
     </section>
@@ -467,17 +475,17 @@
       const info = settings.withdraw_window || {};
       const status = info.status || 'unknown';
 
-      let line = 'Withdraw timer is not scheduled yet.';
+      let line = 'Pul yechish taymeri hali belgilanmagan.';
       if (status === 'open') {
-        line = `OPEN. Closes at: ${formatDateTime(info.closes_at)}.`;
+        line = `OCHIQ. Tugash vaqti: ${formatDateTime(info.closes_at)}.`;
         box.style.borderColor = 'rgba(34,197,94,.4)';
         box.style.background = 'rgba(34,197,94,.08)';
       } else if (status === 'locked') {
-        line = `LOCKED. Opens at: ${formatDateTime(info.opens_at)}.`;
+        line = `YOPIQ. Ochilish vaqti: ${formatDateTime(info.opens_at)}.`;
         box.style.borderColor = 'rgba(239,68,68,.4)';
         box.style.background = 'rgba(239,68,68,.08)';
       } else if (status === 'closed') {
-        line = `ENDED. Last close time: ${formatDateTime(info.closes_at)}.`;
+        line = `TUGAGAN. Oxirgi tugash vaqti: ${formatDateTime(info.closes_at)}.`;
         box.style.borderColor = 'rgba(245,158,11,.4)';
         box.style.background = 'rgba(245,158,11,.08)';
       } else {
@@ -485,7 +493,7 @@
         box.style.background = 'rgba(0,255,204,.06)';
       }
 
-      const nextText = `${line} Open duration: ${settings.withdraw_window_hours || 36} hours.`;
+      const nextText = `${line} Ochiq turish muddati: ${settings.withdraw_window_hours || 36} soat.`;
       if (box.innerText !== nextText) box.innerText = nextText;
     }
 
@@ -529,7 +537,7 @@
             try {
               data = JSON.parse(text);
             } catch (err) {
-              lastError = new Error(`Backend returned an invalid response: ${baseUrl}`);
+              lastError = new Error(`Backend noto'g'ri javob qaytardi: ${baseUrl}`);
               continue;
             }
           }
@@ -547,7 +555,7 @@
         }
       }
 
-      throw lastError || new Error('Could not connect to backend');
+      throw lastError || new Error('Backendga ulanib bo‘lmadi');
     }
 
     async function api(path, options = {}) {
@@ -575,10 +583,29 @@
       return `$${Number(value || 0).toFixed(2)}`;
     }
 
+    function formatTon(value, digits = 4) {
+      if (value === null || value === undefined || value === '') return '-';
+      const number = Number(value);
+      return Number.isFinite(number) ? `${number.toFixed(digits)} TON` : '-';
+    }
+
+    function shortText(value, left = 8, right = 6) {
+      const text = String(value || '').trim();
+      if (!text) return '-';
+      if (text.length <= left + right + 3) return escapeHtml(text);
+      return `${escapeHtml(text.slice(0, left))}...${escapeHtml(text.slice(-right))}`;
+    }
+
+    function renderWalletCell(value) {
+      const address = String(value || '').trim();
+      if (!address) return '<span class="tiny">wallet yoq</span>';
+      return `<div class="mono">${shortText(address, 10, 8)}</div><div class="tiny">${escapeHtml(address)}</div>`;
+    }
+
     function renderTable(id, headers, rows) {
       const table = document.getElementById(id);
       table.innerHTML = `<thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>` +
-        `<tbody>${rows.join('') || `<tr><td colspan="${headers.length}">No data</td></tr>`}</tbody>`;
+        `<tbody>${rows.join('') || `<tr><td colspan="${headers.length}">Ma'lumot yo'q</td></tr>`}</tbody>`;
     }
 
     async function loadPublicSettings() {
@@ -591,14 +618,14 @@
 
     async function setTelegramMenuButton() {
       try {
-        setBusy('btn-set-menu-button', true, 'Updating...');
+        setBusy('btn-set-menu-button', true, 'Yangilanmoqda...');
         const statusBox = document.getElementById('telegram-menu-status');
-        if (statusBox) statusBox.innerText = 'Loading the new Mini App URL from backend...';
+        if (statusBox) statusBox.innerText = 'Backenddan yangi mini app URL olinmoqda...';
 
         const backendStatus = await loadBackendStatus();
         const input = document.getElementById('telegram-menu-url');
         const url = (input.value || backendStatus.webapp_url || '').trim();
-        if (!url) throw new Error('Mini App URL was not found. Deploy the backend first.');
+        if (!url) throw new Error('Mini app URL topilmadi. Avval backendni deploy qiling.');
         if (input) input.value = url;
 
         const result = await api('/admin/telegram/set-menu-button', {
@@ -606,12 +633,12 @@
           body: JSON.stringify({ url, text: 'Open Vidi Pay' })
         });
 
-        if (statusBox) statusBox.innerText = `Telegram menu updated: ${result.url || url}`;
-        setStatus('Telegram menu button updated.');
+        if (statusBox) statusBox.innerText = `Telegram menu yangilandi: ${result.url || url}`;
+        setStatus('Telegram menu button yangilandi.');
       } catch (err) {
         const statusBox = document.getElementById('telegram-menu-status');
-        if (statusBox) statusBox.innerText = `Telegram menu error: ${err.message}`;
-        setStatus(`Telegram menu error: ${err.message}`);
+        if (statusBox) statusBox.innerText = `Telegram menu xatosi: ${err.message}`;
+        setStatus(`Telegram menu xatosi: ${err.message}`);
       } finally {
         setBusy('btn-set-menu-button', false);
       }
@@ -641,17 +668,17 @@
 
     async function saveSettings() {
       try {
-        setStatus('Saving settings...');
+        setStatus('Sozlamalar saqlanyapti...');
         const body = {};
         for (const key of settingKeys) {
           const value = document.getElementById(`setting-${key}`).value;
           body[key] = key === 'withdraw_requires_payment' ? value === 'true' : value;
         }
         await api('/admin/settings', { method: 'POST', body: JSON.stringify(body) });
-        setStatus('Settings saved.');
+        setStatus('Sozlamalar saqlandi.');
         await loadSettings();
       } catch (err) {
-        setStatus(`Settings error: ${err.message}`);
+        setStatus(`Sozlama xatosi: ${err.message}`);
       }
     }
 
@@ -662,19 +689,19 @@
       const hours = Number(document.getElementById('withdraw-window-hours').value || 36);
 
       if (!dateValue) {
-        setStatus('Select an open date first.');
+        setStatus('Avval ochilish sanasini tanlang.');
         return;
       }
 
       if (!Number.isFinite(hours) || hours < 1) {
-        setStatus("Duration must be at least 1 hour.");
+        setStatus("Muddat kamida 1 soat bo'lishi kerak.");
         return;
       }
 
       try {
         adminCommandBusy = true;
-        setBusy('btn-schedule-withdraw', true, 'Scheduling...');
-        setStatus('Scheduling the withdraw timer...');
+        setBusy('btn-schedule-withdraw', true, 'Belgilanmoqda...');
+        setStatus('Pul yechish taymeri belgilanmoqda...');
         const opensAt = new Date(`${dateValue}T${timeValue}:00`);
         const result = await api('/admin/settings', {
           method: 'POST',
@@ -686,10 +713,10 @@
 
         const settings = applySettings(result.settings || await loadPublicSettings());
         setStatus(settings.withdraw_window?.status === 'locked' || settings.withdraw_window?.status === 'open'
-          ? 'Command completed and backend confirmed it.'
-          : 'Command was sent, but check the status again.');
+          ? 'Buyruq bajarildi va backend tasdiqladi.'
+          : 'Buyruq yuborildi, lekin holatni yana tekshiring.');
       } catch (err) {
-        setStatus(`Timer error: ${err.message}`);
+        setStatus(`Taymer xatosi: ${err.message}`);
       } finally {
         adminCommandBusy = false;
         setBusy('btn-schedule-withdraw', false);
@@ -701,14 +728,14 @@
       const hours = Number(document.getElementById('withdraw-window-hours').value || 36);
 
       if (!Number.isFinite(hours) || hours < 1) {
-        setStatus("Duration must be at least 1 hour.");
+        setStatus("Muddat kamida 1 soat bo'lishi kerak.");
         return;
       }
 
       try {
         adminCommandBusy = true;
-        setBusy('btn-open-withdraw-now', true, 'Opening...');
-        setStatus(`Withdraw window ${hours} hours is opening...`);
+        setBusy('btn-open-withdraw-now', true, 'Ochilyapti...');
+        setStatus(`Pul yechish oynasi ${hours} soatga ochilyapti...`);
         const result = await api('/admin/settings', {
           method: 'POST',
           body: JSON.stringify({
@@ -719,10 +746,10 @@
 
         const settings = applySettings(result.settings || await loadPublicSettings());
         setStatus(settings.withdraw_window?.status === 'open'
-          ? 'Withdraw window opened. Backend confirmed it.'
-          : 'Command was sent, but backend has not reported open yet.');
+          ? 'Pul yechish oynasi ochildi. Backend tasdiqladi.'
+          : 'Buyruq yuborildi, lekin backend hali open qaytarmadi.');
       } catch (err) {
-        setStatus(`Open error: ${err.message}`);
+        setStatus(`Ochish xatosi: ${err.message}`);
       } finally {
         adminCommandBusy = false;
         setBusy('btn-open-withdraw-now', false);
@@ -733,8 +760,8 @@
       if (adminCommandBusy) return;
       try {
         adminCommandBusy = true;
-        setBusy('btn-close-withdraw-now', true, 'Closing...');
-        setStatus('Closing the withdraw window...');
+        setBusy('btn-close-withdraw-now', true, 'Yopilyapti...');
+        setStatus('Pul yechish oynasi yopilyapti...');
         const result = await api('/admin/settings', {
           method: 'POST',
           body: JSON.stringify({
@@ -745,10 +772,10 @@
 
         const settings = applySettings(result.settings || await loadPublicSettings());
         setStatus(settings.withdraw_window?.is_open
-          ? 'Close command was sent, but the backend still reports it as open.'
-          : 'Withdraw window closed. Wallet will be locked.');
+          ? 'Yopish buyrug‘i yuborildi, lekin backend hali ochiq qaytardi.'
+          : 'Pul yechish oynasi yopildi. Wallet qulfga tushadi.');
       } catch (err) {
-        setStatus(`Close error: ${err.message}`);
+        setStatus(`Yopish xatosi: ${err.message}`);
       } finally {
         adminCommandBusy = false;
         setBusy('btn-close-withdraw-now', false);
@@ -759,13 +786,13 @@
       const payload = await api('/admin/users?limit=10000');
       const users = Array.isArray(payload) ? payload : (payload.users || []);
       const countEl = document.getElementById('users-count');
-      if (countEl) countEl.innerText = `${users.length} users loaded. Real Telegram users and backend-synced guests are visible in this list.`;
-      renderTable('users-table', ['Database ID', 'Telegram ID', 'Username', 'Name', 'Balance', 'Total time', 'Daily earnings', 'Lock', 'Status', 'Action'], users.map(u => `
+      if (countEl) countEl.innerText = `${users.length} ta user yuklandi. Real Telegram userlar ham, backendga sync bo'lgan guestlar ham shu ro'yxatda ko'rinadi.`;
+      renderTable('users-table', ['Baza ID', 'Telegram ID', 'Username', 'Ism', 'Balans', 'Umumiy vaqt', 'Kunlik daromad', 'Qulf', 'Holat', 'Amal'], users.map(u => `
         <tr id="user-row-${escapeHtml(u.telegram_id)}">
           <td>${escapeHtml(u.id)}</td><td>${escapeHtml(u.telegram_id)}</td>
           <td>${escapeHtml(u.username || '-')}</td><td>${escapeHtml([u.first_name, u.last_name].filter(Boolean).join(' ') || '-')}</td>
           <td>${formatMoney(u.balance)}</td><td>${Number(u.total_watch_seconds || 0)}s</td>
-          <td>${formatMoney(u.daily_income)}</td><td>${u.withdraw_unlocked ? 'yes' : 'none'}</td>
+          <td>${formatMoney(u.daily_income)}</td><td>${u.withdraw_unlocked ? 'ha' : 'yoq'}</td>
           ${renderUserControlCells(u)}
         </tr>
       `));
@@ -773,12 +800,12 @@
 
     function renderUserControlCells(user) {
       const blocked = Boolean(user.is_blocked || user.deleted_at);
-      const label = user.deleted_at ? 'account deleted' : (blocked ? 'blocked' : 'active');
+      const label = user.deleted_at ? 'account ochirilgan' : (blocked ? 'bloklangan' : 'aktiv');
       const pillClass = blocked ? 'blocked' : 'active';
       const lockClass = blocked ? 'lock-anim' : 'lock-anim unlock-anim';
       const buttonClass = blocked ? 'ok user-action' : 'danger user-action';
       const nextAction = blocked ? false : true;
-      const buttonText = blocked ? 'Unblock' : 'Block';
+      const buttonText = blocked ? 'Blokdan chiqarish' : 'Bloklash';
 
       return `
         <td id="user-status-${user.telegram_id}">
@@ -803,31 +830,31 @@
         statusCell.innerHTML = `
           <span class="user-status-pill ${blocked ? 'blocked' : 'active'}">
             <span class="lock-anim ${blocked ? '' : 'unlock-anim'}"></span>
-            ${busy ? 'bajarilmoqda...' : (blocked ? 'blocked' : 'active')}
+            ${busy ? 'bajarilmoqda...' : (blocked ? 'bloklangan' : 'aktiv')}
           </span>
         `;
       }
 
       if (actionCell) {
         actionCell.innerHTML = blocked
-          ? `<button class="ok user-action" ${busy ? 'disabled' : ''} onclick="setUserBlock('${telegramId}', false)">Unblock</button>`
-          : `<button class="danger user-action" ${busy ? 'disabled' : ''} onclick="setUserBlock('${telegramId}', true)">Block</button>`;
+          ? `<button class="ok user-action" ${busy ? 'disabled' : ''} onclick="setUserBlock('${telegramId}', false)">Blokdan chiqarish</button>`
+          : `<button class="danger user-action" ${busy ? 'disabled' : ''} onclick="setUserBlock('${telegramId}', true)">Bloklash</button>`;
       }
     }
 
     async function setUserBlock(telegramId, shouldBlock) {
       try {
         paintUserBlockState(telegramId, shouldBlock, true);
-        setStatus(shouldBlock ? 'Blocking user...' : 'Unblocking user...');
+        setStatus(shouldBlock ? 'User bloklanyapti...' : 'User blokdan chiqarilyapti...');
         await api(`/admin/users/${encodeURIComponent(telegramId)}/${shouldBlock ? 'block' : 'unblock'}`, {
           method: 'POST',
           body: '{}'
         });
         paintUserBlockState(telegramId, shouldBlock, false);
-        setStatus(shouldBlock ? 'User blocked.' : 'User unblocked.');
+        setStatus(shouldBlock ? 'User bloklandi.' : 'User blokdan chiqarildi.');
         await loadUsers();
       } catch (err) {
-        setStatus(`User action error: ${err.message}`);
+        setStatus(`User amali xatosi: ${err.message}`);
         await loadUsers();
       }
     }
@@ -839,21 +866,21 @@
       const status = document.getElementById('manual-earning-status');
 
       if (!telegramId || !Number.isFinite(amount) || amount <= 0) {
-        status.innerText = "Enter Telegram ID and a positive amount.";
+        status.innerText = "Telegram ID va musbat summa kiriting.";
         return;
       }
 
       try {
-        setBusy('btn-add-earning', true, "Adding...");
-        status.innerText = "Updating balance and time...";
+        setBusy('btn-add-earning', true, "Qo'shilyapti...");
+        status.innerText = "Balans va vaqt yangilanyapti...";
         const result = await api(`/admin/users/${encodeURIComponent(telegramId)}/add-earning`, {
           method: 'POST',
           body: JSON.stringify({ amount, minutes })
         });
-        status.innerText = `$${Number(result.amount).toFixed(2)} added. Time: ${result.seconds}s.`;
+        status.innerText = `$${Number(result.amount).toFixed(2)} qo'shildi. Vaqt: ${result.seconds}s.`;
         await loadUsers();
       } catch (err) {
-        status.innerText = `Error: ${err.message}`;
+        status.innerText = `Xato: ${err.message}`;
       } finally {
         setBusy('btn-add-earning', false);
       }
@@ -867,17 +894,17 @@
       const walletType = document.getElementById('history-wallet-type').value.trim() || 'TON';
       const walletAddress = document.getElementById('history-wallet-address').value.trim() || 'Admin wallet';
       const historyStatus = document.getElementById('history-status').value;
-      const note = document.getElementById('history-note').value.trim() || "History added by admin";
+      const note = document.getElementById('history-note').value.trim() || "Admin qo'shgan history";
       const status = document.getElementById('manual-history-status');
 
       if (!telegramId || !Number.isFinite(amount) || amount <= 0 || !dateValue) {
-        status.innerText = "Enter Telegram ID, amount, and date correctly.";
+        status.innerText = "Telegram ID, summa va sanani to'g'ri kiriting.";
         return;
       }
 
       try {
-        setBusy('btn-add-history', true, "Adding...");
-        status.innerText = "Adding history record...";
+        setBusy('btn-add-history', true, "Qo'shilyapti...");
+        status.innerText = "History yozuvi qo'shilyapti...";
         const createdAt = new Date(`${dateValue}T${timeValue}:00`);
         const result = await api(`/admin/users/${encodeURIComponent(telegramId)}/history/withdraw`, {
           method: 'POST',
@@ -891,10 +918,10 @@
             processed_at: createdAt.toISOString()
           })
         });
-        status.innerText = `History added. ID: ${result.withdraw.id}`;
+        status.innerText = `History qo'shildi. ID: ${result.withdraw.id}`;
         await loadWithdraws();
       } catch (err) {
-        status.innerText = `Error: ${err.message}`;
+        status.innerText = `Xato: ${err.message}`;
       } finally {
         setBusy('btn-add-history', false);
       }
@@ -902,7 +929,7 @@
 
     async function sendNotification() {
       try {
-        setBusy('btn-send-notify', true, 'Sending...');
+        setBusy('btn-send-notify', true, 'Yuborilyapti...');
         const title = document.getElementById('notify-title').value.trim();
         const message = document.getElementById('notify-message').value.trim();
         const telegram_id = document.getElementById('notify-telegram-id').value.trim();
@@ -912,11 +939,11 @@
           body: JSON.stringify({ title, message, telegram_id: telegram_id || null })
         });
 
-        setStatus('Notification sent.');
+        setStatus('Bildirishnoma yuborildi.');
         document.getElementById('notify-title').value = '';
         document.getElementById('notify-message').value = '';
       } catch (err) {
-        setStatus(`Notification error: ${err.message}`);
+        setStatus(`Bildirishnoma xatosi: ${err.message}`);
       } finally {
         setBusy('btn-send-notify', false);
       }
@@ -925,14 +952,14 @@
     async function loadWithdraws() {
       const status = document.getElementById('withdraw-status').value;
       const items = await api(`/admin/withdraws?status=${encodeURIComponent(status)}`);
-      renderTable('withdraws-table', ['ID', 'Telegram', 'Amount', 'Wallet', 'Status', 'Actions'], items.map(w => `
+      renderTable('withdraws-table', ['ID', 'Telegram', 'Summa', 'Hamyon', 'Holat', 'Amallar'], items.map(w => `
         <tr>
           <td>${w.id}</td><td>${w.telegram_id}</td><td>${w.amount}</td>
           <td>${w.wallet_type}<br>${w.wallet_address}</td>
           <td class="status ${w.status}">${w.status}</td>
           <td>
-            ${w.status === 'pending' ? `<button class="ok" onclick="approveWithdraw(${w.id})">Mark as paid</button>
-            <button class="danger" onclick="rejectWithdraw(${w.id})">Reject</button>` : ''}
+            ${w.status === 'pending' ? `<button class="ok" onclick="approveWithdraw(${w.id})">To'landi deb belgilash</button>
+            <button class="danger" onclick="rejectWithdraw(${w.id})">Rad etish</button>` : ''}
           </td>
         </tr>
       `));
@@ -944,35 +971,60 @@
     }
 
     async function rejectWithdraw(id) {
-      const reason = prompt('Reject reason') || 'Rejected by admin';
+      const reason = prompt('Rad etish sababi') || 'Admin tomonidan rad etildi';
       await api(`/admin/withdraw/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) });
       await loadWithdraws();
     }
 
     async function loadPaymentOrders() {
       const status = document.getElementById('payment-status').value;
-      const items = await api(`/admin/payment-orders?status=${encodeURIComponent(status)}`);
-      renderTable('payments-table', ["ID", "Telegram ID", "Amount", "Payment type", "Status", "Actions"], items.map(p => `
+      const telegramId = document.getElementById('payment-telegram-id')?.value.trim() || '';
+      const includeLiveBalance = document.getElementById('payment-live-balance')?.checked ? '1' : '';
+      const params = new URLSearchParams({ status, limit: '50' });
+      if (telegramId) params.set('telegram_id', telegramId);
+      if (includeLiveBalance) params.set('include_live_balance', includeLiveBalance);
+      const payload = await api(`/admin/payment-ledger?${params.toString()}`);
+      const items = Array.isArray(payload) ? payload : (payload.data || []);
+      renderTable('payments-table', ["ID", "User", "Deposit wallet", "Deposit", "Refund", "Qolgan TON", "Holat", "Amallar"], items.map(p => `
         <tr>
-          <td>${p.id}</td><td>${p.telegram_id}</td><td>${p.amount} TONCOIN</td>
-          <td>Automatic TON blockchain scanner</td>
-          <td class="status ${p.status}">${p.status === 'pending' ? 'Pending' : 'Approved'}</td>
+          <td>${escapeHtml(p.id)}</td>
           <td>
-            ${p.status === 'pending' ? `<button class="warning" onclick="approvePaymentOrder(${p.id})">TonAPI fallback</button>` : '<span style="color:var(--ok);">Completed</span>'}
+            <div class="mono">${escapeHtml(p.telegram_id)}</div>
+            <div class="tiny">${escapeHtml(p.username || p.first_name || '')}</div>
+          </td>
+          <td>${renderWalletCell(p.deposit_wallet)}</td>
+          <td>
+            <div>Kerak: ${formatTon(p.required_amount_ton, 2)}</div>
+            <div>Kelgan: ${formatTon(p.paid_amount_ton, 4)}</div>
+            <div class="tiny">TX: ${shortText(p.tx_hash, 10, 8)}</div>
+          </td>
+          <td>
+            <div>${p.refund_status ? escapeHtml(p.refund_status) : 'hali yoq'}</div>
+            <div class="tiny">User balansida: ${formatTon(p.refund_user_visible_amount_ton, 2)}</div>
+            <div class="tiny">Auto payout: ${formatTon(p.refund_payout_amount_ton, 2)}</div>
+          </td>
+          <td>
+            <div>Kutilgan: ${formatTon(p.expected_retained_after_refund_ton, 4)}</div>
+            <div>Hozirgi hold: ${formatTon(p.expected_current_wallet_hold_ton, 4)}</div>
+            <div class="tiny">Live: ${p.wallet_live_balance_ok ? formatTon(p.wallet_live_balance_ton, 6) : (p.wallet_live_balance_error ? escapeHtml(p.wallet_live_balance_error) : 'ochirilgan')}</div>
+          </td>
+          <td class="status ${escapeHtml(p.status)}">${p.status === 'pending' ? 'Kutilmoqda' : (p.status === 'confirmed' ? 'Tasdiqlangan' : escapeHtml(p.status))}</td>
+          <td>
+            ${p.status === 'pending' ? `<button class="warning" onclick='approvePaymentOrder(${JSON.stringify(String(p.id))})'>Manual zaxira</button>` : '<span style="color:var(--ok);">Bajarilgan</span>'}
           </td>
         </tr>
       `));
     }
 
     async function approvePaymentOrder(id) {
-      if(!confirm("This is only a backup manual confirmation. Check the automatic scanner first. Continue anyway?")) return;
+      if(!confirm("Bu faqat zaxira manual tasdiqlash. Avval avtomat skanerni tekshirish tavsiya qilinadi. Baribir tasdiqlaysizmi?")) return;
       try {
         await api(`/admin/payment-orders/${id}/approve`, { method: 'POST', body: '{}' });
         await loadPaymentOrders();
         await loadPaymentWallets();
-        alert("TonAPI fallback confirmation completed.");
+        alert("Manual zaxira tasdiqlash bajarildi.");
       } catch(err) {
-        alert("Error: " + err.message);
+        alert("Xatolik: " + err.message);
       }
     }
 
@@ -982,34 +1034,34 @@
         const data = await api('/admin/payment-wallets');
         const scanner = data.scanner || {};
         const config = data.config || {};
-        const lastRun = scanner.lastRunAt ? new Date(scanner.lastRunAt).toLocaleString() : 'not yet';
+        const lastRun = scanner.lastRunAt ? new Date(scanner.lastRunAt).toLocaleString() : 'hali yoq';
         if (box) {
           box.innerText = [
-            `Wallets: total ${data.total || 0}, active ${data.active || 0}, available ${data.available || 0}, assigned ${data.assigned || 0}`,
-            `Pending orders: ${data.pending_orders || 0}`,
-            `Scanner: every ${Math.round((config.scan_interval_ms || 15000) / 1000)} seconds automatically, last check: ${lastRun}`,
-            `Checked: ${scanner.checked || 0}, confirmed: ${scanner.confirmed || 0}`,
-            scanner.lastError ? `Last error: ${scanner.lastError}` : 'Last error: none'
+            `Hamyonlar: jami ${data.total || 0}, aktiv ${data.active || 0}, bo'sh ${data.available || 0}, band ${data.assigned || 0}`,
+            `Pending orderlar: ${data.pending_orders || 0}`,
+            `Skaner: har ${Math.round((config.scan_interval_ms || 15000) / 1000)} soniyada avtomat ishlaydi, oxirgi tekshiruv: ${lastRun}`,
+            `Tekshirildi: ${scanner.checked || 0}, tasdiqlandi: ${scanner.confirmed || 0}`,
+            scanner.lastError ? `Oxirgi xato: ${scanner.lastError}` : 'Oxirgi xato: yoq'
           ].join('\\n');
         }
       } catch (err) {
-        if (box) box.innerText = `Scanner status did not load: ${err.message}`;
+        if (box) box.innerText = `Skaner holati yuklanmadi: ${err.message}`;
         throw err;
       }
     }
 
     async function runPaymentScan() {
       try {
-        setBusy('btn-run-payment-scan', true, 'Checking...');
+        setBusy('btn-run-payment-scan', true, 'Tekshirilmoqda...');
         const result = await api('/admin/payment-scan/run', {
           method: 'POST',
           body: JSON.stringify({ limit: 100 })
         });
         await loadPaymentOrders();
         await loadPaymentWallets();
-        setStatus(`Blockchain checked. Total approved: ${result.confirmed || 0}`);
+        setStatus(`Blockchain tekshirildi. Tasdiqlangan jami: ${result.confirmed || 0}`);
       } catch (err) {
-        setStatus(`Scanner error: ${err.message}`);
+        setStatus(`Skaner xatosi: ${err.message}`);
       } finally {
         setBusy('btn-run-payment-scan', false);
       }
@@ -1018,11 +1070,11 @@
     async function refreshAll() {
       const errors = [];
       try { await loadSettings({ renderForm: !settingsFormRendered }); } catch (err) { errors.push(err.message); }
-      try { await loadUsers(); } catch (err) { errors.push(`Users: ${err.message}`); }
-      try { await loadWithdraws(); } catch (err) { errors.push(`Withdraw: ${err.message}`); }
-      try { await loadPaymentOrders(); } catch (err) { errors.push(`Payments: ${err.message}`); }
-      try { await loadPaymentWallets(); } catch (err) { errors.push(`Scanner: ${err.message}`); }
-      setStatus(errors.length ? errors.join(' | ') : 'Data loaded.');
+      try { await loadUsers(); } catch (err) { errors.push(`Foydalanuvchilar: ${err.message}`); }
+      try { await loadWithdraws(); } catch (err) { errors.push(`Pul yechish: ${err.message}`); }
+      try { await loadPaymentOrders(); } catch (err) { errors.push(`To‘lovlar: ${err.message}`); }
+      try { await loadPaymentWallets(); } catch (err) { errors.push(`Skaner: ${err.message}`); }
+      setStatus(errors.length ? errors.join(' | ') : 'Ma\'lumotlar yuklandi.');
     }
 
     document.getElementById('admin-token').value = localStorage.getItem('vidipay_admin_token') || '';
