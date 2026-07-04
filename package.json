@@ -4,7 +4,8 @@
   "description": "VidiPay Telegram bot",
   "main": "bot.js",
   "scripts": {
-    "start": "node bot.js"
+    "start": "node bot.js",
+    "verify:frontend-admin": "node tools/verify-frontend-admin-static-1_5m.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
