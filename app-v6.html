@@ -2776,6 +2776,7 @@
         let currentWatchCompleted = false;
         let currentMrBeastVideoId = null;
         let watchSessionSubmitted = false;
+        let watchActivationStopInProgress = false;
         let watchSessionVideoIds = new Set();
         let lastWatchUiSnapshot = '';
         let rewardedMrBeastVideos = new Set();
@@ -5992,12 +5993,46 @@
 
                 syncCountedWatchSeconds();
                 updateWatchSessionUi(t('watch_counting'));
+                if (shouldStopWatchAtActivationLimit(countedWatchSeconds)) {
+                    stopWatchAtActivationLimit();
+                }
             }, 1000);
         }
 
         function estimateWatchReward(seconds) {
             const rate = Number(currentTierStatus.reward_per_second || backendSettings.view_reward_per_second || 0.01);
             return Number((Math.max(0, Number(seconds || 0)) * rate).toFixed(2));
+        }
+
+        function shouldStopWatchAtActivationLimit(seconds) {
+            if (latestPaymentStatus?.withdraw_unlocked) return false;
+            const required = getWalletUnlockRequiredAmount();
+            const current = getWalletEarningAmount();
+            if (current >= required) return true;
+            return current + estimateWatchReward(seconds) >= required;
+        }
+
+        function stopWatchAtActivationLimit() {
+            if (watchActivationStopInProgress || watchSessionSubmitted) return;
+            watchActivationStopInProgress = true;
+            if (mrbeastPlayer && mrbeastPlayer.pauseVideo) {
+                mrbeastPlayer.pauseVideo();
+            }
+            clearWatchFallbackPlayer();
+            clearInterval(watchTimerInterval);
+            updateWatchSessionUi(t('activation_deposit_required'));
+            closeModal('watchModal');
+            finalizeWatchSession()
+                .catch(err => {
+                    const watchSeconds = syncCountedWatchSeconds();
+                    showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), err.message || t('watch_reward_save_failed'));
+                })
+                .finally(() => {
+                    watchActivationStopInProgress = false;
+                    updateWalletLockUi();
+                    updateGrowthLockUi();
+                    refreshPaymentStatus().catch(() => null);
+                });
         }
 
         async function finalizeWatchSession() {
