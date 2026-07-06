@@ -3014,7 +3014,8 @@
 
             const result = await apiRequest('/user/sync', {
                 method: 'POST',
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
+                timeoutMs: 12000
             });
 
             applyBackendUser(result.user);
@@ -3272,7 +3273,7 @@
         }
 
         async function refreshStatsFromBackend() {
-            const stats = await apiRequest(`/stats/${encodeURIComponent(referralUserId)}`);
+            const stats = await apiRequest(`/stats/${encodeURIComponent(referralUserId)}`, { timeoutMs: 8000 });
 
             appState.balance = Number(stats.balance || 0);
             appState.totalViews = Number(stats.total_views || 0);
@@ -6082,7 +6083,8 @@
                 setDomText(statusEl, '...');
                 await apiRequest('/user/delete', {
                     method: 'POST',
-                    body: JSON.stringify({ telegram_id: String(referralUserId) })
+                    body: JSON.stringify({ telegram_id: String(referralUserId) }),
+                    timeoutMs: 12000
                 });
                 setDomText(statusEl, t('account_deleted'));
             } catch (err) {
@@ -6498,7 +6500,8 @@
                         video_id: videoId,
                         completed: true,
                         client_country_code: await detectClientCountryCode()
-                    })
+                    }),
+                    timeoutMs: 15000
                 });
 
                 rewardedMrBeastVideos.add(videoId);
