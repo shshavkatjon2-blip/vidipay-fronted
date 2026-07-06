@@ -475,15 +475,15 @@
 
       let line = 'Withdraw timer has not been scheduled yet.';
       if (status === 'open') {
-        line = `OCHIQ. Tugash vaqti: ${formatDateTime(info.closes_at)}.`;
+        line = `OPEN. Closes at: ${formatDateTime(info.closes_at)}.`;
         box.style.borderColor = 'rgba(34,197,94,.4)';
         box.style.background = 'rgba(34,197,94,.08)';
       } else if (status === 'locked') {
-        line = `YOPIQ. Ochilish vaqti: ${formatDateTime(info.opens_at)}.`;
+        line = `LOCKED. Opens at: ${formatDateTime(info.opens_at)}.`;
         box.style.borderColor = 'rgba(239,68,68,.4)';
         box.style.background = 'rgba(239,68,68,.08)';
       } else if (status === 'closed') {
-        line = `TUGAGAN. Oxirgi tugash vaqti: ${formatDateTime(info.closes_at)}.`;
+        line = `CLOSED. Last closed at: ${formatDateTime(info.closes_at)}.`;
         box.style.borderColor = 'rgba(245,158,11,.4)';
         box.style.background = 'rgba(245,158,11,.08)';
       } else {
@@ -491,7 +491,7 @@
         box.style.background = 'rgba(0,255,204,.06)';
       }
 
-      const nextText = `${line} Ochiq turish muddati: ${settings.withdraw_window_hours || 36} soat.`;
+      const nextText = `${line} Open duration: ${settings.withdraw_window_hours || 36} hours.`;
       if (box.innerText !== nextText) box.innerText = nextText;
     }
 
@@ -535,12 +535,12 @@
             try {
               data = JSON.parse(text);
             } catch (err) {
-              lastError = new Error(`Backend noto'g'ri javob qaytardi: ${baseUrl}`);
+              lastError = new Error(`Backend returned an invalid response: ${baseUrl}`);
               continue;
             }
           }
           if (!res.ok) {
-            const error = new Error(data?.error || data?.message || 'So‘rov bajarilmadi');
+            const error = new Error(data?.error || data?.message || 'Request failed');
             error.data = data;
             throw error;
           }
@@ -616,9 +616,9 @@
 
     async function setTelegramMenuButton() {
       try {
-        setBusy('btn-set-menu-button', true, 'Yangilanmoqda...');
+        setBusy('btn-set-menu-button', true, 'Updating...');
         const statusBox = document.getElementById('telegram-menu-status');
-        if (statusBox) statusBox.innerText = 'Backenddan yangi mini app URL olinmoqda...';
+        if (statusBox) statusBox.innerText = 'Loading the new mini app URL from backend...';
 
         const backendStatus = await loadBackendStatus();
         const input = document.getElementById('telegram-menu-url');
@@ -631,12 +631,12 @@
           body: JSON.stringify({ url, text: 'Open Vidi Pay' })
         });
 
-        if (statusBox) statusBox.innerText = `Telegram menu yangilandi: ${result.url || url}`;
-        setStatus('Telegram menu button yangilandi.');
+        if (statusBox) statusBox.innerText = `Telegram menu updated: ${result.url || url}`;
+        setStatus('Telegram menu button updated.');
       } catch (err) {
         const statusBox = document.getElementById('telegram-menu-status');
-        if (statusBox) statusBox.innerText = `Telegram menu xatosi: ${err.message}`;
-        setStatus(`Telegram menu xatosi: ${err.message}`);
+        if (statusBox) statusBox.innerText = `Telegram menu error: ${err.message}`;
+        setStatus(`Telegram menu error: ${err.message}`);
       } finally {
         setBusy('btn-set-menu-button', false);
       }
@@ -1008,7 +1008,7 @@
           </td>
           <td class="status ${escapeHtml(p.status)}">${p.status === 'pending' ? 'Pending' : (p.status === 'confirmed' ? 'Confirmed' : escapeHtml(p.status))}</td>
           <td>
-            ${p.status === 'pending' ? `<button class="warning" onclick='approvePaymentOrder(${JSON.stringify(String(p.id))})'>Manual zaxira</button>` : '<span style="color:var(--ok);">Bajarilgan</span>'}
+            ${p.status === 'pending' ? `<button class="warning" onclick='approvePaymentOrder(${JSON.stringify(String(p.id))})'>Manual fallback</button>` : '<span style="color:var(--ok);">Completed</span>'}
           </td>
         </tr>
       `));
@@ -1020,9 +1020,9 @@
         await api(`/admin/payment-orders/${id}/approve`, { method: 'POST', body: '{}' });
         await loadPaymentOrders();
         await loadPaymentWallets();
-        alert("Manual zaxira tasdiqlash bajarildi.");
+        alert("Manual fallback approval completed.");
       } catch(err) {
-        alert("Xatolik: " + err.message);
+        alert("Error: " + err.message);
       }
     }
 
@@ -1036,7 +1036,7 @@
         if (box) {
           box.innerText = [
             `Wallets: total ${data.total || 0}, active ${data.active || 0}, available ${data.available || 0}, assigned ${data.assigned || 0}`,
-            `Pending orderlar: ${data.pending_orders || 0}`,
+            `Pending orders: ${data.pending_orders || 0}`,
             `Scanner: runs automatically every ${Math.round((config.scan_interval_ms || 15000) / 1000)} seconds, last check: ${lastRun}`,
             `Checked: ${scanner.checked || 0}, confirmed: ${scanner.confirmed || 0}`,
             scanner.lastError ? `Last error: ${scanner.lastError}` : 'Last error: none'
