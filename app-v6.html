@@ -146,12 +146,32 @@
         }
         .ton-payment-actions button {
             min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             border-radius: 12px;
             border: 1px solid rgba(0, 255, 204, 0.28);
             background: rgba(0, 255, 204, 0.1);
             color: #ffffff;
             font-weight: 900;
+            line-height: 1.25;
+            white-space: normal;
+            touch-action: manipulation;
             cursor: pointer;
+        }
+        #payment-address-box {
+            display: block;
+        }
+        #payment-address-text {
+            overflow-wrap: anywhere;
+        }
+        #payment-qr,
+        .payment-qr,
+        .qr-code,
+        .qrcode,
+        canvas[data-payment-qr] {
+            display: none !important;
         }
         .wallet-activation-card {
             margin-top: 14px;
@@ -274,6 +294,14 @@
         @media (max-width: 420px) {
             .wallet-flow-row { grid-template-columns: 1fr; }
             .ton-payment-actions { grid-template-columns: 1fr; }
+            .ton-payment-actions button { min-height: 48px; }
+            .modal-close {
+                width: 44px;
+                height: 44px;
+                top: 10px;
+                right: 10px;
+                z-index: 5;
+            }
         }
 
         /* TOP NAVBAR */
@@ -2675,10 +2703,8 @@
         if (apiOverrideParam && /^https:\/\/.+/i.test(apiOverrideParam)) {
             localStorage.setItem('vidiPayApiBase', apiOverrideParam.replace(/\/$/, ''));
         }
-        const FALLBACK_API_BASE_URLS = [
-            'https://vidipay-backend-1.onrender.com',
-            'http://127.0.0.1:10000'
-        ];
+        const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
+        const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
 
         function normalizeApiBaseUrl(value) {
             const raw = String(value || '').trim().replace(/\/$/, '');
@@ -2711,7 +2737,7 @@
             return [...new Set(candidates)];
         }
 
-        let API_BASE_URL = getApiBaseCandidates()[0] || 'http://127.0.0.1:10000';
+        let API_BASE_URL = getApiBaseCandidates()[0] || PRODUCTION_API_BASE_URL;
         localStorage.setItem('vidiPayApiBase', API_BASE_URL);
         const MRBEAST_RANDOM_START_MAX = 40;
         const DAY_MS = 24 * 60 * 60 * 1000;
@@ -5112,7 +5138,7 @@
         });
 
 
-        // MUTLOQ YANGI OYNA OCHISH VA ESKILARINI BERKITIY LOGIKASI
+        // Always open one modal at a time and close the previous modal.
         function openModal(id) { 
             // Close any modal that may already be open before switching tabs
             const overlays = document.querySelectorAll('.modal-overlay');
@@ -5121,7 +5147,6 @@
                 modal.style.display = 'none';
             });
             
-            // Keyin yangi oynani mustaqil ochamiz
             const modal = document.getElementById(id);
             if (modal) {
                 modal.classList.add('is-open');
@@ -5204,7 +5229,7 @@
             setText('lbl-watch-result-reward', dict.earned_result);
             setText('lbl-mark-all-read', dict.mark_all_read);
 
-            // YANGI QO'SHILGAN TARJIMALAR UCHUN:
+            // Extra visible labels used by the wallet and deposit screens.
             setText('lbl-unlock-title', dict.account_unlock_title || languages.en.account_unlock_title);
             setText('lbl-fastest-method', dict.fastest_method || 'Security confirmation');
             setText('lbl-fiat-desc', dict.fiat_desc || languages.en.fiat_desc);
@@ -6450,6 +6475,14 @@
 
             openModal('tonDepositModal');
             const statusEl = document.getElementById('ton-deposit-status-text');
+            const addressBox = document.getElementById('payment-address-box');
+            const amountEl = document.getElementById('payment-amount-text');
+            const addressEl = document.getElementById('payment-address-text');
+            const expiryEl = document.getElementById('payment-expiry-text');
+            if (addressBox) addressBox.style.display = 'block';
+            setDomText(amountEl, `${TON_ACTIVATION_AMOUNT.toFixed(2)} TONCOIN`);
+            setDomText(addressEl, t('card_order_loading'));
+            setDomText(expiryEl, '');
             setDomText(statusEl, t('card_order_loading'));
 
             try {
