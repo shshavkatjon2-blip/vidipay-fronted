@@ -144,8 +144,6 @@
       min-width: 132px;
     }
     .notice { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
-    .mono { font-family: Consolas, "Courier New", monospace; word-break: break-all; }
-    .tiny { color: var(--muted); font-size: 12px; line-height: 1.45; }
     .notice-box {
       border: 1px solid rgba(0,255,204,.22);
       background: rgba(0,255,204,.06);
@@ -200,12 +198,12 @@
     <div class="login-row">
       <input id="admin-token" type="password" placeholder="Admin token">
       <button onclick="saveToken()">Save token</button>
-      <span class="notice" id="status-line">Enter admin token.</span>
+      <span class="notice" id="status-line">Enter the admin token.</span>
     </div>
 
     <section>
       <h2>Telegram mini app URL</h2>
-      <div class="notice-box" id="telegram-menu-status">If the old window appears, press this button after backend deploy.</div>
+      <div class="notice-box" id="telegram-menu-status">If Telegram still opens an old screen, press this after the backend deploy.</div>
       <div class="login-row">
         <input id="telegram-menu-url" placeholder="Mini app URL is loaded automatically">
         <button class="primary" id="btn-set-menu-button" onclick="setTelegramMenuButton()">Update Telegram menu URL</button>
@@ -215,15 +213,15 @@
     <section>
       <h2>Settings</h2>
       <div class="timer-panel">
-        <h3>Withdraw Timer</h3>
-        <div class="notice-box" id="window-status-box">Timer status appears after the token is saved.</div>
+        <h3>Withdrawal timer</h3>
+        <div class="notice-box" id="window-status-box">Timer status appears after saving the token.</div>
         <div class="timer-row">
           <div class="timer-field">
-            <label>Open date</label>
+            <label>Opening date</label>
             <input id="withdraw-open-date" type="date">
           </div>
           <div class="timer-field">
-            <label>Open time</label>
+            <label>Opening time</label>
             <input id="withdraw-open-time" type="time">
           </div>
           <div class="timer-field">
@@ -251,7 +249,7 @@
     </section>
 
     <section>
-      <h2>Add Manual User Earnings</h2>
+      <h2>Add manual user earning</h2>
       <div class="timer-panel">
         <div class="timer-row">
           <div class="timer-field">
@@ -263,19 +261,19 @@
             <input id="earning-amount" type="number" min="0.01" step="0.01" placeholder="Example: 100">
           </div>
           <div class="timer-field">
-            <label>Minutes earned over</label>
+            <label>Minutes earned</label>
             <input id="earning-minutes" type="number" min="0" step="0.01" placeholder="Example: 10">
           </div>
         </div>
         <div class="timer-actions">
           <button class="primary" id="btn-add-earning" onclick="addManualEarning()">Add to balance and time</button>
         </div>
-        <div class="notice" id="manual-earning-status">This appears in the user screen as balance, total time, daily time, and daily income.</div>
+        <div class="notice" id="manual-earning-status">This appears in the user app as balance, total time, daily time, and daily income.</div>
       </div>
     </section>
 
     <section>
-      <h2>Add Manual User History</h2>
+      <h2>Add manual user history entry</h2>
       <div class="timer-panel">
         <div class="timer-row">
           <div class="timer-field">
@@ -312,18 +310,18 @@
           </div>
           <div class="timer-field">
             <label>Note</label>
-            <input id="history-note" placeholder="Example: manual admin history">
+            <input id="history-note" placeholder="Example: admin-added history">
           </div>
         </div>
         <div class="timer-actions">
           <button class="primary" id="btn-add-history" onclick="addManualHistory()">Add to history</button>
         </div>
-        <div class="notice" id="manual-history-status">The entry appears as a receipt in the user app History section.</div>
+        <div class="notice" id="manual-history-status">The entry appears as a receipt in the History section of the user app.</div>
       </div>
     </section>
 
     <section>
-      <h2>Send Notification / News</h2>
+      <h2>Send notification / news</h2>
       <div class="timer-panel">
         <div class="timer-row">
           <div class="timer-field">
@@ -331,7 +329,7 @@
             <input id="notify-title" placeholder="Example: New update">
           </div>
           <div class="timer-field">
-            <label>Telegram ID, leave empty for all</label>
+            <label>Telegram ID, leave empty for all users</label>
             <input id="notify-telegram-id" placeholder="77777 or empty">
           </div>
         </div>
@@ -347,7 +345,7 @@
 
     <section>
       <div class="toolbar">
-        <h2 style="margin-right:auto;">Withdraw Requests</h2>
+        <h2 style="margin-right:auto;">Withdrawal requests</h2>
         <select id="withdraw-status" onchange="loadWithdraws()">
           <option value="pending">Pending</option>
           <option value="approved">Approved</option>
@@ -359,27 +357,21 @@
 
     <section>
       <div class="toolbar">
-        <h2 style="margin-right:auto;">Payment Orders</h2>
-        <input id="payment-telegram-id" placeholder="Test Telegram ID" style="max-width:180px;" onkeydown="if(event.key==='Enter') loadPaymentOrders()">
+        <h2 style="margin-right:auto;">Payment orders</h2>
         <select id="payment-status" onchange="loadPaymentOrders()">
           <option value="pending">Pending</option>
           <option value="confirmed">Confirmed</option>
           <option value="all">All</option>
         </select>
-        <label class="tiny" style="display:flex;align-items:center;gap:6px;">
-          <input id="payment-live-balance" type="checkbox" style="width:auto;min-height:auto;" onchange="loadPaymentOrders()">
-          Live balance
-        </label>
-        <button onclick="loadPaymentOrders()">Refresh</button>
       </div>
       <div class="timer-panel">
-        <h3>Automatic TON Scanner</h3>
-        <div class="notice" id="payment-scanner-status">Status is loading...</div>
+        <h3>Automatic TON scanner</h3>
+        <div class="notice" id="payment-scanner-status">Loading status...</div>
         <div class="timer-actions" style="margin-top:10px;">
-          <button class="primary" id="btn-run-payment-scan" onclick="runPaymentScan()">Check blockchain now</button>
+          <button class="primary" id="btn-run-payment-scan" onclick="runPaymentScan()">Scan blockchain now</button>
           <button id="btn-load-payment-wallets" onclick="loadPaymentWallets()">Refresh scanner status</button>
         </div>
-      <div class="notice">Primary flow is automatic: when a TON blockchain payment is found, the system opens withdrawal automatically. Manual approval is only a fallback when TonAPI is temporarily unavailable.</div>
+        <div class="notice">Main flow is automatic: when a TON blockchain payment is found, the system unlocks withdrawal by itself. Manual approval is only a backup if TonAPI is temporarily unavailable.</div>
       </div>
       <div class="grid"><table id="payments-table"></table></div>
     </section>
@@ -417,7 +409,7 @@
       ].map(normalizeApiBaseUrl).filter(Boolean))];
     }
 
-    let API_BASE_URL = getAdminApiCandidates()[0] || 'https://vidipay-backend-1.onrender.com';
+    let API_BASE_URL = getAdminApiCandidates()[0] || ADMIN_PRODUCTION_API_BASE_URL;
     const settingKeys = [
       'view_seconds_required',
       'view_reward_per_second',
@@ -473,17 +465,17 @@
       const info = settings.withdraw_window || {};
       const status = info.status || 'unknown';
 
-      let line = 'Withdraw timer has not been scheduled yet.';
+      let line = 'Withdrawal timer is not scheduled yet.';
       if (status === 'open') {
-        line = `OPEN. Closes at: ${formatDateTime(info.closes_at)}.`;
+        line = `OPEN. Closing time: ${formatDateTime(info.closes_at)}.`;
         box.style.borderColor = 'rgba(34,197,94,.4)';
         box.style.background = 'rgba(34,197,94,.08)';
       } else if (status === 'locked') {
-        line = `LOCKED. Opens at: ${formatDateTime(info.opens_at)}.`;
+        line = `LOCKED. Opening time: ${formatDateTime(info.opens_at)}.`;
         box.style.borderColor = 'rgba(239,68,68,.4)';
         box.style.background = 'rgba(239,68,68,.08)';
       } else if (status === 'closed') {
-        line = `CLOSED. Last closed at: ${formatDateTime(info.closes_at)}.`;
+        line = `CLOSED. Last closing time: ${formatDateTime(info.closes_at)}.`;
         box.style.borderColor = 'rgba(245,158,11,.4)';
         box.style.background = 'rgba(245,158,11,.08)';
       } else {
@@ -540,7 +532,7 @@
             }
           }
           if (!res.ok) {
-            const error = new Error(data?.error || data?.message || 'Request failed');
+            const error = new Error(data?.error || data?.message || 'So‘rov bajarilmadi');
             error.data = data;
             throw error;
           }
@@ -577,32 +569,22 @@
       }[char]));
     }
 
+    function safeDomId(prefix, value) {
+      const safeValue = String(value ?? '').replace(/[^a-zA-Z0-9_-]/g, '_') || 'empty';
+      return `${prefix}-${safeValue}`;
+    }
+
+    function safeJsString(value) {
+      return JSON.stringify(String(value ?? ''));
+    }
+
     function formatMoney(value) {
       return `$${Number(value || 0).toFixed(2)}`;
     }
 
-    function formatTon(value, digits = 4) {
-      if (value === null || value === undefined || value === '') return '-';
-      const number = Number(value);
-      return Number.isFinite(number) ? `${number.toFixed(digits)} TON` : '-';
-    }
-
-    function shortText(value, left = 8, right = 6) {
-      const text = String(value || '').trim();
-      if (!text) return '-';
-      if (text.length <= left + right + 3) return escapeHtml(text);
-      return `${escapeHtml(text.slice(0, left))}...${escapeHtml(text.slice(-right))}`;
-    }
-
-    function renderWalletCell(value) {
-      const address = String(value || '').trim();
-      if (!address) return '<span class="tiny">no wallet</span>';
-      return `<div class="mono">${shortText(address, 10, 8)}</div><div class="tiny">${escapeHtml(address)}</div>`;
-    }
-
     function renderTable(id, headers, rows) {
       const table = document.getElementById(id);
-      table.innerHTML = `<thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>` +
+      table.innerHTML = `<thead><tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>` +
         `<tbody>${rows.join('') || `<tr><td colspan="${headers.length}">No data</td></tr>`}</tbody>`;
     }
 
@@ -616,9 +598,9 @@
 
     async function setTelegramMenuButton() {
       try {
-        setBusy('btn-set-menu-button', true, 'Updating...');
+        setBusy('btn-set-menu-button', true, 'Yangilanmoqda...');
         const statusBox = document.getElementById('telegram-menu-status');
-        if (statusBox) statusBox.innerText = 'Loading the new mini app URL from backend...';
+        if (statusBox) statusBox.innerText = 'Backenddan yangi mini app URL olinmoqda...';
 
         const backendStatus = await loadBackendStatus();
         const input = document.getElementById('telegram-menu-url');
@@ -656,8 +638,8 @@
       const box = document.getElementById('settings-form');
       box.innerHTML = settingKeys.map(key => `
         <div class="setting-field">
-          <label>${key}</label>
-          <input id="setting-${key}" value="${settings[key] ?? ''}">
+          <label>${escapeHtml(key)}</label>
+          <input id="setting-${escapeHtml(key)}" value="${escapeHtml(settings[key] ?? '')}">
         </div>
       `).join('');
       settingsFormRendered = true;
@@ -692,14 +674,14 @@
       }
 
       if (!Number.isFinite(hours) || hours < 1) {
-        setStatus('Duration must be at least 1 hour.');
+        setStatus("Duration must be at least 1 hour.");
         return;
       }
 
       try {
         adminCommandBusy = true;
         setBusy('btn-schedule-withdraw', true, 'Scheduling...');
-        setStatus('Scheduling withdraw timer...');
+        setStatus('Scheduling the withdrawal timer...');
         const opensAt = new Date(`${dateValue}T${timeValue}:00`);
         const result = await api('/admin/settings', {
           method: 'POST',
@@ -711,8 +693,8 @@
 
         const settings = applySettings(result.settings || await loadPublicSettings());
         setStatus(settings.withdraw_window?.status === 'locked' || settings.withdraw_window?.status === 'open'
-          ? 'Command completed and confirmed by backend.'
-          : 'Command sent, but check the status again.');
+          ? 'Command completed and confirmed by the backend.'
+          : 'Command was sent, but check the status again.');
       } catch (err) {
         setStatus(`Timer error: ${err.message}`);
       } finally {
@@ -726,14 +708,14 @@
       const hours = Number(document.getElementById('withdraw-window-hours').value || 36);
 
       if (!Number.isFinite(hours) || hours < 1) {
-        setStatus('Duration must be at least 1 hour.');
+        setStatus("Duration must be at least 1 hour.");
         return;
       }
 
       try {
         adminCommandBusy = true;
         setBusy('btn-open-withdraw-now', true, 'Opening...');
-        setStatus(`Opening withdraw window for ${hours} hours...`);
+        setStatus(`Withdrawal window ${hours} hours is opening...`);
         const result = await api('/admin/settings', {
           method: 'POST',
           body: JSON.stringify({
@@ -744,8 +726,8 @@
 
         const settings = applySettings(result.settings || await loadPublicSettings());
         setStatus(settings.withdraw_window?.status === 'open'
-          ? 'Withdraw window opened. Backend confirmed it.'
-          : 'Command sent, but backend has not returned open yet.');
+          ? 'Withdrawal window ochildi. Backend tasdiqladi.'
+          : 'Command was sent, but the backend still does not report open.');
       } catch (err) {
         setStatus(`Open error: ${err.message}`);
       } finally {
@@ -759,7 +741,7 @@
       try {
         adminCommandBusy = true;
         setBusy('btn-close-withdraw-now', true, 'Closing...');
-        setStatus('Closing withdraw window...');
+        setStatus('Withdrawal window yopilyapti...');
         const result = await api('/admin/settings', {
           method: 'POST',
           body: JSON.stringify({
@@ -770,8 +752,8 @@
 
         const settings = applySettings(result.settings || await loadPublicSettings());
         setStatus(settings.withdraw_window?.is_open
-          ? 'Close command was sent, but backend still returned open.'
-          : 'Withdraw window closed. Wallet will be locked.');
+          ? 'Close command was sent, but the backend still reports it as open.'
+          : 'Withdrawal window yopildi. Wallet qulfga tusyesdi.');
       } catch (err) {
         setStatus(`Close error: ${err.message}`);
       } finally {
@@ -784,9 +766,9 @@
       const payload = await api('/admin/users?limit=10000');
       const users = Array.isArray(payload) ? payload : (payload.users || []);
       const countEl = document.getElementById('users-count');
-      if (countEl) countEl.innerText = `${users.length} users loaded. Real Telegram users and backend-synced guests are shown in this list.`;
+      if (countEl) countEl.innerText = `${users.length}  users loaded. Real Telegram users and backend-synced guests are shown in this list.`;
       renderTable('users-table', ['Database ID', 'Telegram ID', 'Username', 'Name', 'Balance', 'Total time', 'Daily income', 'Lock', 'Status', 'Action'], users.map(u => `
-        <tr id="user-row-${escapeHtml(u.telegram_id)}">
+        <tr id="${safeDomId('user-row', u.telegram_id)}">
           <td>${escapeHtml(u.id)}</td><td>${escapeHtml(u.telegram_id)}</td>
           <td>${escapeHtml(u.username || '-')}</td><td>${escapeHtml([u.first_name, u.last_name].filter(Boolean).join(' ') || '-')}</td>
           <td>${formatMoney(u.balance)}</td><td>${Number(u.total_watch_seconds || 0)}s</td>
@@ -804,24 +786,28 @@
       const buttonClass = blocked ? 'ok user-action' : 'danger user-action';
       const nextAction = blocked ? false : true;
       const buttonText = blocked ? 'Unblock' : 'Block';
+      const statusId = safeDomId('user-status', user.telegram_id);
+      const actionId = safeDomId('user-action', user.telegram_id);
+      const telegramArg = safeJsString(user.telegram_id);
 
       return `
-        <td id="user-status-${user.telegram_id}">
+        <td id="${statusId}">
           <span class="user-status-pill ${pillClass}">
             <span class="${lockClass}"></span>
             ${label}
           </span>
         </td>
-        <td id="user-action-${user.telegram_id}">
-          <button class="${buttonClass}" onclick="setUserBlock('${user.telegram_id}', ${nextAction})">${buttonText}</button>
+        <td id="${actionId}">
+          <button class="${buttonClass}" onclick="setUserBlock(${telegramArg}, ${nextAction})">${buttonText}</button>
         </td>
       `;
     }
 
     function paintUserBlockState(telegramId, blocked, busy = false) {
-      const row = document.getElementById(`user-row-${telegramId}`);
-      const statusCell = document.getElementById(`user-status-${telegramId}`);
-      const actionCell = document.getElementById(`user-action-${telegramId}`);
+      const row = document.getElementById(safeDomId('user-row', telegramId));
+      const statusCell = document.getElementById(safeDomId('user-status', telegramId));
+      const actionCell = document.getElementById(safeDomId('user-action', telegramId));
+      const telegramArg = safeJsString(telegramId);
       if (row) row.classList.toggle('user-changing', busy);
 
       if (statusCell) {
@@ -835,8 +821,8 @@
 
       if (actionCell) {
         actionCell.innerHTML = blocked
-          ? `<button class="ok user-action" ${busy ? 'disabled' : ''} onclick="setUserBlock('${telegramId}', false)">Unblock</button>`
-          : `<button class="danger user-action" ${busy ? 'disabled' : ''} onclick="setUserBlock('${telegramId}', true)">Block</button>`;
+          ? `<button class="ok user-action" ${busy ? 'disabled' : ''} onclick="setUserBlock(${telegramArg}, false)">Unblock</button>`
+          : `<button class="danger user-action" ${busy ? 'disabled' : ''} onclick="setUserBlock(${telegramArg}, true)">Block</button>`;
       }
     }
 
@@ -864,13 +850,13 @@
       const status = document.getElementById('manual-earning-status');
 
       if (!telegramId || !Number.isFinite(amount) || amount <= 0) {
-        status.innerText = 'Enter Telegram ID and a positive amount.';
+        status.innerText = "Enter Telegram ID and a positive amount.";
         return;
       }
 
       try {
-        setBusy('btn-add-earning', true, 'Adding...');
-        status.innerText = 'Updating balance and time...';
+        setBusy('btn-add-earning', true, "Adding...");
+        status.innerText = "Balance va vaqt yangilanyapti...";
         const result = await api(`/admin/users/${encodeURIComponent(telegramId)}/add-earning`, {
           method: 'POST',
           body: JSON.stringify({ amount, minutes })
@@ -892,17 +878,17 @@
       const walletType = document.getElementById('history-wallet-type').value.trim() || 'TON';
       const walletAddress = document.getElementById('history-wallet-address').value.trim() || 'Admin wallet';
       const historyStatus = document.getElementById('history-status').value;
-      const note = document.getElementById('history-note').value.trim() || 'Manual admin history';
+      const note = document.getElementById('history-note').value.trim() || "Admin-added history";
       const status = document.getElementById('manual-history-status');
 
       if (!telegramId || !Number.isFinite(amount) || amount <= 0 || !dateValue) {
-        status.innerText = 'Enter Telegram ID, amount, and date correctly.';
+        status.innerText = "Enter Telegram ID, amount, and date correctly.";
         return;
       }
 
       try {
-        setBusy('btn-add-history', true, 'Adding...');
-        status.innerText = 'Adding history entry...';
+        setBusy('btn-add-history', true, "Adding...");
+        status.innerText = "Adding history entry...";
         const createdAt = new Date(`${dateValue}T${timeValue}:00`);
         const result = await api(`/admin/users/${encodeURIComponent(telegramId)}/history/withdraw`, {
           method: 'POST',
@@ -950,7 +936,7 @@
     async function loadWithdraws() {
       const status = document.getElementById('withdraw-status').value;
       const items = await api(`/admin/withdraws?status=${encodeURIComponent(status)}`);
-      renderTable('withdraws-table', ['ID', 'Telegram', 'Amount', 'Wallet', 'Status', 'Actions'], items.map(w => `
+      renderTable('withdraws-table', ['ID', 'Telegram', 'Summa', 'Wallet', 'Status', 'Actionlar'], items.map(w => `
         <tr>
           <td>${w.id}</td><td>${w.telegram_id}</td><td>${w.amount}</td>
           <td>${w.wallet_type}<br>${w.wallet_address}</td>
@@ -976,51 +962,26 @@
 
     async function loadPaymentOrders() {
       const status = document.getElementById('payment-status').value;
-      const telegramId = document.getElementById('payment-telegram-id')?.value.trim() || '';
-      const includeLiveBalance = document.getElementById('payment-live-balance')?.checked ? '1' : '';
-      const params = new URLSearchParams({ status, limit: '50' });
-      if (telegramId) params.set('telegram_id', telegramId);
-      if (includeLiveBalance) params.set('include_live_balance', includeLiveBalance);
-      const payload = await api(`/admin/payment-ledger?${params.toString()}`);
-      const items = Array.isArray(payload) ? payload : (payload.data || []);
-      renderTable('payments-table', ['ID', 'User', 'Deposit wallet', 'Deposit', 'Refund', 'Remaining TON', 'Status', 'Actions'], items.map(p => `
+      const items = await api(`/admin/payment-orders?status=${encodeURIComponent(status)}`);
+      renderTable('payments-table', ["ID", "Telegram ID", "Summa", "Payment type", "Status", "Actionlar"], items.map(p => `
         <tr>
-          <td>${escapeHtml(p.id)}</td>
+          <td>${p.id}</td><td>${p.telegram_id}</td><td>${p.amount} TONCOIN</td>
+          <td>Automatic TON blockchain scanner</td>
+          <td class="status ${p.status}">${p.status === 'pending' ? 'Pending' : 'Confirmed'}</td>
           <td>
-            <div class="mono">${escapeHtml(p.telegram_id)}</div>
-            <div class="tiny">${escapeHtml(p.username || p.first_name || '')}</div>
-          </td>
-          <td>${renderWalletCell(p.deposit_wallet)}</td>
-          <td>
-            <div>Required: ${formatTon(p.required_amount_ton, 2)}</div>
-            <div>Received: ${formatTon(p.paid_amount_ton, 4)}</div>
-            <div class="tiny">TX: ${shortText(p.tx_hash, 10, 8)}</div>
-          </td>
-          <td>
-            <div>${p.refund_status ? escapeHtml(p.refund_status) : 'not yet'}</div>
-            <div class="tiny">In user balance: ${formatTon(p.refund_user_visible_amount_ton, 2)}</div>
-            <div class="tiny">Auto payout: ${formatTon(p.refund_payout_amount_ton, 2)}</div>
-          </td>
-          <td>
-            <div>Expected: ${formatTon(p.expected_retained_after_refund_ton, 4)}</div>
-            <div>Current hold: ${formatTon(p.expected_current_wallet_hold_ton, 4)}</div>
-            <div class="tiny">Live: ${p.wallet_live_balance_ok ? formatTon(p.wallet_live_balance_ton, 6) : (p.wallet_live_balance_error ? escapeHtml(p.wallet_live_balance_error) : 'disabled')}</div>
-          </td>
-          <td class="status ${escapeHtml(p.status)}">${p.status === 'pending' ? 'Pending' : (p.status === 'confirmed' ? 'Confirmed' : escapeHtml(p.status))}</td>
-          <td>
-            ${p.status === 'pending' ? `<button class="warning" onclick='approvePaymentOrder(${JSON.stringify(String(p.id))})'>Manual fallback</button>` : '<span style="color:var(--ok);">Completed</span>'}
+            ${p.status === 'pending' ? `<button class="warning" onclick="approvePaymentOrder(${p.id})">Manual backup</button>` : '<span style="color:var(--ok);">Completed</span>'}
           </td>
         </tr>
       `));
     }
 
     async function approvePaymentOrder(id) {
-      if(!confirm('This is only a fallback manual approval. Check the automatic scanner first. Confirm anyway?')) return;
+      if(!confirm("This is only a backup manual approval. Checking the automatic scanner first is recommended. Approve anyway?")) return;
       try {
         await api(`/admin/payment-orders/${id}/approve`, { method: 'POST', body: '{}' });
         await loadPaymentOrders();
         await loadPaymentWallets();
-        alert("Manual fallback approval completed.");
+        alert("Manual backup approval completed.");
       } catch(err) {
         alert("Error: " + err.message);
       }
@@ -1037,20 +998,20 @@
           box.innerText = [
             `Wallets: total ${data.total || 0}, active ${data.active || 0}, available ${data.available || 0}, assigned ${data.assigned || 0}`,
             `Pending orders: ${data.pending_orders || 0}`,
-            `Scanner: runs automatically every ${Math.round((config.scan_interval_ms || 15000) / 1000)} seconds, last check: ${lastRun}`,
+            `Scanner: every ${Math.round((config.scan_interval_ms || 15000) / 1000)} seconds automatically, last check: ${lastRun}`,
             `Checked: ${scanner.checked || 0}, confirmed: ${scanner.confirmed || 0}`,
-            scanner.lastError ? `Last error: ${scanner.lastError}` : 'Last error: none'
+            scanner.lastError ? `Last error: ${scanner.lastError}` : 'Last error: no'
           ].join('\\n');
         }
       } catch (err) {
-        if (box) box.innerText = `Scanner status failed to load: ${err.message}`;
+        if (box) box.innerText = `Scanner status did not load: ${err.message}`;
         throw err;
       }
     }
 
     async function runPaymentScan() {
       try {
-        setBusy('btn-run-payment-scan', true, 'Checking...');
+        setBusy('btn-run-payment-scan', true, 'Scanning...');
         const result = await api('/admin/payment-scan/run', {
           method: 'POST',
           body: JSON.stringify({ limit: 100 })
@@ -1069,8 +1030,8 @@
       const errors = [];
       try { await loadSettings({ renderForm: !settingsFormRendered }); } catch (err) { errors.push(err.message); }
       try { await loadUsers(); } catch (err) { errors.push(`Users: ${err.message}`); }
-      try { await loadWithdraws(); } catch (err) { errors.push(`Withdraws: ${err.message}`); }
-      try { await loadPaymentOrders(); } catch (err) { errors.push(`Payments: ${err.message}`); }
+      try { await loadWithdraws(); } catch (err) { errors.push(`Withdrawals: ${err.message}`); }
+      try { await loadPaymentOrders(); } catch (err) { errors.push(`To‘lovlar: ${err.message}`); }
       try { await loadPaymentWallets(); } catch (err) { errors.push(`Scanner: ${err.message}`); }
       setStatus(errors.length ? errors.join(' | ') : 'Data loaded.');
     }
