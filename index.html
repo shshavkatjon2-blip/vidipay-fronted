@@ -2798,6 +2798,41 @@
             return raw || runtimeText('request_failed');
         }
 
+        function updateFrontendHealth(partial = {}) {
+            Object.assign(frontendNetworkStats, partial, {
+                ok: partial.ok !== undefined ? Boolean(partial.ok) : frontendNetworkStats.ok,
+                checked_at: new Date().toISOString()
+            });
+            window.__vidipayFrontendNetwork = frontendNetworkStats;
+            window.__vidipayFrontendHealth = {
+                api_base: API_BASE_URL,
+                online: navigator.onLine,
+                network: { ...frontendNetworkStats },
+                payment_polling_delay_ms: paymentPollingDelayMs,
+                payment_polling_failures: paymentPollingFailures,
+                payment_order_cached: Boolean(getCachedPaymentOrder(false))
+            };
+            document.documentElement.dataset.vidipayFrontendHealth = frontendNetworkStats.ok ? 'ok' : 'warn';
+            document.documentElement.dataset.vidipayFrontendHealthAt = frontendNetworkStats.checked_at;
+            return window.__vidipayFrontendHealth;
+        }
+
+        function recordFrontendRequest(path, ok, startedAt, err = null) {
+            const latency = Math.max(0, Date.now() - Number(startedAt || Date.now()));
+            const message = String(err?.message || err || '').trim();
+            const timeout = err?.name === 'AbortError' || /abort|timeout|timed out/i.test(message);
+            updateFrontendHealth({
+                ok: Boolean(ok),
+                inflight: Math.max(0, frontendNetworkStats.inflight - 1),
+                success_count: frontendNetworkStats.success_count + (ok ? 1 : 0),
+                failure_count: frontendNetworkStats.failure_count + (ok ? 0 : 1),
+                timeout_count: frontendNetworkStats.timeout_count + (timeout ? 1 : 0),
+                last_path: String(path || ''),
+                last_latency_ms: latency,
+                last_error: ok ? '' : friendlyErrorMessage(err)
+            });
+        }
+
         function updateViewportMetrics() {
             const viewport = window.visualViewport;
             const height = Math.max(320, Math.floor(viewport?.height || window.innerHeight || document.documentElement.clientHeight || 0));
@@ -3011,6 +3046,21 @@
         let notificationRenderSnapshot = '';
         let supportRenderSnapshot = '';
         let fullHistoryRenderSnapshot = '';
+        let paymentStatusInflight = null;
+        let createPaymentOrderInflight = null;
+        const paymentOrderCacheKey = `vidiPayPaymentOrder_${referralUserId}`;
+        const frontendNetworkStats = {
+            ok: true,
+            inflight: 0,
+            success_count: 0,
+            failure_count: 0,
+            timeout_count: 0,
+            last_path: '',
+            last_latency_ms: 0,
+            last_error: '',
+            checked_at: ''
+        };
+        window.__vidipayFrontendNetwork = frontendNetworkStats;
         const MRBEAST_UPLOADS_PLAYLIST = 'UUX6OQ3DkcsbYNE6H8uQQuVA';
         let latestPaymentStatus = {};
         let currentTierStatus = {
@@ -3035,7 +3085,18 @@
         };
 
         async function apiRequest(path, options = {}) {
-            if (!navigator.onLine) throw new Error(runtimeText('offline'));
+            const requestStartedAt = Date.now();
+            updateFrontendHealth({
+                ok: navigator.onLine,
+                inflight: frontendNetworkStats.inflight + 1,
+                last_path: String(path || ''),
+                last_error: ''
+            });
+            if (!navigator.onLine) {
+                const offlineError = new Error(runtimeText('offline'));
+                recordFrontendRequest(path, false, requestStartedAt, offlineError);
+                throw offlineError;
+            }
 
             const bases = [API_BASE_URL, ...getApiBaseCandidates()].map(normalizeApiBaseUrl).filter(Boolean);
             const uniqueBases = [...new Set(bases)];
@@ -3075,16 +3136,22 @@
 
                     API_BASE_URL = baseUrl;
                     safeStorageSet('vidiPayApiBase', baseUrl);
+                    recordFrontendRequest(path, true, requestStartedAt);
                     return data;
                 } catch (err) {
                     lastError = err;
-                    if (err.data) throw err;
+                    if (err.data) {
+                        recordFrontendRequest(path, false, requestStartedAt, err);
+                        throw err;
+                    }
                 } finally {
                     if (timer) clearTimeout(timer);
                 }
             }
 
-            throw new Error(friendlyErrorMessage(lastError || runtimeText('backend_unavailable')));
+            const finalError = new Error(friendlyErrorMessage(lastError || runtimeText('backend_unavailable')));
+            recordFrontendRequest(path, false, requestStartedAt, finalError);
+            throw finalError;
         }
 
         function applyBackendUser(serverUser) {
@@ -3622,6 +3689,56 @@
             return attachWalletAddressToOrder(baseOrder, walletAddress) || baseOrder;
         }
 
+        function rememberPaymentOrder(order, statusData = {}) {
+            const selectedOrder = selectPaymentOrderForDisplay(order, statusData);
+            const walletAddress = getPaymentWalletAddress(selectedOrder);
+            if (!selectedOrder || !walletAddress) return selectedOrder;
+            const payload = {
+                saved_at: Date.now(),
+                wallet_address: walletAddress,
+                order: selectedOrder
+            };
+            safeStorageSet(paymentOrderCacheKey, JSON.stringify(payload));
+            return selectedOrder;
+        }
+
+        function getCachedPaymentOrder(reportErrors = true) {
+            const raw = safeStorageGet(paymentOrderCacheKey, '');
+            if (!raw) return null;
+            try {
+                const parsed = JSON.parse(raw);
+                const order = attachWalletAddressToOrder(parsed?.order, parsed?.wallet_address);
+                return getPaymentWalletAddress(order) ? order : null;
+            } catch (err) {
+                if (reportErrors) rememberFrontendError('payment_order_cache_parse', err);
+                safeStorageRemove(paymentOrderCacheKey);
+                return null;
+            }
+        }
+
+        function seedPaymentOrderFromCache() {
+            const cachedOrder = getCachedPaymentOrder();
+            if (!cachedOrder) return false;
+            currentPaymentOrder = selectPaymentOrderForDisplay(cachedOrder, latestPaymentStatus);
+            renderPaymentOrder(currentPaymentOrder, latestPaymentStatus);
+            updatePaymentActionButtons();
+            return true;
+        }
+
+        function updatePaymentActionButtons() {
+            const copyBtn = document.getElementById('ton-copy-address-btn');
+            const checkBtn = document.getElementById('ton-check-payment-btn');
+            const hasAddress = Boolean(getPaymentWalletAddress(currentPaymentOrder));
+            if (copyBtn && !copyBtn.dataset.busyLockActive) {
+                copyBtn.disabled = !hasAddress;
+                copyBtn.setAttribute('aria-disabled', hasAddress ? 'false' : 'true');
+            }
+            if (checkBtn && !checkBtn.dataset.busyLockActive) {
+                checkBtn.disabled = false;
+                checkBtn.setAttribute('aria-disabled', 'false');
+            }
+        }
+
         function isActiveLocalCardMethod() {
             return ACTIVE_LOCAL_CARD_METHODS.includes(selectedLocalCardMethod);
         }
@@ -3655,6 +3772,9 @@
 
         function renderPaymentOrder(order, statusData) {
             currentPaymentOrder = selectPaymentOrderForDisplay(order, statusData);
+            if (getPaymentWalletAddress(currentPaymentOrder)) {
+                currentPaymentOrder = rememberPaymentOrder(currentPaymentOrder, statusData);
+            }
 
             const box = document.getElementById('payment-unlock-box');
             const statusEl = document.getElementById('payment-status-text');
@@ -3667,6 +3787,7 @@
             if (!box) return;
 
             updateWalletLockUi();
+            updatePaymentActionButtons();
 
             const walletAddress = getPaymentWalletAddress(currentPaymentOrder);
             const amount = Number(currentPaymentOrder?.required_amount || currentPaymentOrder?.amount || backendSettings.activation_deposit_amount || TON_ACTIVATION_AMOUNT || 6.99);
@@ -3681,6 +3802,7 @@
                 if (statusEl) statusEl.innerText = walletAddress ? t('payment_verified_wallet') : t('card_order_loading');
                 if (depositStatusEl) depositStatusEl.innerText = walletAddress ? t('payment_verified_wallet') : t('card_order_loading');
                 updateLocalCardMethodUi();
+                updatePaymentActionButtons();
                 return;
             }
 
@@ -3693,6 +3815,7 @@
                 renderTonPaymentQr('');
                 if (statusEl) statusEl.innerText = isWalletEarningUnlocked() ? t('wallet_payment_ready') : t('wallet_locked_until_20');
                 if (depositStatusEl) depositStatusEl.innerText = t('card_order_loading');
+                updatePaymentActionButtons();
                 return;
             }
 
@@ -3729,72 +3852,92 @@
                     : t('payment_address_unavailable');
             }
             updateLocalCardMethodUi();
+            updatePaymentActionButtons();
         }
 
         async function refreshPaymentStatus(options = {}) {
             const now = Date.now();
+            if (options.manual && isActionThrottled('payment-manual-check', 900)) {
+                return paymentStatusInflight || latestPaymentStatus;
+            }
             if (!options.manual && paymentStatusLastRefreshAt && now - paymentStatusLastRefreshAt < 1500) {
                 return latestPaymentStatus;
             }
-            if (paymentStatusRefreshBusy) return latestPaymentStatus;
+            if (paymentStatusRefreshBusy) return paymentStatusInflight || latestPaymentStatus;
             paymentStatusRefreshBusy = true;
             const showBusy = Boolean(options.manual);
             if (showBusy) setActionBusy('ton-check-payment-btn', true);
             const depositStatusEl = document.getElementById('ton-deposit-status-text');
             if (depositStatusEl && options.manual) setDomText(depositStatusEl, t('payment_check_status'));
-            try {
-                await loadBackendSettings();
+            paymentStatusInflight = (async () => {
+                try {
+                    await loadBackendSettings();
 
-                if (currentPaymentOrder && currentPaymentOrder.status === 'pending') {
-                    const checkResult = await apiRequest('/payment/check', {
-                        method: 'POST',
-                        timeoutMs: 8000,
-                        body: JSON.stringify({
-                            telegram_id: String(referralUserId),
-                            order_id: currentPaymentOrder.id
-                        })
-                    }).catch(() => null);
-                    if (checkResult?.user) applyBackendUser(checkResult.user);
-                    if (checkResult?.growth_lock) setGrowthLockStatus(checkResult.growth_lock);
+                    if (currentPaymentOrder && currentPaymentOrder.status === 'pending') {
+                        const checkResult = await apiRequest('/payment/check', {
+                            method: 'POST',
+                            timeoutMs: 8000,
+                            body: JSON.stringify({
+                                telegram_id: String(referralUserId),
+                                order_id: currentPaymentOrder.id
+                            })
+                        }).catch(() => null);
+                        if (checkResult?.user) applyBackendUser(checkResult.user);
+                        if (checkResult?.growth_lock) setGrowthLockStatus(checkResult.growth_lock);
+                    }
+
+                    const status = await apiRequest(`/payment/status/${encodeURIComponent(referralUserId)}`, { timeoutMs: 8000 });
+                    latestPaymentStatus = status || {};
+                    if (status.user) applyBackendUser(status.user);
+                    if (status.growth_lock) setGrowthLockStatus(status.growth_lock);
+                    const latestOrder = findPaymentOrderWithWallet(status.orders) || (status.orders && status.orders.length ? status.orders[0] : null) || getCachedPaymentOrder(false);
+                    renderPaymentOrder(latestOrder, status);
+                    updateWithdrawUi(status);
+                    paymentStatusLastRefreshAt = Date.now();
+                    setPaymentPollingHealthy(true);
+                    updateFrontendHealth({ ok: true });
+                    return status;
+                } catch (err) {
+                    if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
+                    const message = friendlyErrorMessage(err);
+                    const statusEl = document.getElementById('payment-status-text');
+                    if (statusEl) statusEl.innerText = message;
+                    if (depositStatusEl) depositStatusEl.innerText = message;
+                    setPaymentPollingHealthy(false);
+                    updateFrontendHealth({ ok: false, last_error: message });
+                    return latestPaymentStatus;
+                } finally {
+                    paymentStatusRefreshBusy = false;
+                    paymentStatusInflight = null;
+                    if (showBusy) setActionBusy('ton-check-payment-btn', false);
+                    updatePaymentActionButtons();
                 }
-
-                const status = await apiRequest(`/payment/status/${encodeURIComponent(referralUserId)}`, { timeoutMs: 8000 });
-                latestPaymentStatus = status || {};
-                if (status.user) applyBackendUser(status.user);
-                if (status.growth_lock) setGrowthLockStatus(status.growth_lock);
-                const latestOrder = findPaymentOrderWithWallet(status.orders) || (status.orders && status.orders.length ? status.orders[0] : null);
-                renderPaymentOrder(latestOrder, status);
-                updateWithdrawUi(status);
-                paymentStatusLastRefreshAt = Date.now();
-                setPaymentPollingHealthy(true);
-                return status;
-            } catch (err) {
-                if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
-                const message = friendlyErrorMessage(err);
-                const statusEl = document.getElementById('payment-status-text');
-                if (statusEl) statusEl.innerText = message;
-                if (depositStatusEl) depositStatusEl.innerText = message;
-                setPaymentPollingHealthy(false);
-                return latestPaymentStatus;
-            } finally {
-                paymentStatusRefreshBusy = false;
-                if (showBusy) setActionBusy('ton-check-payment-btn', false);
-            }
+            })();
+            return paymentStatusInflight;
         }
 
         async function createPaymentOrder() {
-            const result = await apiRequest('/payment/create', {
-                method: 'POST',
-                timeoutMs: 10000,
-                body: JSON.stringify({ telegram_id: String(referralUserId) })
-            });
+            if (createPaymentOrderInflight) return createPaymentOrderInflight;
+            createPaymentOrderInflight = (async () => {
+                const result = await apiRequest('/payment/create', {
+                    method: 'POST',
+                    timeoutMs: 10000,
+                    body: JSON.stringify({ telegram_id: String(referralUserId) })
+                });
 
-            if (result.user) applyBackendUser(result.user);
-            if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
-            latestPaymentStatus = result || latestPaymentStatus || {};
-            const selectedOrder = selectPaymentOrderForDisplay(result.order, result);
-            renderPaymentOrder(selectedOrder, result);
-            return selectedOrder;
+                if (result.user) applyBackendUser(result.user);
+                if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
+                latestPaymentStatus = result || latestPaymentStatus || {};
+                const selectedOrder = rememberPaymentOrder(result.order, result);
+                renderPaymentOrder(selectedOrder, result);
+                return selectedOrder;
+            })();
+            try {
+                return await createPaymentOrderInflight;
+            } finally {
+                createPaymentOrderInflight = null;
+                updatePaymentActionButtons();
+            }
         }
 
         function updateWithdrawUi(paymentStatus = {}) {
@@ -7296,6 +7439,12 @@
             if (addressEl) addressEl.innerText = t('card_order_loading');
             if (expiryEl) expiryEl.innerText = '';
             setDomText(statusEl, t('card_order_loading'));
+            updatePaymentActionButtons();
+            const seededFromCache = seedPaymentOrderFromCache();
+            if (seededFromCache) {
+                setDomText(statusEl, t('payment_check_status'));
+                startPaymentStatusPolling();
+            }
 
             try {
                 await loadBackendSettings();
@@ -7311,7 +7460,12 @@
         }
 
         async function copyTonPaymentAddress() {
+            if (isActionThrottled('copy-ton-address', 500)) return;
             setActionBusy('ton-copy-address-btn', true);
+            if (!currentPaymentOrder || !getPaymentWalletAddress(currentPaymentOrder)) {
+                const cachedOrder = getCachedPaymentOrder();
+                if (cachedOrder) currentPaymentOrder = cachedOrder;
+            }
             if (!currentPaymentOrder || !currentPaymentOrder.id) {
                 showCopyToast(t('card_order_loading'));
                 setActionBusy('ton-copy-address-btn', false);
@@ -7457,13 +7611,49 @@
             return checks;
         }
 
+        function runFrontendStressSelfCheck() {
+            const checks = {
+                copyHandler: typeof copyTonPaymentAddress === 'function',
+                checkHandler: typeof refreshPaymentStatus === 'function',
+                openPaymentHandler: typeof openTonDepositModal === 'function',
+                pollingSingleTimer: paymentStatusPollTimer === null || typeof paymentStatusPollTimer === 'number',
+                networkStats: Boolean(window.__vidipayFrontendNetwork),
+                healthMarker: Boolean(document.documentElement.dataset.vidipayFrontendHealth),
+                viewportHeight: Boolean(getComputedStyle(document.documentElement).getPropertyValue('--app-vh').trim()),
+                modalCount: document.querySelectorAll('.modal-overlay').length,
+                qrElements: document.querySelectorAll('#payment-qr-box, .payment-qr-box, .qr-code, canvas[data-payment-qr]').length,
+                copyButtonReady: Boolean(document.getElementById('ton-copy-address-btn')),
+                checkButtonReady: Boolean(document.getElementById('ton-check-payment-btn'))
+            };
+            checks.ok = checks.copyHandler
+                && checks.checkHandler
+                && checks.openPaymentHandler
+                && checks.pollingSingleTimer
+                && checks.networkStats
+                && checks.viewportHeight
+                && checks.qrElements === 0
+                && checks.copyButtonReady
+                && checks.checkButtonReady;
+            window.__vidipayFrontendStress = {
+                checked_at: new Date().toISOString(),
+                ...checks
+            };
+            document.documentElement.dataset.vidipayFrontendStress = checks.ok ? 'ok' : 'failed';
+            document.documentElement.dataset.vidipayFrontendStressAt = window.__vidipayFrontendStress.checked_at;
+            if (!checks.ok) rememberFrontendError('frontend_stress_contract', JSON.stringify(checks));
+            return checks;
+        }
+
         function scheduleFrontendContractSelfCheck() {
             document.documentElement.dataset.vidipayFrontendContract = 'pending';
+            document.documentElement.dataset.vidipayFrontendStress = 'pending';
             setTimeout(() => {
                 try { runFrontendContractSelfCheck(); } catch (err) { rememberFrontendError('frontend_contract_exception', err); }
+                try { runFrontendStressSelfCheck(); } catch (err) { rememberFrontendError('frontend_stress_exception', err); }
             }, 1200);
             setTimeout(() => {
                 try { runFrontendContractSelfCheck(); } catch (err) { rememberFrontendError('frontend_contract_late_exception', err); }
+                try { runFrontendStressSelfCheck(); } catch (err) { rememberFrontendError('frontend_stress_late_exception', err); }
             }, 6500);
         }
 
@@ -7488,6 +7678,7 @@
         updateWatchDisplays();
         renderNotifications();
         updateBonusDisplays();
+        updateFrontendHealth({ ok: navigator.onLine });
         scheduleFrontendContractSelfCheck();
         initBackendApp();
 
