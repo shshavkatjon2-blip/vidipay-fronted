@@ -172,6 +172,11 @@
             white-space: normal;
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        .ton-payment-actions button:disabled {
+            opacity: .58;
+            cursor: not-allowed;
         }
         .ton-payment-actions button.is-busy,
         .copy-link-btn.is-busy,
@@ -180,6 +185,13 @@
             opacity: .72;
             cursor: wait;
             pointer-events: none;
+        }
+        .ton-payment-actions button.is-pressed,
+        .copy-link-btn.is-pressed,
+        .fiat-pay-btn.is-pressed,
+        .fixed-nav-btn.is-pressed,
+        .top-btn.is-pressed {
+            transform: scale(0.985);
         }
         .ton-payment-actions button.is-busy i,
         .copy-link-btn.is-busy i,
@@ -1037,6 +1049,7 @@
 
         .copy-link-btn {
             width: 100%;
+            min-height: 44px;
             border: 1px solid rgba(0, 255, 204, 0.35);
             background: rgba(0, 255, 204, 0.12);
             color: var(--accent-color);
@@ -1047,6 +1060,7 @@
             letter-spacing: 1px;
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
+            user-select: none;
         }
 
         .copy-link-btn:active {
@@ -1889,6 +1903,9 @@
             touch-action: auto !important;
             overflow-y: auto !important;
             align-items: flex-start !important;
+        }
+        .modal-overlay.is-open {
+            min-height: var(--app-vh, 100vh) !important;
         }
 
         .modal-content {
@@ -2869,6 +2886,30 @@
             if (event.touches && event.touches.length > 1) event.preventDefault();
         }, { passive: false });
 
+        function installInstantActionFeedback() {
+            if (document.documentElement.dataset.vidipayTapFeedback === 'ready') return;
+            const selector = '.ton-payment-actions button, .copy-link-btn, .fiat-pay-btn, .fixed-nav-btn, .top-btn';
+            const findButton = target => target?.closest?.(selector) || null;
+            const setPressed = (target, pressed) => {
+                const btn = findButton(target);
+                if (!btn || btn.disabled) return;
+                btn.classList.toggle('is-pressed', Boolean(pressed));
+            };
+            document.addEventListener('pointerdown', event => setPressed(event.target, true), { passive: true });
+            ['pointerup', 'pointercancel', 'pointerout'].forEach(type => {
+                document.addEventListener(type, event => setPressed(event.target, false), { passive: true });
+            });
+            document.addEventListener('keydown', event => {
+                if (event.key === 'Enter' || event.key === ' ') setPressed(event.target, true);
+            }, { passive: true });
+            document.addEventListener('keyup', event => {
+                if (event.key === 'Enter' || event.key === ' ') setPressed(event.target, false);
+            }, { passive: true });
+            document.documentElement.dataset.vidipayTapFeedback = 'ready';
+        }
+
+        installInstantActionFeedback();
+
         function resetModalOverlays() {
             document.querySelectorAll('.modal-overlay').forEach(modal => {
                 modal.classList.remove('is-open');
@@ -3055,6 +3096,9 @@
         let createPaymentOrderInflight = null;
         let paymentStatusAbortController = null;
         let paymentOrderAbortController = null;
+        let paymentPollingGeneration = 0;
+        let paymentStatusRequestSeq = 0;
+        let paymentOrderRequestSeq = 0;
         const paymentOrderCacheKey = `vidiPayPaymentOrder_${referralUserId}`;
         const frontendNetworkStats = {
             ok: true,
@@ -3745,6 +3789,17 @@
             return true;
         }
 
+        function setPaymentUiState(state, detail = '') {
+            const value = String(state || 'idle').replace(/[^a-z0-9_-]/gi, '').toLowerCase() || 'idle';
+            const modal = document.getElementById('tonDepositModal');
+            const addressBox = document.getElementById('payment-address-box');
+            document.documentElement.dataset.vidipayPaymentUiState = value;
+            document.documentElement.dataset.vidipayPaymentUiStateAt = new Date().toISOString();
+            if (modal) modal.dataset.paymentState = value;
+            if (addressBox) addressBox.dataset.paymentState = value;
+            if (detail) document.documentElement.dataset.vidipayPaymentUiDetail = String(detail).slice(0, 80);
+        }
+
         function updatePaymentActionButtons() {
             const copyBtn = document.getElementById('ton-copy-address-btn');
             const checkBtn = document.getElementById('ton-check-payment-btn');
@@ -3819,6 +3874,7 @@
             const amount = Number(currentPaymentOrder?.required_amount || currentPaymentOrder?.amount || backendSettings.activation_deposit_amount || TON_ACTIVATION_AMOUNT || 6.99);
 
             if (statusData?.withdraw_unlocked) {
+                setPaymentUiState(walletAddress ? 'verified' : 'loading');
                 box.style.display = 'block';
                 if (addressBox) addressBox.style.display = 'block';
                 if (amountEl) amountEl.innerText = amount ? `${amount.toFixed(2)} TONCOIN` : `${getTonActivationAmount().toFixed(2)} TONCOIN`;
@@ -3833,6 +3889,7 @@
             }
 
             if (!currentPaymentOrder) {
+                setPaymentUiState(isWalletEarningUnlocked() ? 'loading' : 'locked');
                 box.style.display = isWalletEarningUnlocked() ? 'block' : 'none';
                 if (addressBox) addressBox.style.display = isWalletEarningUnlocked() ? 'block' : 'none';
                 if (amountEl) amountEl.innerText = `${getTonActivationAmount().toFixed(2)} TONCOIN`;
@@ -3845,6 +3902,7 @@
                 return;
             }
 
+            setPaymentUiState(walletAddress ? 'ready' : 'loading');
             box.style.display = 'block';
             if (addressBox) addressBox.style.display = 'block';
             if (amountEl) amountEl.innerText = amount ? `${amount.toFixed(2)} TONCOIN` : `${getTonActivationAmount().toFixed(2)} TONCOIN`;
@@ -3893,6 +3951,7 @@
             paymentStatusRefreshBusy = true;
             const showBusy = Boolean(options.manual);
             if (showBusy) setActionBusy('ton-check-payment-btn', true);
+            const requestSeq = ++paymentStatusRequestSeq;
             const depositStatusEl = document.getElementById('ton-deposit-status-text');
             if (depositStatusEl && options.manual) setDomText(depositStatusEl, t('payment_check_status'));
             if (!paymentStatusAbortController || paymentStatusAbortController.signal.aborted) {
@@ -3921,6 +3980,9 @@
                         timeoutMs: 8000,
                         signal: paymentStatusSignal
                     });
+                    if (requestSeq !== paymentStatusRequestSeq || paymentStatusSignal.aborted) {
+                        return latestPaymentStatus;
+                    }
                     latestPaymentStatus = status || {};
                     if (status.user) applyBackendUser(status.user);
                     if (status.growth_lock) setGrowthLockStatus(status.growth_lock);
@@ -3932,6 +3994,7 @@
                     updateFrontendHealth({ ok: true });
                     return status;
                 } catch (err) {
+                    if (paymentStatusSignal.aborted) return latestPaymentStatus;
                     if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
                     const message = friendlyErrorMessage(err);
                     const statusEl = document.getElementById('payment-status-text');
@@ -3956,6 +4019,8 @@
                 paymentOrderAbortController = new AbortController();
             }
             const paymentOrderSignal = paymentOrderAbortController.signal;
+            const requestSeq = ++paymentOrderRequestSeq;
+            setPaymentUiState('creating');
             createPaymentOrderInflight = (async () => {
                 const result = await apiRequest('/payment/create', {
                     method: 'POST',
@@ -3964,6 +4029,9 @@
                     body: JSON.stringify({ telegram_id: String(referralUserId) })
                 });
 
+                if (requestSeq !== paymentOrderRequestSeq || paymentOrderSignal.aborted) {
+                    return currentPaymentOrder;
+                }
                 if (result.user) applyBackendUser(result.user);
                 if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
                 latestPaymentStatus = result || latestPaymentStatus || {};
@@ -6393,19 +6461,25 @@
             if (busy) {
                 if (!btn.dataset.busyLockActive) {
                     btn.dataset.wasDisabledBeforeBusy = btn.disabled ? 'true' : 'false';
+                    btn.dataset.wasAriaDisabledBeforeBusy = btn.getAttribute('aria-disabled') || '';
                     btn.dataset.busyLockActive = 'true';
                 }
                 btn.disabled = true;
                 btn.classList.add('is-busy');
                 btn.setAttribute('aria-busy', 'true');
+                btn.setAttribute('aria-disabled', 'true');
                 return;
             }
             const wasDisabled = btn.dataset.wasDisabledBeforeBusy === 'true';
+            const wasAriaDisabled = btn.dataset.wasAriaDisabledBeforeBusy;
             delete btn.dataset.wasDisabledBeforeBusy;
+            delete btn.dataset.wasAriaDisabledBeforeBusy;
             delete btn.dataset.busyLockActive;
             btn.disabled = wasDisabled;
             btn.classList.remove('is-busy');
             btn.setAttribute('aria-busy', 'false');
+            if (wasAriaDisabled) btn.setAttribute('aria-disabled', wasAriaDisabled);
+            else btn.setAttribute('aria-disabled', wasDisabled ? 'true' : 'false');
         }
 
         function isActionThrottled(key, cooldownMs = 600) {
@@ -7217,6 +7291,7 @@
         }
 
         function openModal(id) {
+            updateViewportMetrics();
             const wasTonDepositOpen = document.getElementById('tonDepositModal')?.classList.contains('is-open');
             const wasSupportOpen = document.getElementById('supportChatModal')?.classList.contains('is-open');
             if (wasTonDepositOpen && id !== 'tonDepositModal') stopPaymentStatusPolling({ abort: true, reason: 'modal_switch' });
@@ -7468,6 +7543,7 @@
             tonDepositOpenBusy = true;
             setActionBusy('fiat-pay-btn', true);
             openModal('tonDepositModal');
+            setPaymentUiState('opening');
             const statusEl = document.getElementById('ton-deposit-status-text');
             const addressBox = document.getElementById('payment-address-box');
             const amountEl = document.getElementById('payment-amount-text');
@@ -7481,6 +7557,7 @@
             updatePaymentActionButtons();
             const seededFromCache = seedPaymentOrderFromCache();
             if (seededFromCache) {
+                setPaymentUiState('cached');
                 setDomText(statusEl, t('payment_check_status'));
                 startPaymentStatusPolling();
             }
@@ -7491,6 +7568,7 @@
                 renderPaymentOrder(order, latestPaymentStatus);
                 startPaymentStatusPolling();
             } catch (err) {
+                setPaymentUiState('error', friendlyErrorMessage(err));
                 setDomText(statusEl, friendlyErrorMessage(err));
             } finally {
                 tonDepositOpenBusy = false;
@@ -7505,12 +7583,6 @@
                 const cachedOrder = getCachedPaymentOrder();
                 if (cachedOrder) currentPaymentOrder = cachedOrder;
             }
-            if (!currentPaymentOrder || !currentPaymentOrder.id) {
-                showCopyToast(t('card_order_loading'));
-                setActionBusy('ton-copy-address-btn', false);
-                return;
-            }
-
             const walletAddress = getPaymentWalletAddress(currentPaymentOrder);
             if (!walletAddress) {
                 showCopyToast(t('payment_address_unavailable'));
@@ -7528,19 +7600,23 @@
         // ==========================================
 
         function startPaymentStatusPolling() {
-            stopPaymentStatusPolling();
+            paymentPollingGeneration += 1;
+            stopPaymentStatusPolling({ preserveGeneration: true });
             if (!document.getElementById('tonDepositModal')?.classList.contains('is-open')) return;
-            schedulePaymentStatusPoll(1200);
+            schedulePaymentStatusPoll(1200, paymentPollingGeneration);
         }
 
         function abortPaymentNetwork(reason = 'payment_abort') {
             try {
+                paymentStatusRequestSeq += 1;
+                paymentOrderRequestSeq += 1;
                 if (paymentStatusAbortController && !paymentStatusAbortController.signal.aborted) {
                     paymentStatusAbortController.abort();
                 }
                 if (paymentOrderAbortController && !paymentOrderAbortController.signal.aborted) {
                     paymentOrderAbortController.abort();
                 }
+                setPaymentUiState('idle', reason);
                 updateFrontendHealth({
                     ok: navigator.onLine,
                     last_path: reason,
@@ -7552,6 +7628,7 @@
         }
 
         function stopPaymentStatusPolling(options = {}) {
+            if (!options.preserveGeneration) paymentPollingGeneration += 1;
             if (paymentStatusPollTimer) clearTimeout(paymentStatusPollTimer);
             paymentStatusPollTimer = null;
             if (options.abort) abortPaymentNetwork(options.reason || 'payment_polling_stopped');
@@ -7577,10 +7654,11 @@
             return paymentPollingDelayMs;
         }
 
-        function schedulePaymentStatusPoll(delayMs = getPaymentPollingDelay()) {
-            stopPaymentStatusPolling();
+        function schedulePaymentStatusPoll(delayMs = getPaymentPollingDelay(), generation = paymentPollingGeneration) {
+            stopPaymentStatusPolling({ preserveGeneration: true });
             if (!isTonDepositModalOpen()) return;
             paymentStatusPollTimer = setTimeout(async () => {
+                if (generation !== paymentPollingGeneration) return;
                 if (!isTonDepositModalOpen()) {
                     stopPaymentStatusPolling();
                     return;
@@ -7591,7 +7669,7 @@
                         setPaymentPollingHealthy(false);
                     });
                 }
-                if (isTonDepositModalOpen()) schedulePaymentStatusPoll();
+                if (isTonDepositModalOpen() && generation === paymentPollingGeneration) schedulePaymentStatusPoll(undefined, generation);
             }, Math.max(1000, Number(delayMs || 7000)));
         }
 
@@ -7643,6 +7721,10 @@
                 'ton-deposit-status-text',
                 'main-balance'
             ];
+            const copyBtn = document.getElementById('ton-copy-address-btn');
+            const checkBtn = document.getElementById('ton-check-payment-btn');
+            const copyMinHeight = copyBtn ? parseFloat(getComputedStyle(copyBtn).minHeight || '0') : 0;
+            const checkMinHeight = checkBtn ? parseFloat(getComputedStyle(checkBtn).minHeight || '0') : 0;
             const duplicateIds = Array.from(document.querySelectorAll('[id]'))
                 .map(el => el.id)
                 .filter((id, index, all) => id && all.indexOf(id) !== index);
@@ -7652,11 +7734,25 @@
                 requiredIds: requiredIds.filter(id => !document.getElementById(id)),
                 duplicateIds: [...new Set(duplicateIds)].slice(0, 12),
                 appVh: Boolean(getComputedStyle(document.documentElement).getPropertyValue('--app-vh').trim()),
-                copyButton: Boolean(document.getElementById('ton-copy-address-btn')),
-                checkButton: Boolean(document.getElementById('ton-check-payment-btn')),
+                copyButton: Boolean(copyBtn),
+                checkButton: Boolean(checkBtn),
+                mobileTapTargets: copyMinHeight >= 44 && checkMinHeight >= 44,
+                tapFeedback: document.documentElement.dataset.vidipayTapFeedback === 'ready',
+                paymentUiStateReady: typeof setPaymentUiState === 'function',
+                pollGenerationReady: Number.isFinite(paymentPollingGeneration),
                 modalLockReady: !document.body.classList.contains('modal-open')
             };
-            checks.ok = checks.backendUrl && checks.noQrBox && !checks.requiredIds.length && !checks.duplicateIds.length && checks.appVh && checks.copyButton && checks.checkButton;
+            checks.ok = checks.backendUrl
+                && checks.noQrBox
+                && !checks.requiredIds.length
+                && !checks.duplicateIds.length
+                && checks.appVh
+                && checks.copyButton
+                && checks.checkButton
+                && checks.mobileTapTargets
+                && checks.tapFeedback
+                && checks.paymentUiStateReady
+                && checks.pollGenerationReady;
             window.__vidipayFrontendContract = {
                 checked_at: new Date().toISOString(),
                 ...checks
@@ -7670,35 +7766,47 @@
         }
 
         function runFrontendStressSelfCheck() {
+            const copyBtn = document.getElementById('ton-copy-address-btn');
+            const checkBtn = document.getElementById('ton-check-payment-btn');
+            const copyMinHeight = copyBtn ? parseFloat(getComputedStyle(copyBtn).minHeight || '0') : 0;
+            const checkMinHeight = checkBtn ? parseFloat(getComputedStyle(checkBtn).minHeight || '0') : 0;
             const checks = {
                 copyHandler: typeof copyTonPaymentAddress === 'function',
                 checkHandler: typeof refreshPaymentStatus === 'function',
                 openPaymentHandler: typeof openTonDepositModal === 'function',
                 pollingSingleTimer: paymentStatusPollTimer === null || typeof paymentStatusPollTimer === 'number',
+                pollingGeneration: Number.isFinite(paymentPollingGeneration),
                 networkStats: Boolean(window.__vidipayFrontendNetwork),
                 healthMarker: Boolean(document.documentElement.dataset.vidipayFrontendHealth),
                 abortCleanup: typeof abortPaymentNetwork === 'function',
+                paymentUiState: typeof setPaymentUiState === 'function',
+                tapFeedback: document.documentElement.dataset.vidipayTapFeedback === 'ready',
                 viewportHeight: Boolean(getComputedStyle(document.documentElement).getPropertyValue('--app-vh').trim()),
                 modalCount: document.querySelectorAll('.modal-overlay').length,
                 qrElements: document.querySelectorAll('#payment-qr-box, .payment-qr-box, .qr-code, canvas[data-payment-qr]').length,
-                copyButtonReady: Boolean(document.getElementById('ton-copy-address-btn')),
-                checkButtonReady: Boolean(document.getElementById('ton-check-payment-btn')),
-                copyButtonA11y: Boolean(document.getElementById('ton-copy-address-btn')?.getAttribute('aria-label')),
-                checkButtonA11y: Boolean(document.getElementById('ton-check-payment-btn')?.getAttribute('aria-label')),
+                copyButtonReady: Boolean(copyBtn),
+                checkButtonReady: Boolean(checkBtn),
+                copyButtonA11y: Boolean(copyBtn?.getAttribute('aria-label')),
+                checkButtonA11y: Boolean(checkBtn?.getAttribute('aria-label')),
+                mobileTapTargets: copyMinHeight >= 44 && checkMinHeight >= 44,
                 statusLiveRegion: document.getElementById('ton-deposit-status-text')?.getAttribute('aria-live') === 'polite'
             };
             checks.ok = checks.copyHandler
                 && checks.checkHandler
                 && checks.openPaymentHandler
                 && checks.pollingSingleTimer
+                && checks.pollingGeneration
                 && checks.networkStats
                 && checks.abortCleanup
+                && checks.paymentUiState
+                && checks.tapFeedback
                 && checks.viewportHeight
                 && checks.qrElements === 0
                 && checks.copyButtonReady
                 && checks.checkButtonReady
                 && checks.copyButtonA11y
                 && checks.checkButtonA11y
+                && checks.mobileTapTargets
                 && checks.statusLiveRegion;
             window.__vidipayFrontendStress = {
                 checked_at: new Date().toISOString(),
