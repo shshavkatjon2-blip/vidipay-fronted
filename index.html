@@ -4270,7 +4270,8 @@
         function updatePaymentActionButtons() {
             const copyBtn = document.getElementById('ton-copy-address-btn');
             const checkBtn = document.getElementById('ton-check-payment-btn');
-            const hasAddress = Boolean(getPaymentWalletAddress(currentPaymentOrder));
+            const walletAddress = getCurrentPaymentWalletAddress();
+            const hasAddress = Boolean(walletAddress && isLikelyTonWalletAddress(walletAddress));
             const copyLabel = t('copy_ton_address') || 'COPY ADDRESS';
             const checkLabel = t('pay_with_fiat') || 'CHECK PAYMENT';
             if (copyBtn && !copyBtn.dataset.busyLockActive) {
@@ -8128,18 +8129,22 @@
                     if (cachedStatusOrder) currentPaymentOrder = cachedStatusOrder;
                 }
             }
-            const walletAddress = getPaymentWalletAddress(currentPaymentOrder);
+            const walletAddress = getCurrentPaymentWalletAddress();
+            setPaymentAddressVisibility(walletAddress);
             if (!walletAddress) {
                 showCopyToast(t('payment_address_unavailable'));
                 setActionBusy('ton-copy-address-btn', false);
+                updatePaymentRealTestReadiness('copy_address_missing');
                 return;
             }
 
             try {
                 await copyTextToClipboard(walletAddress);
                 showCopyToast(t('ton_address_copied'));
+                updatePaymentRealTestReadiness('copy_address_success');
             } finally {
                 setActionBusy('ton-copy-address-btn', false);
+                updatePaymentActionButtons();
             }
         }
         // ==========================================
@@ -8345,7 +8350,7 @@
                 setWatchUiState('idle', 'runtime_guard');
             }
 
-            return {
+            const snapshot = {
                 reason,
                 sweep_count: frontendRuntimeGuardSweepCount,
                 payment_modal_open: isTonDepositModalOpen(),
@@ -8354,6 +8359,7 @@
                 payment_inflight: Boolean(paymentStatusInflight || createPaymentOrderInflight || paymentOrderResolveInflight)
             };
             updatePaymentRealTestReadiness(`runtime_guard:${reason}`);
+            return snapshot;
         }
 
         function installFrontendRuntimeGuard() {
@@ -8502,7 +8508,7 @@
                 runtimeGuardLastAt: Number.isFinite(frontendRuntimeGuardLastAt),
                 staleBusyCleanup: !Array.from(document.querySelectorAll('[data-busy-lock-active="true"]')).some(btn => {
                     if (btn.id === 'ton-check-payment-btn') return !(paymentStatusInflight || paymentStatusRefreshBusy);
-                    if (btn.id === 'fiat-pay-btn') return !(tonDepositOpenBusy || createPaymentOrderInflight);
+                    if (btn.id === 'fiat-pay-btn') return !(tonDepositOpenBusy || createPaymentOrderInflight || paymentOrderResolveInflight);
                     return false;
                 }),
                 tapFeedback: document.documentElement.dataset.vidipayTapFeedback === 'ready',
