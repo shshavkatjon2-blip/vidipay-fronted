@@ -2610,7 +2610,7 @@
                 </div>
                 <div class="support-input-row">
                     <input id="support-message-input" type="text" placeholder="Write your question..." data-i18n-placeholder="support_placeholder" onkeydown="if(event.key==='Enter') sendSupportMessage();">
-                    <button onclick="sendSupportMessage()"><i class="fas fa-paper-plane"></i></button>
+                    <button id="support-send-btn" onclick="sendSupportMessage()"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
         </div>
@@ -2813,6 +2813,8 @@
         let notificationsFetchedAt = 0;
         let historyInflight = null;
         let historyFetchedAt = 0;
+        let referralCopyBusy = false;
+        let supportReplyTimer = null;
         const MRBEAST_UPLOADS_PLAYLIST = 'UUX6OQ3DkcsbYNE6H8uQQuVA';
         let latestPaymentStatus = {};
         let currentTierStatus = {
@@ -6574,9 +6576,13 @@
             openModal('refModal');
         }
 
-        function copyReferralLink() {
+        async function copyReferralLink() {
+            if (referralCopyBusy) return;
             const link = (document.getElementById('bonus-ref-link')?.innerText || document.getElementById('ref-link').innerText);
+            const activeButton = document.activeElement?.tagName === 'BUTTON' ? document.activeElement : document.getElementById('copy-link-btn');
             const status = document.getElementById('copy-status');
+            referralCopyBusy = true;
+            setActionBusy(activeButton, true);
             appState.invitedShares = (appState.invitedShares || 0) + 1;
             saveAppState();
             updateBonusDisplays();
@@ -6589,14 +6595,13 @@
                 }
             };
 
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(link).then(copied).catch(() => {
-                    fallbackCopyReferral(link);
-                    copied();
-                });
-            } else {
-                fallbackCopyReferral(link);
+            try {
+                const ok = await copyTextToClipboard(link);
+                if (!ok) fallbackCopyReferral(link);
                 copied();
+            } finally {
+                referralCopyBusy = false;
+                setActionBusy(activeButton, false);
             }
         }
 
@@ -6722,17 +6727,26 @@
 
         function sendSupportMessage() {
             const input = document.getElementById('support-message-input');
+            const sendBtn = document.getElementById('support-send-btn');
             if (!input || !input.value.trim()) return;
             const text = input.value.trim();
+            if (input.disabled) return;
+            input.disabled = true;
+            setActionBusy(sendBtn, true);
             appState.supportMessages = appState.supportMessages || [];
             appState.supportMessages.push({ from: 'user', text });
             input.value = '';
             renderSupportMessages();
             saveAppState();
-            setTimeout(() => {
+            if (supportReplyTimer) clearTimeout(supportReplyTimer);
+            supportReplyTimer = setTimeout(() => {
                 appState.supportMessages.push({ from: 'support', text: t('support_received') });
                 saveAppState();
                 renderSupportMessages();
+                input.disabled = false;
+                input.focus();
+                setActionBusy(sendBtn, false);
+                supportReplyTimer = null;
             }, 500);
         }
 
