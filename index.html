@@ -30,6 +30,8 @@
             --clicker-grad: radial-gradient(circle, #6effe5 0%, #00ffcc 70%, #00b38f 100%);
             --clicker-shadow: #004d3d;
             --gold: #ffcc00;
+            --app-vh: 100vh;
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
         }
 
         html {
@@ -51,7 +53,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh;
+            min-height: var(--app-vh, 100vh);
             user-select: none;
             overflow-x: hidden;
             overflow-y: auto;
@@ -666,6 +668,9 @@
             border-radius: 28px;
             width: 100%;
             max-width: 460px;
+            max-height: calc(var(--app-vh, 100vh) - 32px);
+            overflow-y: auto;
+            overscroll-behavior: contain;
             padding: 40px 35px;
             box-sizing: border-box;
             position: relative;
@@ -1884,7 +1889,7 @@
         }
 
         .modal-content {
-            max-height: calc(100vh - 32px) !important;
+            max-height: calc(var(--app-vh, 100vh) - 32px) !important;
             overflow-y: auto !important;
             overscroll-behavior: contain !important;
             -webkit-overflow-scrolling: touch !important;
@@ -1902,7 +1907,7 @@
             right: 0;
             bottom: 0;
             height: 82px;
-            padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+            padding: 10px 12px calc(10px + var(--safe-bottom));
             background: rgba(9, 14, 18, 0.94);
             backdrop-filter: blur(14px);
             border-top: 1px solid rgba(0, 255, 204, 0.16);
@@ -2792,6 +2797,24 @@
             if (/failed to fetch|networkerror|load failed|connection/i.test(raw)) return runtimeText('backend_unavailable');
             return raw || runtimeText('request_failed');
         }
+
+        function updateViewportMetrics() {
+            const viewport = window.visualViewport;
+            const height = Math.max(320, Math.floor(viewport?.height || window.innerHeight || document.documentElement.clientHeight || 0));
+            document.documentElement.style.setProperty('--app-vh', `${height}px`);
+        }
+
+        function installViewportMetrics() {
+            updateViewportMetrics();
+            window.addEventListener('resize', updateViewportMetrics, { passive: true });
+            window.addEventListener('orientationchange', () => setTimeout(updateViewportMetrics, 250), { passive: true });
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', updateViewportMetrics, { passive: true });
+                window.visualViewport.addEventListener('scroll', updateViewportMetrics, { passive: true });
+            }
+        }
+
+        installViewportMetrics();
 
         document.addEventListener('gesturestart', event => event.preventDefault());
         document.addEventListener('gesturechange', event => event.preventDefault());
@@ -7377,6 +7400,70 @@
             refreshSettingsInBackground();
         });
 
+        function pauseFrontendActivity(reason = 'page_pause') {
+            window.__vidipayLastLifecycle = { reason, time: new Date().toISOString() };
+            stopPaymentStatusPolling();
+            clearTimeout(settingsRefreshTimer);
+        }
+
+        function resumeFrontendActivity(reason = 'page_resume') {
+            updateViewportMetrics();
+            scheduleSettingsRefresh();
+            if (isTonDepositModalOpen()) {
+                setPaymentPollingHealthy(true);
+                refreshPaymentStatus({ poll: true }).catch(err => rememberFrontendError(`${reason}_payment`, err));
+                schedulePaymentStatusPoll(1800);
+            }
+            refreshTierStatusFromLiveNetwork().catch(err => rememberFrontendError(`${reason}_tier`, err));
+        }
+
+        window.addEventListener('pagehide', () => pauseFrontendActivity('pagehide'));
+        window.addEventListener('pageshow', event => {
+            resumeFrontendActivity(event.persisted ? 'pageshow_bfcache' : 'pageshow');
+        });
+
+        function runFrontendContractSelfCheck() {
+            const requiredIds = [
+                'ton-copy-address-btn',
+                'ton-check-payment-btn',
+                'payment-address-text',
+                'payment-status-text',
+                'ton-deposit-status-text',
+                'main-balance'
+            ];
+            const duplicateIds = Array.from(document.querySelectorAll('[id]'))
+                .map(el => el.id)
+                .filter((id, index, all) => id && all.indexOf(id) !== index);
+            const checks = {
+                backendUrl: API_BASE_URL === PRODUCTION_API_BASE_URL,
+                noQrBox: !document.getElementById('payment-qr-box'),
+                requiredIds: requiredIds.filter(id => !document.getElementById(id)),
+                duplicateIds: [...new Set(duplicateIds)].slice(0, 12),
+                appVh: Boolean(getComputedStyle(document.documentElement).getPropertyValue('--app-vh').trim()),
+                copyButton: Boolean(document.getElementById('ton-copy-address-btn')),
+                checkButton: Boolean(document.getElementById('ton-check-payment-btn')),
+                modalLockReady: !document.body.classList.contains('modal-open')
+            };
+            checks.ok = checks.backendUrl && checks.noQrBox && !checks.requiredIds.length && !checks.duplicateIds.length && checks.appVh && checks.copyButton && checks.checkButton;
+            window.__vidipayFrontendContract = {
+                checked_at: new Date().toISOString(),
+                ...checks
+            };
+            if (!checks.ok) {
+                rememberFrontendError('frontend_contract', JSON.stringify(checks));
+            }
+            return checks;
+        }
+
+        function scheduleFrontendContractSelfCheck() {
+            setTimeout(() => {
+                try { runFrontendContractSelfCheck(); } catch (err) { rememberFrontendError('frontend_contract_exception', err); }
+            }, 1200);
+            setTimeout(() => {
+                try { runFrontendContractSelfCheck(); } catch (err) { rememberFrontendError('frontend_contract_late_exception', err); }
+            }, 6500);
+        }
+
         async function initBackendApp() {
             try {
                 await loadBackendSettings();
@@ -7398,6 +7485,7 @@
         updateWatchDisplays();
         renderNotifications();
         updateBonusDisplays();
+        scheduleFrontendContractSelfCheck();
         initBackendApp();
 
     </script>
