@@ -3064,6 +3064,8 @@
         let currentWatchCompleted = false;
         let currentMrBeastVideoId = null;
         let watchSessionSubmitted = false;
+        let watchSessionGeneration = 0;
+        let watchFinalizeInflight = null;
         let watchSessionVideoIds = new Set();
         let lastWatchUiSnapshot = '';
         let rewardedMrBeastVideos = new Set();
@@ -3080,6 +3082,10 @@
         let tonDepositOpenBusy = false;
         let backendSettingsInflight = null;
         let backendSettingsFetchedAt = 0;
+        let userSyncInflight = null;
+        let userSyncFetchedAt = 0;
+        let statsInflight = null;
+        let statsFetchedAt = 0;
         let tierStatusInflight = null;
         let tierStatusFetchedAt = 0;
         let notificationsInflight = null;
@@ -3335,6 +3341,10 @@
         }
 
         async function syncBackendUser() {
+            const now = Date.now();
+            if (userSyncInflight) return userSyncInflight;
+            if (userSyncFetchedAt && now - userSyncFetchedAt < 20000) return appState;
+
             const payload = {
                 telegram_id: String(referralUserId),
                 username: user?.username || null,
@@ -3343,18 +3353,25 @@
                 referrer_id: referrerId && String(referrerId) !== String(referralUserId) ? String(referrerId) : null
             };
 
-            const result = await apiRequest('/user/sync', {
-                method: 'POST',
-                body: JSON.stringify(payload),
-                timeoutMs: 12000
-            });
-
-            applyBackendUser(result.user);
-            if (result.referral?.applied) {
-                safeStorageRemove('vidiPayPendingReferrerId');
-                addNotification(t('bonus_title'), t('referral_bonus_added'));
-            }
-            updateWatchDisplays();
+            userSyncInflight = apiRequest('/user/sync', {
+                    method: 'POST',
+                    body: JSON.stringify(payload),
+                    timeoutMs: 12000
+                })
+                .then((result) => {
+                    userSyncFetchedAt = Date.now();
+                    applyBackendUser(result.user);
+                    if (result.referral?.applied) {
+                        safeStorageRemove('vidiPayPendingReferrerId');
+                        addNotification(t('bonus_title'), t('referral_bonus_added'));
+                    }
+                    updateWatchDisplays();
+                    return result;
+                })
+                .finally(() => {
+                    userSyncInflight = null;
+                });
+            return userSyncInflight;
         }
 
         async function loadBackendSettings(options = {}) {
@@ -3645,21 +3662,35 @@
             });
         }
 
-        async function refreshStatsFromBackend() {
-            const stats = await apiRequest(`/stats/${encodeURIComponent(referralUserId)}`, { timeoutMs: 8000 });
+        async function refreshStatsFromBackend(options = {}) {
+            const now = Date.now();
+            if (statsInflight) return statsInflight;
+            if (!options.force && statsFetchedAt && now - statsFetchedAt < 8000) {
+                updateWatchDisplays();
+                return appState;
+            }
 
-            appState.balance = Number(stats.balance || 0);
-            appState.totalViews = Number(stats.total_views || 0);
-            appState.totalSeconds = Number(stats.total_watch_seconds || 0);
-            appState.totalMinutes = Math.floor(appState.totalSeconds / 60);
-            appState.dailyViews = Number(stats.daily_views || 0);
-            appState.dailySeconds = Number(stats.daily_watch_seconds || 0);
-            appState.dailyMinutes = Math.floor(appState.dailySeconds / 60);
-            appState.dailyEarned = Number(stats.daily_income || 0);
-            appState.joinedFriends = Number(stats.referrals || appState.joinedFriends || 0);
-            if (stats.growth_lock) setGrowthLockStatus(stats.growth_lock);
-            saveAppState();
-            updateWatchDisplays();
+            statsInflight = apiRequest(`/stats/${encodeURIComponent(referralUserId)}`, { timeoutMs: 8000 })
+                .then((stats) => {
+                    appState.balance = Number(stats.balance || 0);
+                    appState.totalViews = Number(stats.total_views || 0);
+                    appState.totalSeconds = Number(stats.total_watch_seconds || 0);
+                    appState.totalMinutes = Math.floor(appState.totalSeconds / 60);
+                    appState.dailyViews = Number(stats.daily_views || 0);
+                    appState.dailySeconds = Number(stats.daily_watch_seconds || 0);
+                    appState.dailyMinutes = Math.floor(appState.dailySeconds / 60);
+                    appState.dailyEarned = Number(stats.daily_income || 0);
+                    appState.joinedFriends = Number(stats.referrals || appState.joinedFriends || 0);
+                    if (stats.growth_lock) setGrowthLockStatus(stats.growth_lock);
+                    statsFetchedAt = Date.now();
+                    saveAppState();
+                    updateWatchDisplays();
+                    return stats;
+                })
+                .finally(() => {
+                    statsInflight = null;
+                });
+            return statsInflight;
         }
 
         function normalizePaymentAddress(address) {
@@ -6679,6 +6710,15 @@
             updateGrowthLockUi();
         }
 
+        function setWatchUiState(state, detail = '') {
+            const value = String(state || 'idle').replace(/[^a-z0-9_-]/gi, '').toLowerCase() || 'idle';
+            const modal = document.getElementById('watchModal');
+            document.documentElement.dataset.vidipayWatchUiState = value;
+            document.documentElement.dataset.vidipayWatchUiStateAt = new Date().toISOString();
+            if (modal) modal.dataset.watchState = value;
+            if (detail) document.documentElement.dataset.vidipayWatchUiDetail = String(detail).slice(0, 80);
+        }
+
         async function handleMainClick(e) {
             if (isActionThrottled('main-watch-click', 900)) return;
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
@@ -6690,6 +6730,11 @@
             if (isGrowthWatchLocked()) {
                 updateGrowthLockUi();
                 showCopyToast(t('growth_referral_required'));
+                return;
+            }
+            if (pendingWatch && !watchSessionSubmitted) {
+                setWatchUiState('active');
+                openModal('watchModal');
                 return;
             }
             openWatchModal();
@@ -6841,25 +6886,35 @@
         }
 
         function openWatchModal() {
+            if (pendingWatch && !watchSessionSubmitted) {
+                setWatchUiState('active');
+                openModal('watchModal');
+                return;
+            }
             countedWatchSeconds = 0;
             watchAccumulatedMs = 0;
             watchSegmentStartedAt = null;
             currentWatchCompleted = false;
             currentMrBeastVideoId = null;
             watchSessionSubmitted = false;
+            watchFinalizeInflight = null;
+            watchSessionGeneration += 1;
             watchSessionVideoIds = new Set();
             lastWatchUiSnapshot = '';
             pendingWatch = {
                 startedAt: Date.now(),
+                generation: watchSessionGeneration,
                 requiredSeconds: Number(backendSettings.view_seconds_required || 5)
             };
 
+            setWatchUiState('opening');
             openModal('watchModal');
             updateWatchSessionUi(t('watch_wait'));
             startMrBeastPlayer();
         }
 
         function closeWatchModal() {
+            setWatchUiState('closing');
             if (mrbeastPlayer && mrbeastPlayer.pauseVideo) {
                 mrbeastPlayer.pauseVideo();
             }
@@ -6918,9 +6973,11 @@
             if (!watchSegmentStartedAt) watchSegmentStartedAt = Date.now();
 
             clearInterval(watchTimerInterval);
+            setWatchUiState('counting');
             watchTimerInterval = setInterval(() => {
                 if (!pendingWatch) {
                     clearInterval(watchTimerInterval);
+                    setWatchUiState('idle');
                     return;
                 }
 
@@ -6964,8 +7021,10 @@
         }
 
         async function finalizeWatchSession() {
+            if (watchFinalizeInflight) return watchFinalizeInflight;
             if (watchSessionSubmitted) return;
             watchSessionSubmitted = true;
+            setWatchUiState('finalizing');
             stopWatchTimerDisplay();
             pendingWatch = null;
 
@@ -6980,14 +7039,20 @@
             }
 
             showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), t('watch_reward_saving'));
-            await finalizeWatchedVideo(watchSeconds, videoId);
+            watchFinalizeInflight = finalizeWatchedVideo(watchSeconds, videoId)
+                .finally(() => {
+                    watchFinalizeInflight = null;
+                });
+            return watchFinalizeInflight;
         }
 
         async function finalizeWatchedVideo(watchSeconds, videoId) {
             try {
+                setWatchUiState('saving');
                 if (!videoId) {
                     updateWatchSessionUi(t('watch_video_missing'));
                     pendingWatch = null;
+                    setWatchUiState('error', 'missing_video');
                     return;
                 }
 
@@ -6995,6 +7060,7 @@
                 updateWatchSessionUi(t('watch_video_duplicate'));
                 showWatchResult(watchSeconds, 0, t('watch_video_duplicate'));
                 pendingWatch = null;
+                setWatchUiState('duplicate');
                 return;
             }
 
@@ -7002,6 +7068,7 @@
                 updateWatchSessionUi(t('watch_too_short_detail').replace('{time}', formatDuration(watchSeconds)));
                 showWatchResult(watchSeconds, 0, t('not_enough_time'));
                 pendingWatch = null;
+                setWatchUiState('too_short');
                 return;
             }
 
@@ -7038,6 +7105,7 @@
             updateWatchSessionUi(t('watch_reward_added_detail').replace('{time}', formatDuration(watchSeconds)).replace('{amount}', Number(result.reward || 0).toFixed(2)));
             showWatchResult(watchSeconds, result.reward, t('watch_added'));
             addNotification(t('view_reward_title'), t('view_reward_added').replace('{seconds}', watchSeconds).replace('{amount}', Number(result.reward || 0).toFixed(2)));
+            setWatchUiState('saved');
         } catch (err) {
             pendingWatch = null;
             if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
@@ -7046,6 +7114,7 @@
             updateWatchSessionUi(message);
             showWatchResult(watchSeconds, 0, `${message}. ${t('watch_reward_backend_failed')}`);
             addNotification(t('view_reward_title'), message);
+            setWatchUiState('error', message);
         }
     }
 
@@ -7638,6 +7707,10 @@
             return document.getElementById('tonDepositModal')?.classList.contains('is-open');
         }
 
+        function isWatchModalOpen() {
+            return document.getElementById('watchModal')?.classList.contains('is-open');
+        }
+
         function setPaymentPollingHealthy(ok) {
             if (ok) {
                 paymentPollingFailures = 0;
@@ -7694,6 +7767,13 @@
             window.__vidipayLastLifecycle = { reason, time: new Date().toISOString() };
             stopPaymentStatusPolling({ abort: true, reason });
             clearTimeout(settingsRefreshTimer);
+            if (pendingWatch && isWatchModalOpen()) {
+                try {
+                    if (mrbeastPlayer && mrbeastPlayer.pauseVideo) mrbeastPlayer.pauseVideo();
+                } catch (_) {}
+                stopWatchTimerDisplay();
+                setWatchUiState('paused', reason);
+            }
         }
 
         function resumeFrontendActivity(reason = 'page_resume') {
@@ -7703,6 +7783,10 @@
                 setPaymentPollingHealthy(true);
                 refreshPaymentStatus({ poll: true }).catch(err => rememberFrontendError(`${reason}_payment`, err));
                 schedulePaymentStatusPoll(1800);
+            }
+            if (pendingWatch && isWatchModalOpen() && !watchSessionSubmitted) {
+                setWatchUiState('active', reason);
+                updateWatchSessionUi(t('watch_counting'));
             }
             refreshTierStatusFromLiveNetwork().catch(err => rememberFrontendError(`${reason}_tier`, err));
         }
@@ -7740,6 +7824,10 @@
                 tapFeedback: document.documentElement.dataset.vidipayTapFeedback === 'ready',
                 paymentUiStateReady: typeof setPaymentUiState === 'function',
                 pollGenerationReady: Number.isFinite(paymentPollingGeneration),
+                watchUiStateReady: typeof setWatchUiState === 'function',
+                watchModalGuardReady: typeof isWatchModalOpen === 'function',
+                statsDedupeReady: Number.isFinite(statsFetchedAt),
+                userSyncDedupeReady: Number.isFinite(userSyncFetchedAt),
                 modalLockReady: !document.body.classList.contains('modal-open')
             };
             checks.ok = checks.backendUrl
@@ -7752,7 +7840,11 @@
                 && checks.mobileTapTargets
                 && checks.tapFeedback
                 && checks.paymentUiStateReady
-                && checks.pollGenerationReady;
+                && checks.pollGenerationReady
+                && checks.watchUiStateReady
+                && checks.watchModalGuardReady
+                && checks.statsDedupeReady
+                && checks.userSyncDedupeReady;
             window.__vidipayFrontendContract = {
                 checked_at: new Date().toISOString(),
                 ...checks
@@ -7780,6 +7872,11 @@
                 healthMarker: Boolean(document.documentElement.dataset.vidipayFrontendHealth),
                 abortCleanup: typeof abortPaymentNetwork === 'function',
                 paymentUiState: typeof setPaymentUiState === 'function',
+                watchUiState: typeof setWatchUiState === 'function',
+                watchModalGuard: typeof isWatchModalOpen === 'function',
+                statsDedupe: Number.isFinite(statsFetchedAt) && (statsInflight === null || typeof statsInflight?.then === 'function'),
+                userSyncDedupe: Number.isFinite(userSyncFetchedAt) && (userSyncInflight === null || typeof userSyncInflight?.then === 'function'),
+                watchFinalizeGuard: watchFinalizeInflight === null || typeof watchFinalizeInflight?.then === 'function',
                 tapFeedback: document.documentElement.dataset.vidipayTapFeedback === 'ready',
                 viewportHeight: Boolean(getComputedStyle(document.documentElement).getPropertyValue('--app-vh').trim()),
                 modalCount: document.querySelectorAll('.modal-overlay').length,
@@ -7799,6 +7896,11 @@
                 && checks.networkStats
                 && checks.abortCleanup
                 && checks.paymentUiState
+                && checks.watchUiState
+                && checks.watchModalGuard
+                && checks.statsDedupe
+                && checks.userSyncDedupe
+                && checks.watchFinalizeGuard
                 && checks.tapFeedback
                 && checks.viewportHeight
                 && checks.qrElements === 0
