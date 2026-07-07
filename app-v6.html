@@ -5586,6 +5586,7 @@
         });
 
         function changeLang(lang) {
+            if (isActionThrottled(`lang-${lang}`, 250)) return;
             if (!languages[lang] || lang === 'uz') lang = 'en';
             currentLang = lang;
             safeStorageSet('vidiPayLang', lang);
@@ -6020,6 +6021,15 @@
             btn.setAttribute('aria-busy', busy ? 'true' : 'false');
         }
 
+        function isActionThrottled(key, cooldownMs = 600) {
+            const now = Date.now();
+            const store = isActionThrottled.store || (isActionThrottled.store = new Map());
+            const until = Number(store.get(key) || 0);
+            if (until > now) return true;
+            store.set(key, now + cooldownMs);
+            return false;
+        }
+
         async function copyTextToClipboard(text) {
             const value = String(text || '');
             if (!value) return false;
@@ -6054,6 +6064,7 @@
         }
 
         function openWalletIfUnlocked() {
+            if (isActionThrottled('open-wallet', 500)) return;
             if (!isWalletEarningUnlocked()) {
                 const required = getWalletUnlockRequiredAmount();
                 const earned = getWalletEarningAmount();
@@ -6208,6 +6219,7 @@
         }
 
         async function handleMainClick(e) {
+            if (isActionThrottled('main-watch-click', 900)) return;
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
             if (isActivationDepositLocked()) {
                 updateGrowthLockUi();
@@ -6243,10 +6255,12 @@
         }
 
         function playRandomMrBeastVideo() {
+            if (isActionThrottled('watch-random', 700)) return;
             playMrBeastAt(randomMrBeastIndex());
         }
 
         function playNextMrBeastVideo() {
+            if (isActionThrottled('watch-next', 700)) return;
             if (!mrbeastPlayer || !mrbeastPlayer.nextVideo) {
                 showMrBeastFallbackPlayer(t('watch_playing'));
                 return;
@@ -6256,6 +6270,7 @@
         }
 
         function playPreviousMrBeastVideo() {
+            if (isActionThrottled('watch-previous', 700)) return;
             if (!mrbeastPlayer || !mrbeastPlayer.previousVideo) {
                 showMrBeastFallbackPlayer(t('watch_playing'));
                 return;
@@ -6353,6 +6368,7 @@
         }
 
         function openWatchFullscreen() {
+            if (isActionThrottled('watch-fullscreen', 900)) return;
             const target = document.getElementById('mrbeast-player') || document.getElementById('watchModal');
             const request = target?.requestFullscreen || target?.webkitRequestFullscreen || target?.msRequestFullscreen;
             if (request) {
@@ -6608,6 +6624,7 @@
         }
 
         function triggerInvite() {
+            if (isActionThrottled('trigger-invite', 500)) return;
             openModal('refModal');
         }
 
