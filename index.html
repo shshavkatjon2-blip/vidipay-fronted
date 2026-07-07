@@ -3284,6 +3284,8 @@
         let paymentOrderResolveInflight = null;
         let paymentRealTestReadinessLastSnapshot = '';
         let paymentAddressVisibleSinceAt = 0;
+        let paymentModalWatchdogTimer = null;
+        let paymentModalWatchdogLastSnapshot = '';
         const paymentOrderCacheKey = `vidiPayPaymentOrder_${referralUserId}`;
         const paymentStatusCacheKey = `vidiPayPaymentStatus_${referralUserId}`;
         const paymentRealTestReadinessKey = `vidiPayRealTestReady_${referralUserId}`;
@@ -4292,6 +4294,114 @@
                 checkBtn.classList.toggle('is-ready', Boolean(getCurrentPaymentWalletAddress()));
             }
             updatePaymentRealTestReadiness('action_buttons');
+        }
+
+        function getPaymentQrElements() {
+            return Array.from(document.querySelectorAll('#payment-qr-box, .payment-qr-box, .qr-code, .qrcode, canvas[data-payment-qr], img[data-payment-qr], [data-payment-qr], [data-qr-code]'));
+        }
+
+        function suppressPaymentQrElements(reason = 'sync') {
+            const qrElements = getPaymentQrElements();
+            qrElements.forEach(el => {
+                if (!el) return;
+                const ownedByPaymentModal = Boolean(el.closest?.('#tonDepositModal')) || el.id === 'payment-qr-box' || el.classList?.contains('payment-qr-box');
+                if (ownedByPaymentModal) {
+                    el.remove();
+                    return;
+                }
+                el.setAttribute('aria-hidden', 'true');
+                el.dataset.paymentQrSuppressed = 'true';
+                el.style.display = 'none';
+            });
+            const remaining = getPaymentQrElements().length;
+            document.documentElement.dataset.vidipayPaymentQrSuppressed = remaining === 0 ? 'ready' : 'hidden';
+            document.documentElement.dataset.vidipayPaymentQrSuppressedReason = String(reason || '').slice(0, 60);
+            document.documentElement.dataset.vidipayPaymentQrRemaining = String(remaining);
+            return remaining;
+        }
+
+        function ensurePaymentActionHandlers(reason = 'sync') {
+            const copyBtn = document.getElementById('ton-copy-address-btn');
+            const checkBtn = document.getElementById('ton-check-payment-btn');
+            const copyLabel = t('copy_ton_address') || 'COPY ADDRESS';
+            const checkLabel = t('pay_with_fiat') || 'CHECK PAYMENT';
+            if (copyBtn) {
+                copyBtn.type = 'button';
+                copyBtn.setAttribute('onclick', 'copyTonPaymentAddress()');
+                copyBtn.setAttribute('aria-label', copyLabel);
+                copyBtn.setAttribute('title', copyLabel);
+                copyBtn.dataset.paymentAction = 'copy-address';
+                copyBtn.dataset.paymentHandlerReady = typeof copyTonPaymentAddress === 'function' ? 'ready' : 'missing';
+                const copyText = copyBtn.querySelector('#lbl-copy-ton-address');
+                if (copyText) setDomText(copyText, copyLabel);
+            }
+            if (checkBtn) {
+                checkBtn.type = 'button';
+                checkBtn.setAttribute('onclick', 'checkTonPaymentNow()');
+                checkBtn.setAttribute('aria-label', checkLabel);
+                checkBtn.setAttribute('title', checkLabel);
+                checkBtn.dataset.paymentAction = 'check-payment';
+                checkBtn.dataset.paymentManualCheckReady = typeof checkTonPaymentNow === 'function' ? 'ready' : 'missing';
+                const checkText = checkBtn.querySelector('#lbl-check-ton-payment');
+                if (checkText) setDomText(checkText, checkLabel);
+            }
+            document.documentElement.dataset.vidipayPaymentActionHandlers = copyBtn && checkBtn ? 'ready' : 'waiting';
+            document.documentElement.dataset.vidipayPaymentActionHandlersReason = String(reason || '').slice(0, 60);
+        }
+
+        function sanitizePaymentModalDom(reason = 'sync') {
+            const modal = document.getElementById('tonDepositModal');
+            const walletAddress = getCurrentPaymentWalletAddress();
+            const qrRemaining = suppressPaymentQrElements(reason);
+            setPaymentAddressVisibility(walletAddress);
+            ensurePaymentActionHandlers(reason);
+            updatePaymentActionButtons();
+            if (modal) {
+                modal.dataset.paymentModalWatchdog = 'ready';
+                modal.dataset.paymentQrRemaining = String(qrRemaining);
+                normalizeFrontendActionElements(modal);
+            }
+            syncModalAccessibilityState(`payment_watchdog:${reason}`);
+            const snapshot = {
+                checked_at: new Date().toISOString(),
+                reason: String(reason || 'sync').slice(0, 80),
+                modal_open: isTonDepositModalOpen(),
+                has_wallet_address: Boolean(walletAddress && isLikelyTonWalletAddress(walletAddress)),
+                qr_remaining: qrRemaining,
+                copy_handler: document.getElementById('ton-copy-address-btn')?.getAttribute('onclick') || '',
+                check_handler: document.getElementById('ton-check-payment-btn')?.getAttribute('onclick') || '',
+                copy_ready: document.getElementById('ton-copy-address-btn')?.dataset.paymentHandlerReady || 'missing',
+                check_ready: document.getElementById('ton-check-payment-btn')?.dataset.paymentManualCheckReady || 'missing'
+            };
+            const serialized = JSON.stringify(snapshot);
+            if (serialized !== paymentModalWatchdogLastSnapshot) {
+                paymentModalWatchdogLastSnapshot = serialized;
+                window.__vidipayPaymentModalWatchdog = snapshot;
+            }
+            document.documentElement.dataset.vidipayPaymentModalWatchdog = 'ready';
+            document.documentElement.dataset.vidipayPaymentModalWatchdogAt = snapshot.checked_at;
+            document.documentElement.dataset.vidipayPaymentModalWatchdogReason = snapshot.reason;
+            return snapshot;
+        }
+
+        function installPaymentModalWatchdog() {
+            if (document.documentElement.dataset.vidipayPaymentModalWatchdogInstalled === 'ready') return;
+            const sweep = reason => {
+                try {
+                    if (isTonDepositModalOpen() || reason !== 'interval') sanitizePaymentModalDom(reason);
+                } catch (err) {
+                    rememberFrontendError('payment_modal_watchdog', err);
+                }
+            };
+            document.documentElement.dataset.vidipayPaymentModalWatchdogInstalled = 'ready';
+            sweep('install');
+            paymentModalWatchdogTimer = setInterval(() => sweep('interval'), 2800);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) sweep('visible');
+            }, { passive: true });
+            window.addEventListener('focus', () => sweep('focus'), { passive: true });
+            window.addEventListener('online', () => sweep('online'), { passive: true });
+            window.addEventListener('pageshow', () => sweep('pageshow'), { passive: true });
         }
 
         function isActiveLocalCardMethod() {
@@ -7860,6 +7970,7 @@
                 }
                 if (id === 'tonDepositModal') {
                     renderPaymentOrder(currentPaymentOrder, latestPaymentStatus);
+                    sanitizePaymentModalDom('open:tonDepositModal');
                     refreshPaymentRuntimeStrip(document.documentElement.dataset.vidipayPaymentUiState || 'loading');
                     updatePaymentRealTestReadiness('modal_open');
                     startPaymentStatusPolling();
@@ -7877,6 +7988,7 @@
                 if (id === 'tonDepositModal') {
                     stopPaymentStatusPolling({ abort: true, reason: 'modal_close' });
                     refreshPaymentRuntimeStrip('idle');
+                    sanitizePaymentModalDom('close:tonDepositModal');
                     updatePaymentRealTestReadiness('modal_close');
                 }
                 if (id === 'supportChatModal') resetSupportComposer();
@@ -8368,6 +8480,7 @@
 
             if (isTonDepositModalOpen()) {
                 if (!currentPaymentOrder) seedPaymentOrderFromCache();
+                sanitizePaymentModalDom(`runtime:${reason}`);
                 updatePaymentActionButtons();
                 if (!paymentStatusPollTimer && navigator.onLine) {
                     schedulePaymentStatusPoll(2500, paymentPollingGeneration);
@@ -8416,6 +8529,7 @@
             resumeFrontendActivity(event.persisted ? 'pageshow_bfcache' : 'pageshow');
         });
         installFrontendRuntimeGuard();
+        installPaymentModalWatchdog();
 
         function runFrontendContractSelfCheck() {
             const requiredIds = [
@@ -8461,6 +8575,11 @@
                 actionNormalizerReady: document.documentElement.dataset.vidipayFrontendActionNormalizerInstalled === 'ready',
                 modalStateGuardReady: document.documentElement.dataset.vidipayModalStateGuard === 'ready',
                 runtimeGuardReady: document.documentElement.dataset.vidipayFrontendRuntimeGuardInstalled === 'ready',
+                paymentModalWatchdogReady: document.documentElement.dataset.vidipayPaymentModalWatchdogInstalled === 'ready' && typeof sanitizePaymentModalDom === 'function',
+                paymentActionHandlersReady: document.documentElement.dataset.vidipayPaymentActionHandlers === 'ready',
+                paymentQrSuppressionReady: document.documentElement.dataset.vidipayPaymentQrSuppressed === 'ready',
+                manualCheckHandlerReady: checkBtn?.getAttribute('onclick') === 'checkTonPaymentNow()',
+                copyHandlerReady: copyBtn?.getAttribute('onclick') === 'copyTonPaymentAddress()',
                 modalLockReady: !document.body.classList.contains('modal-open')
             };
             checks.ok = checks.backendUrl
@@ -8487,7 +8606,12 @@
                 && checks.actionGuardReady
                 && checks.actionNormalizerReady
                 && checks.modalStateGuardReady
-                && checks.runtimeGuardReady;
+                && checks.runtimeGuardReady
+                && checks.paymentModalWatchdogReady
+                && checks.paymentActionHandlersReady
+                && checks.paymentQrSuppressionReady
+                && checks.manualCheckHandlerReady
+                && checks.copyHandlerReady;
             window.__vidipayFrontendContract = {
                 checked_at: new Date().toISOString(),
                 ...checks
@@ -8536,6 +8660,12 @@
                 runtimeGuard: document.documentElement.dataset.vidipayFrontendRuntimeGuard === 'ready',
                 runtimeGuardTimer: frontendRuntimeGuardTimer !== null,
                 runtimeGuardLastAt: Number.isFinite(frontendRuntimeGuardLastAt),
+                paymentModalWatchdog: document.documentElement.dataset.vidipayPaymentModalWatchdogInstalled === 'ready',
+                paymentModalWatchdogTimer: paymentModalWatchdogTimer !== null,
+                paymentActionHandlers: document.documentElement.dataset.vidipayPaymentActionHandlers === 'ready',
+                paymentQrSuppression: document.documentElement.dataset.vidipayPaymentQrSuppressed === 'ready',
+                manualCheckClickHandler: checkBtn?.getAttribute('onclick') === 'checkTonPaymentNow()',
+                copyAddressClickHandler: copyBtn?.getAttribute('onclick') === 'copyTonPaymentAddress()',
                 staleBusyCleanup: !Array.from(document.querySelectorAll('[data-busy-lock-active="true"]')).some(btn => {
                     if (btn.id === 'ton-check-payment-btn') return !(paymentStatusInflight || paymentStatusRefreshBusy || paymentManualCheckInflight);
                     if (btn.id === 'fiat-pay-btn') return !(tonDepositOpenBusy || createPaymentOrderInflight || paymentOrderResolveInflight);
@@ -8581,6 +8711,12 @@
                 && checks.runtimeGuard
                 && checks.runtimeGuardTimer
                 && checks.runtimeGuardLastAt
+                && checks.paymentModalWatchdog
+                && checks.paymentModalWatchdogTimer
+                && checks.paymentActionHandlers
+                && checks.paymentQrSuppression
+                && checks.manualCheckClickHandler
+                && checks.copyAddressClickHandler
                 && checks.staleBusyCleanup
                 && checks.tapFeedback
                 && checks.viewportHeight
