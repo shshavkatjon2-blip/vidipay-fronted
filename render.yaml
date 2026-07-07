@@ -24,7 +24,7 @@ services:
       - key: GAME_URL
         sync: false
       - key: PUBLIC_BACKEND_URL
-        value: https://vidipay-backend.onrender.com
+        value: https://vidipay-backend-1.onrender.com
       - key: PUBLIC_APP_URL
         value: https://shshavkatjon2-blip.github.io/vidipay-fronted
       - key: ALLOWED_ORIGINS
