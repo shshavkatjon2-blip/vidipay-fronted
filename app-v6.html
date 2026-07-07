@@ -6750,7 +6750,20 @@
             }, 500);
         }
 
+        function resetSupportComposer() {
+            if (supportReplyTimer) clearTimeout(supportReplyTimer);
+            supportReplyTimer = null;
+            const input = document.getElementById('support-message-input');
+            if (input) input.disabled = false;
+            setActionBusy('support-send-btn', false);
+        }
+
         function openModal(id) {
+            const wasTonDepositOpen = document.getElementById('tonDepositModal')?.classList.contains('is-open');
+            const wasSupportOpen = document.getElementById('supportChatModal')?.classList.contains('is-open');
+            if (wasTonDepositOpen && id !== 'tonDepositModal') stopPaymentStatusPolling();
+            if (wasSupportOpen && id !== 'supportChatModal') resetSupportComposer();
+
             document.querySelectorAll('.modal-overlay').forEach(modal => {
                 modal.classList.remove('is-open');
                 modal.style.display = 'none';
@@ -6795,6 +6808,7 @@
                 modal.classList.remove('is-open');
                 modal.style.display = 'none';
                 if (id === 'tonDepositModal') stopPaymentStatusPolling();
+                if (id === 'supportChatModal') resetSupportComposer();
             }
         }
 
