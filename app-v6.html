@@ -3092,6 +3092,9 @@
         let notificationsFetchedAt = 0;
         let historyInflight = null;
         let historyFetchedAt = 0;
+        let frontendRuntimeGuardTimer = null;
+        let frontendRuntimeGuardLastAt = 0;
+        let frontendRuntimeGuardSweepCount = 0;
         let referralCopyBusy = false;
         let supportReplyTimer = null;
         let runtimeStatusToastTimer = null;
@@ -7791,10 +7794,77 @@
             refreshTierStatusFromLiveNetwork().catch(err => rememberFrontendError(`${reason}_tier`, err));
         }
 
+        function resetStaleActionBusyLocks() {
+            const activeBusy = new Map([
+                ['ton-check-payment-btn', Boolean(paymentStatusInflight || paymentStatusRefreshBusy)],
+                ['fiat-pay-btn', Boolean(tonDepositOpenBusy || createPaymentOrderInflight)],
+                ['ton-copy-address-btn', false]
+            ]);
+            activeBusy.forEach((isActive, id) => {
+                const btn = document.getElementById(id);
+                if (btn?.dataset.busyLockActive === 'true' && !isActive) {
+                    setActionBusy(btn, false);
+                }
+            });
+        }
+
+        function runFrontendRuntimeGuard(reason = 'runtime_guard') {
+            frontendRuntimeGuardLastAt = Date.now();
+            frontendRuntimeGuardSweepCount += 1;
+            document.documentElement.dataset.vidipayFrontendRuntimeGuard = 'ready';
+            document.documentElement.dataset.vidipayFrontendRuntimeGuardAt = new Date(frontendRuntimeGuardLastAt).toISOString();
+            document.documentElement.dataset.vidipayFrontendRuntimeGuardReason = String(reason || '').slice(0, 60);
+            updateViewportMetrics();
+            resetStaleActionBusyLocks();
+
+            if (isTonDepositModalOpen()) {
+                if (!currentPaymentOrder) seedPaymentOrderFromCache();
+                updatePaymentActionButtons();
+                if (!paymentStatusPollTimer && navigator.onLine) {
+                    schedulePaymentStatusPoll(2500, paymentPollingGeneration);
+                }
+            } else if (paymentStatusPollTimer) {
+                stopPaymentStatusPolling({ preserveGeneration: true });
+            }
+
+            if (!isWatchModalOpen() && document.documentElement.dataset.vidipayWatchUiState === 'paused') {
+                setWatchUiState('idle', 'runtime_guard');
+            }
+
+            return {
+                reason,
+                sweep_count: frontendRuntimeGuardSweepCount,
+                payment_modal_open: isTonDepositModalOpen(),
+                watch_modal_open: isWatchModalOpen(),
+                payment_polling_timer: Boolean(paymentStatusPollTimer),
+                payment_inflight: Boolean(paymentStatusInflight || createPaymentOrderInflight)
+            };
+        }
+
+        function installFrontendRuntimeGuard() {
+            if (document.documentElement.dataset.vidipayFrontendRuntimeGuardInstalled === 'ready') return;
+            document.documentElement.dataset.vidipayFrontendRuntimeGuardInstalled = 'ready';
+            const sweep = reason => {
+                try {
+                    window.__vidipayFrontendRuntimeGuard = runFrontendRuntimeGuard(reason);
+                } catch (err) {
+                    rememberFrontendError('frontend_runtime_guard', err);
+                }
+            };
+            sweep('install');
+            frontendRuntimeGuardTimer = setInterval(() => sweep('interval'), 7000);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) sweep('visible');
+            }, { passive: true });
+            window.addEventListener('focus', () => sweep('focus'), { passive: true });
+            window.addEventListener('online', () => sweep('online'), { passive: true });
+        }
+
         window.addEventListener('pagehide', () => pauseFrontendActivity('pagehide'));
         window.addEventListener('pageshow', event => {
             resumeFrontendActivity(event.persisted ? 'pageshow_bfcache' : 'pageshow');
         });
+        installFrontendRuntimeGuard();
 
         function runFrontendContractSelfCheck() {
             const requiredIds = [
@@ -7828,6 +7898,7 @@
                 watchModalGuardReady: typeof isWatchModalOpen === 'function',
                 statsDedupeReady: Number.isFinite(statsFetchedAt),
                 userSyncDedupeReady: Number.isFinite(userSyncFetchedAt),
+                runtimeGuardReady: document.documentElement.dataset.vidipayFrontendRuntimeGuardInstalled === 'ready',
                 modalLockReady: !document.body.classList.contains('modal-open')
             };
             checks.ok = checks.backendUrl
@@ -7844,7 +7915,8 @@
                 && checks.watchUiStateReady
                 && checks.watchModalGuardReady
                 && checks.statsDedupeReady
-                && checks.userSyncDedupeReady;
+                && checks.userSyncDedupeReady
+                && checks.runtimeGuardReady;
             window.__vidipayFrontendContract = {
                 checked_at: new Date().toISOString(),
                 ...checks
@@ -7877,6 +7949,14 @@
                 statsDedupe: Number.isFinite(statsFetchedAt) && (statsInflight === null || typeof statsInflight?.then === 'function'),
                 userSyncDedupe: Number.isFinite(userSyncFetchedAt) && (userSyncInflight === null || typeof userSyncInflight?.then === 'function'),
                 watchFinalizeGuard: watchFinalizeInflight === null || typeof watchFinalizeInflight?.then === 'function',
+                runtimeGuard: document.documentElement.dataset.vidipayFrontendRuntimeGuard === 'ready',
+                runtimeGuardTimer: frontendRuntimeGuardTimer !== null,
+                runtimeGuardLastAt: Number.isFinite(frontendRuntimeGuardLastAt),
+                staleBusyCleanup: !Array.from(document.querySelectorAll('[data-busy-lock-active="true"]')).some(btn => {
+                    if (btn.id === 'ton-check-payment-btn') return !(paymentStatusInflight || paymentStatusRefreshBusy);
+                    if (btn.id === 'fiat-pay-btn') return !(tonDepositOpenBusy || createPaymentOrderInflight);
+                    return false;
+                }),
                 tapFeedback: document.documentElement.dataset.vidipayTapFeedback === 'ready',
                 viewportHeight: Boolean(getComputedStyle(document.documentElement).getPropertyValue('--app-vh').trim()),
                 modalCount: document.querySelectorAll('.modal-overlay').length,
@@ -7901,6 +7981,10 @@
                 && checks.statsDedupe
                 && checks.userSyncDedupe
                 && checks.watchFinalizeGuard
+                && checks.runtimeGuard
+                && checks.runtimeGuardTimer
+                && checks.runtimeGuardLastAt
+                && checks.staleBusyCleanup
                 && checks.tapFeedback
                 && checks.viewportHeight
                 && checks.qrElements === 0
