@@ -188,6 +188,39 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
+        .runtime-status-toast {
+            position: fixed;
+            left: 50%;
+            bottom: 92px;
+            transform: translateX(-50%);
+            z-index: 5200;
+            max-width: min(92vw, 420px);
+            padding: 12px 18px;
+            border-radius: 999px;
+            background: rgba(0,255,204,.16);
+            border: 1px solid rgba(0,255,204,.45);
+            color: #fff;
+            font-size: 12px;
+            font-weight: 900;
+            line-height: 1.35;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,.35);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .18s ease, transform .18s ease;
+        }
+        .runtime-status-toast.is-visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-4px);
+        }
+        .runtime-status-toast.is-error {
+            background: rgba(239,68,68,.18);
+            border-color: rgba(239,68,68,.55);
+        }
+        .runtime-status-toast.is-warn {
+            background: rgba(245,158,11,.18);
+            border-color: rgba(245,158,11,.55);
+        }
         #payment-address-box {
             display: block;
         }
@@ -2937,6 +2970,9 @@
         let settingsRefreshTimer = null;
         let paymentStatusRefreshBusy = false;
         let paymentStatusPollTimer = null;
+        let paymentPollingDelayMs = 7000;
+        let paymentPollingFailures = 0;
+        let paymentStatusLastRefreshAt = 0;
         let tonDepositOpenBusy = false;
         let backendSettingsInflight = null;
         let backendSettingsFetchedAt = 0;
@@ -2948,6 +2984,10 @@
         let historyFetchedAt = 0;
         let referralCopyBusy = false;
         let supportReplyTimer = null;
+        let runtimeStatusToastTimer = null;
+        let notificationRenderSnapshot = '';
+        let supportRenderSnapshot = '';
+        let fullHistoryRenderSnapshot = '';
         const MRBEAST_UPLOADS_PLAYLIST = 'UUX6OQ3DkcsbYNE6H8uQQuVA';
         let latestPaymentStatus = {};
         let currentTierStatus = {
@@ -3366,7 +3406,13 @@
         let withdrawUiSnapshot = '';
 
         function setDomText(el, value) {
-            if (el && el.innerText !== value) el.innerText = value;
+            const text = String(value ?? '');
+            if (el && el.innerText !== text) el.innerText = text;
+        }
+
+        function setDomHtml(el, value) {
+            const html = String(value ?? '');
+            if (el && el.innerHTML !== html) el.innerHTML = html;
         }
 
         function escapeHtml(value) {
@@ -3385,6 +3431,42 @@
 
         function setDomDisplay(el, value) {
             if (el && el.style.display !== value) el.style.display = value;
+        }
+
+        function deferUiWork(key, fn) {
+            const queue = deferUiWork.queue || (deferUiWork.queue = new Map());
+            queue.set(key, fn);
+            if (deferUiWork.raf) return;
+            deferUiWork.raf = requestAnimationFrame(() => {
+                const jobs = Array.from(queue.values());
+                queue.clear();
+                deferUiWork.raf = null;
+                jobs.forEach(job => {
+                    try { job(); } catch (err) { rememberFrontendError('deferred_ui_work', err); }
+                });
+            });
+        }
+
+        function showRuntimeStatusToast(message, type = 'info') {
+            const text = String(message || '').trim();
+            if (!text) return;
+            let toast = document.getElementById('runtime-status-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'runtime-status-toast';
+                toast.className = 'runtime-status-toast';
+                toast.setAttribute('role', 'status');
+                toast.setAttribute('aria-live', 'polite');
+                document.body.appendChild(toast);
+            }
+            toast.classList.toggle('is-error', type === 'error');
+            toast.classList.toggle('is-warn', type === 'warn');
+            setDomText(toast, text);
+            toast.classList.add('is-visible');
+            clearTimeout(runtimeStatusToastTimer);
+            runtimeStatusToastTimer = setTimeout(() => {
+                toast.classList.remove('is-visible');
+            }, type === 'error' ? 2600 : 1800);
         }
 
         function formatNiceDate(value) {
@@ -3627,9 +3709,14 @@
         }
 
         async function refreshPaymentStatus(options = {}) {
+            const now = Date.now();
+            if (!options.manual && paymentStatusLastRefreshAt && now - paymentStatusLastRefreshAt < 1500) {
+                return latestPaymentStatus;
+            }
             if (paymentStatusRefreshBusy) return latestPaymentStatus;
             paymentStatusRefreshBusy = true;
-            setActionBusy('ton-check-payment-btn', true);
+            const showBusy = Boolean(options.manual);
+            if (showBusy) setActionBusy('ton-check-payment-btn', true);
             const depositStatusEl = document.getElementById('ton-deposit-status-text');
             if (depositStatusEl && options.manual) setDomText(depositStatusEl, t('payment_check_status'));
             try {
@@ -3655,6 +3742,8 @@
                 const latestOrder = findPaymentOrderWithWallet(status.orders) || (status.orders && status.orders.length ? status.orders[0] : null);
                 renderPaymentOrder(latestOrder, status);
                 updateWithdrawUi(status);
+                paymentStatusLastRefreshAt = Date.now();
+                setPaymentPollingHealthy(true);
                 return status;
             } catch (err) {
                 if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
@@ -3662,10 +3751,11 @@
                 const statusEl = document.getElementById('payment-status-text');
                 if (statusEl) statusEl.innerText = message;
                 if (depositStatusEl) depositStatusEl.innerText = message;
+                setPaymentPollingHealthy(false);
                 return latestPaymentStatus;
             } finally {
                 paymentStatusRefreshBusy = false;
-                setActionBusy('ton-check-payment-btn', false);
+                if (showBusy) setActionBusy('ton-check-payment-btn', false);
             }
         }
 
@@ -5788,6 +5878,9 @@
             updateWatchDisplays();
             updateProfileModal();
             withdrawUiSnapshot = '';
+            notificationRenderSnapshot = '';
+            supportRenderSnapshot = '';
+            fullHistoryRenderSnapshot = '';
             updateWithdrawUi(latestPaymentStatus);
             updateLocalCardMethodUi();
             updateWalletLockUi();
@@ -6092,9 +6185,22 @@
         function setActionBusy(buttonOrId, busy) {
             const btn = typeof buttonOrId === 'string' ? document.getElementById(buttonOrId) : buttonOrId;
             if (!btn) return;
-            btn.disabled = Boolean(busy);
-            btn.classList.toggle('is-busy', Boolean(busy));
-            btn.setAttribute('aria-busy', busy ? 'true' : 'false');
+            if (busy) {
+                if (!btn.dataset.busyLockActive) {
+                    btn.dataset.wasDisabledBeforeBusy = btn.disabled ? 'true' : 'false';
+                    btn.dataset.busyLockActive = 'true';
+                }
+                btn.disabled = true;
+                btn.classList.add('is-busy');
+                btn.setAttribute('aria-busy', 'true');
+                return;
+            }
+            const wasDisabled = btn.dataset.wasDisabledBeforeBusy === 'true';
+            delete btn.dataset.wasDisabledBeforeBusy;
+            delete btn.dataset.busyLockActive;
+            btn.disabled = wasDisabled;
+            btn.classList.remove('is-busy');
+            btn.setAttribute('aria-busy', 'false');
         }
 
         function isActionThrottled(key, cooldownMs = 600) {
@@ -6818,7 +6924,7 @@
             const box = document.getElementById('notification-list');
             if (!box) return;
             const items = getNotifications();
-            box.innerHTML = items.map(item => {
+            const html = items.map(item => {
                 const title = item.titleKey ? t(item.titleKey) : translateAdminNotificationText(item.rawTitle || item.title || '');
                 const text = item.textKey ? t(item.textKey) : translateAdminNotificationText(item.rawText || item.text || '');
                 const date = item.date || '';
@@ -6830,6 +6936,11 @@
                 </div>
             `;
             }).join('');
+            const snapshot = `${currentLang}|${html}`;
+            if (notificationRenderSnapshot !== snapshot) {
+                notificationRenderSnapshot = snapshot;
+                setDomHtml(box, html);
+            }
             setUnreadNotificationCount(getUnreadNotificationCount());
         }
 
@@ -6851,7 +6962,7 @@
             const box = document.getElementById('support-chat-box');
             if (!box) return;
             const messages = appState.supportMessages || [];
-            box.innerHTML = `<div class="chat-msg support" style="align-self:flex-start; background: rgba(255,255,255,.055); color:#cbd5e1; border:1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 10px 12px; font-size: 13px;">${escapeHtml(t('support_chat_greeting'))}</div>` +
+            const html = `<div class="chat-msg support" style="align-self:flex-start; background: rgba(255,255,255,.055); color:#cbd5e1; border:1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 10px 12px; font-size: 13px;">${escapeHtml(t('support_chat_greeting'))}</div>` +
                 messages.map(m => {
                     const from = m.from === 'user' ? 'user' : 'support';
                     const style = from === 'user'
@@ -6859,7 +6970,12 @@
                         : 'align-self:flex-start; background: rgba(255,255,255,.055); color:#cbd5e1; border:1px solid rgba(255,255,255,.08);';
                     return `<div class="chat-msg ${from}" style="border-radius: 14px; padding: 10px 12px; font-size: 13px; line-height: 1.45; ${style}">${escapeHtml(m.text || '')}</div>`;
                 }).join('');
-            box.scrollTop = box.scrollHeight;
+            const snapshot = `${currentLang}|${html}`;
+            if (supportRenderSnapshot !== snapshot) {
+                supportRenderSnapshot = snapshot;
+                setDomHtml(box, html);
+                box.scrollTop = box.scrollHeight;
+            }
         }
 
         function sendSupportMessage() {
@@ -7026,11 +7142,19 @@
                 }
 
                 if (!items.length) {
-                    box.innerHTML = `<div class="history-empty">${t('no_history')}</div>`;
+                    const emptyHtml = `<div class="history-empty">${escapeHtml(t('no_history'))}</div>`;
+                    if (fullHistoryRenderSnapshot !== emptyHtml) {
+                        fullHistoryRenderSnapshot = emptyHtml;
+                        setDomHtml(box, emptyHtml);
+                    }
                     return;
                 }
 
-                box.innerHTML = items.map(renderReceiptItem).join('');
+                const html = items.map(renderReceiptItem).join('');
+                if (fullHistoryRenderSnapshot !== html) {
+                    fullHistoryRenderSnapshot = html;
+                    setDomHtml(box, html);
+                }
             })().finally(() => {
                 historyInflight = null;
             });
@@ -7115,6 +7239,13 @@
         }
 
         document.addEventListener('visibilitychange', scheduleSettingsRefresh);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && isTonDepositModalOpen()) {
+                setPaymentPollingHealthy(true);
+                refreshPaymentStatus({ poll: true }).catch(err => rememberFrontendError('payment_visible_refresh', err));
+                schedulePaymentStatusPoll(2500);
+            }
+        });
         scheduleSettingsRefresh();
         updateUnifiedTimers();
 
@@ -7183,16 +7314,68 @@
         function startPaymentStatusPolling() {
             stopPaymentStatusPolling();
             if (!document.getElementById('tonDepositModal')?.classList.contains('is-open')) return;
-            paymentStatusPollTimer = setInterval(() => {
-                if (document.hidden || !document.getElementById('tonDepositModal')?.classList.contains('is-open')) return;
-                refreshPaymentStatus().catch(() => null);
-            }, 7000);
+            schedulePaymentStatusPoll(1200);
         }
 
         function stopPaymentStatusPolling() {
-            if (paymentStatusPollTimer) clearInterval(paymentStatusPollTimer);
+            if (paymentStatusPollTimer) clearTimeout(paymentStatusPollTimer);
             paymentStatusPollTimer = null;
         }
+
+        function isTonDepositModalOpen() {
+            return document.getElementById('tonDepositModal')?.classList.contains('is-open');
+        }
+
+        function setPaymentPollingHealthy(ok) {
+            if (ok) {
+                paymentPollingFailures = 0;
+                paymentPollingDelayMs = 7000;
+                return;
+            }
+            paymentPollingFailures = Math.min(6, paymentPollingFailures + 1);
+            paymentPollingDelayMs = Math.min(60000, 7000 * Math.pow(1.75, paymentPollingFailures));
+        }
+
+        function getPaymentPollingDelay() {
+            if (!navigator.onLine) return 20000;
+            if (document.hidden) return Math.max(30000, paymentPollingDelayMs);
+            return paymentPollingDelayMs;
+        }
+
+        function schedulePaymentStatusPoll(delayMs = getPaymentPollingDelay()) {
+            stopPaymentStatusPolling();
+            if (!isTonDepositModalOpen()) return;
+            paymentStatusPollTimer = setTimeout(async () => {
+                if (!isTonDepositModalOpen()) {
+                    stopPaymentStatusPolling();
+                    return;
+                }
+                if (!document.hidden && navigator.onLine) {
+                    await refreshPaymentStatus({ poll: true }).catch(err => {
+                        rememberFrontendError('payment_poll', err);
+                        setPaymentPollingHealthy(false);
+                    });
+                }
+                if (isTonDepositModalOpen()) schedulePaymentStatusPoll();
+            }, Math.max(1000, Number(delayMs || 7000)));
+        }
+
+        window.addEventListener('offline', () => {
+            showRuntimeStatusToast(runtimeText('offline'), 'error');
+            setPaymentPollingHealthy(false);
+            const depositStatusEl = document.getElementById('ton-deposit-status-text');
+            if (isTonDepositModalOpen()) setDomText(depositStatusEl, runtimeText('offline'));
+        });
+
+        window.addEventListener('online', () => {
+            showRuntimeStatusToast(runtimeText('online'));
+            setPaymentPollingHealthy(true);
+            if (isTonDepositModalOpen()) {
+                refreshPaymentStatus({ manual: false }).catch(err => rememberFrontendError('payment_online_refresh', err));
+                schedulePaymentStatusPoll(2500);
+            }
+            refreshSettingsInBackground();
+        });
 
         async function initBackendApp() {
             try {
