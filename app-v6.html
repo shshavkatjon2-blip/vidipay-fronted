@@ -2830,6 +2830,8 @@
                 network: { ...frontendNetworkStats },
                 payment_polling_delay_ms: paymentPollingDelayMs,
                 payment_polling_failures: paymentPollingFailures,
+                payment_polling_last_scheduled_delay_ms: paymentPollingLastScheduledDelayMs,
+                payment_polling_last_jitter_ms: paymentPollingLastJitterMs,
                 payment_order_cached: Boolean(getCachedPaymentOrder(false)),
                 payment_status_cached: Boolean(getCachedPaymentStatus(false))
             };
@@ -3080,6 +3082,8 @@
         let paymentPollingDelayMs = 7000;
         let paymentPollingFailures = 0;
         let paymentStatusLastRefreshAt = 0;
+        let paymentPollingLastScheduledDelayMs = 0;
+        let paymentPollingLastJitterMs = 0;
         let tonDepositOpenBusy = false;
         let backendSettingsInflight = null;
         let backendSettingsFetchedAt = 0;
@@ -3111,6 +3115,7 @@
         let paymentOrderRequestSeq = 0;
         const paymentOrderCacheKey = `vidiPayPaymentOrder_${referralUserId}`;
         const paymentStatusCacheKey = `vidiPayPaymentStatus_${referralUserId}`;
+        const frontendPollJitterSeed = String(referralUserId || user?.id || 'guest');
         const frontendNetworkStats = {
             ok: true,
             inflight: 0,
@@ -7805,15 +7810,38 @@
             paymentPollingDelayMs = Math.min(60000, 7000 * Math.pow(1.75, paymentPollingFailures));
         }
 
+        function stableFrontendJitter(seed, maxMs = 2500) {
+            const text = String(seed || 'guest');
+            let hash = 0;
+            for (let i = 0; i < text.length; i += 1) {
+                hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
+            }
+            const normalized = Math.abs(hash || 1) % Math.max(1, Number(maxMs || 1));
+            return normalized;
+        }
+
+        function getConnectionAwarePollingBaseDelay() {
+            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            const effectiveType = String(connection?.effectiveType || '').toLowerCase();
+            const saveData = Boolean(connection?.saveData);
+            if (saveData || effectiveType.includes('2g')) return Math.max(25000, paymentPollingDelayMs);
+            if (effectiveType.includes('3g')) return Math.max(14000, paymentPollingDelayMs);
+            return paymentPollingDelayMs;
+        }
+
         function getPaymentPollingDelay() {
             if (!navigator.onLine) return 20000;
-            if (document.hidden) return Math.max(30000, paymentPollingDelayMs);
-            return paymentPollingDelayMs;
+            const baseDelay = getConnectionAwarePollingBaseDelay();
+            if (document.hidden) return Math.max(30000, baseDelay);
+            const jitter = stableFrontendJitter(`${frontendPollJitterSeed}:${paymentPollingFailures}`, paymentPollingFailures ? 8000 : 3500);
+            paymentPollingLastJitterMs = jitter;
+            return Math.min(90000, Math.max(1200, baseDelay + jitter));
         }
 
         function schedulePaymentStatusPoll(delayMs = getPaymentPollingDelay(), generation = paymentPollingGeneration) {
             stopPaymentStatusPolling({ preserveGeneration: true });
             if (!isTonDepositModalOpen()) return;
+            paymentPollingLastScheduledDelayMs = Math.max(1000, Number(delayMs || 7000));
             paymentStatusPollTimer = setTimeout(async () => {
                 if (generation !== paymentPollingGeneration) return;
                 if (!isTonDepositModalOpen()) {
@@ -7827,7 +7855,7 @@
                     });
                 }
                 if (isTonDepositModalOpen() && generation === paymentPollingGeneration) schedulePaymentStatusPoll(undefined, generation);
-            }, Math.max(1000, Number(delayMs || 7000)));
+            }, paymentPollingLastScheduledDelayMs);
         }
 
         window.addEventListener('offline', () => {
@@ -7980,6 +8008,7 @@
                 statsDedupeReady: Number.isFinite(statsFetchedAt),
                 userSyncDedupeReady: Number.isFinite(userSyncFetchedAt),
                 paymentStatusCacheReady: typeof getCachedPaymentStatus === 'function' && typeof rememberPaymentStatus === 'function',
+                adaptivePollingReady: typeof stableFrontendJitter === 'function' && typeof getConnectionAwarePollingBaseDelay === 'function',
                 runtimeGuardReady: document.documentElement.dataset.vidipayFrontendRuntimeGuardInstalled === 'ready',
                 modalLockReady: !document.body.classList.contains('modal-open')
             };
@@ -7999,6 +8028,7 @@
                 && checks.statsDedupeReady
                 && checks.userSyncDedupeReady
                 && checks.paymentStatusCacheReady
+                && checks.adaptivePollingReady
                 && checks.runtimeGuardReady;
             window.__vidipayFrontendContract = {
                 checked_at: new Date().toISOString(),
@@ -8032,6 +8062,7 @@
                 statsDedupe: Number.isFinite(statsFetchedAt) && (statsInflight === null || typeof statsInflight?.then === 'function'),
                 userSyncDedupe: Number.isFinite(userSyncFetchedAt) && (userSyncInflight === null || typeof userSyncInflight?.then === 'function'),
                 paymentStatusCache: typeof getCachedPaymentStatus === 'function' && typeof rememberPaymentStatus === 'function',
+                adaptivePolling: typeof stableFrontendJitter === 'function' && Number.isFinite(paymentPollingLastScheduledDelayMs) && Number.isFinite(paymentPollingLastJitterMs),
                 watchFinalizeGuard: watchFinalizeInflight === null || typeof watchFinalizeInflight?.then === 'function',
                 runtimeGuard: document.documentElement.dataset.vidipayFrontendRuntimeGuard === 'ready',
                 runtimeGuardTimer: frontendRuntimeGuardTimer !== null,
@@ -8065,6 +8096,7 @@
                 && checks.statsDedupe
                 && checks.userSyncDedupe
                 && checks.paymentStatusCache
+                && checks.adaptivePolling
                 && checks.watchFinalizeGuard
                 && checks.runtimeGuard
                 && checks.runtimeGuardTimer
