@@ -6694,8 +6694,14 @@
             const box = document.getElementById('support-chat-box');
             if (!box) return;
             const messages = appState.supportMessages || [];
-            box.innerHTML = `<div class="chat-msg support" style="align-self:flex-start; background: rgba(255,255,255,.055); color:#cbd5e1; border:1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 10px 12px; font-size: 13px;">${t('support_chat_greeting')}</div>` +
-                messages.map(m => `<div class="chat-msg ${m.from}" style="border-radius: 14px; padding: 10px 12px; font-size: 13px; line-height: 1.45; ${m.from==='user'?'align-self:flex-end; background: rgba(0,255,204,.14); color:#fff; border:1px solid rgba(0,255,204,.2);':'align-self:flex-start; background: rgba(255,255,255,.055); color:#cbd5e1; border:1px solid rgba(255,255,255,.08);'}">${m.text}</div>`).join('');
+            box.innerHTML = `<div class="chat-msg support" style="align-self:flex-start; background: rgba(255,255,255,.055); color:#cbd5e1; border:1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 10px 12px; font-size: 13px;">${escapeHtml(t('support_chat_greeting'))}</div>` +
+                messages.map(m => {
+                    const from = m.from === 'user' ? 'user' : 'support';
+                    const style = from === 'user'
+                        ? 'align-self:flex-end; background: rgba(0,255,204,.14); color:#fff; border:1px solid rgba(0,255,204,.2);'
+                        : 'align-self:flex-start; background: rgba(255,255,255,.055); color:#cbd5e1; border:1px solid rgba(255,255,255,.08);';
+                    return `<div class="chat-msg ${from}" style="border-radius: 14px; padding: 10px 12px; font-size: 13px; line-height: 1.45; ${style}">${escapeHtml(m.text || '')}</div>`;
+                }).join('');
             box.scrollTop = box.scrollHeight;
         }
 
@@ -6832,9 +6838,9 @@
             }
             box.innerHTML = items.map(item => `
                 <div class="history-item">
-                    <b>$${item.amount} - ${item.method}</b>
-                    <div>${t('status_label')}: ${item.status}</div>
-                    <div>${item.date}</div>
+                    <b>$${escapeHtml(item.amount)} - ${escapeHtml(item.method)}</b>
+                    <div>${escapeHtml(t('status_label'))}: ${escapeHtml(item.status)}</div>
+                    <div>${escapeHtml(item.date)}</div>
                 </div>
             `).join('');
         }
@@ -6877,22 +6883,23 @@
             const typeText = item.title || (item.type === 'payment' ? t('history_wallet_payment') : t('history_withdraw'));
             const amount = `$${Number(item.amount || 0).toFixed(2)} ${item.currency || item.method || ''}`;
             const status = item.status || 'pending';
+            const statusClass = String(status).replace(/[^a-z0-9_-]/gi, '').toLowerCase() || 'pending';
 
             return `
                 <div class="history-item">
                     <div class="receipt-head">
                         <div>
-                            <div class="receipt-type">${typeText}</div>
-                            <b>${amount}</b>
+                            <div class="receipt-type">${escapeHtml(typeText)}</div>
+                            <b>${escapeHtml(amount)}</b>
                         </div>
-                        <div class="receipt-status ${status}">${status}</div>
+                        <div class="receipt-status ${statusClass}">${escapeHtml(status)}</div>
                     </div>
-                    <div class="receipt-row"><span class="receipt-label">${t('receipt_date_time')}</span><span class="receipt-value">${created}</span></div>
-                    <div class="receipt-row"><span class="receipt-label">${t('receipt_network')}</span><span class="receipt-value">${item.network || item.method || '-'}</span></div>
-                    <div class="receipt-row"><span class="receipt-label">${t('receipt_wallet_label')}</span><span class="receipt-value">${item.wallet || '-'}</span></div>
-                    <div class="receipt-row"><span class="receipt-label">${t('receipt_verified_at')}</span><span class="receipt-value">${processed}</span></div>
-                    ${item.tx_hash ? `<div class="receipt-row"><span class="receipt-label">TX</span><span class="receipt-value">${item.tx_hash}</span></div>` : ''}
-                    ${item.admin_note ? `<div class="receipt-row"><span class="receipt-label">${t('receipt_note')}</span><span class="receipt-value">${item.admin_note}</span></div>` : ''}
+                    <div class="receipt-row"><span class="receipt-label">${escapeHtml(t('receipt_date_time'))}</span><span class="receipt-value">${escapeHtml(created)}</span></div>
+                    <div class="receipt-row"><span class="receipt-label">${escapeHtml(t('receipt_network'))}</span><span class="receipt-value">${escapeHtml(item.network || item.method || '-')}</span></div>
+                    <div class="receipt-row"><span class="receipt-label">${escapeHtml(t('receipt_wallet_label'))}</span><span class="receipt-value">${escapeHtml(item.wallet || '-')}</span></div>
+                    <div class="receipt-row"><span class="receipt-label">${escapeHtml(t('receipt_verified_at'))}</span><span class="receipt-value">${escapeHtml(processed)}</span></div>
+                    ${item.tx_hash ? `<div class="receipt-row"><span class="receipt-label">TX</span><span class="receipt-value">${escapeHtml(item.tx_hash)}</span></div>` : ''}
+                    ${item.admin_note ? `<div class="receipt-row"><span class="receipt-label">${escapeHtml(t('receipt_note'))}</span><span class="receipt-value">${escapeHtml(item.admin_note)}</span></div>` : ''}
                 </div>
             `;
         }
