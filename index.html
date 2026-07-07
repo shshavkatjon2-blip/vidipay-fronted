@@ -2627,6 +2627,57 @@
         };
         tg.expand();
 
+        const storageFallback = new Map();
+        window.__vidipayScriptErrors = window.__vidipayScriptErrors || [];
+
+        function rememberFrontendError(label, err) {
+            try {
+                const detail = {
+                    label,
+                    message: String(err?.message || err || ''),
+                    time: new Date().toISOString()
+                };
+                window.__vidipayScriptErrors.push(detail);
+                if (window.__vidipayScriptErrors.length > 25) window.__vidipayScriptErrors.shift();
+            } catch (e) {}
+        }
+
+        window.addEventListener('error', event => rememberFrontendError('window_error', event.error || event.message));
+        window.addEventListener('unhandledrejection', event => rememberFrontendError('unhandled_rejection', event.reason));
+
+        function safeStorageGet(key, fallback = null) {
+            try {
+                const value = window.localStorage.getItem(key);
+                return value === null ? fallback : value;
+            } catch (err) {
+                rememberFrontendError('storage_get', err);
+                return storageFallback.has(key) ? storageFallback.get(key) : fallback;
+            }
+        }
+
+        function safeStorageSet(key, value) {
+            const text = String(value);
+            storageFallback.set(key, text);
+            try {
+                window.localStorage.setItem(key, text);
+                return true;
+            } catch (err) {
+                rememberFrontendError('storage_set', err);
+                return false;
+            }
+        }
+
+        function safeStorageRemove(key) {
+            storageFallback.delete(key);
+            try {
+                window.localStorage.removeItem(key);
+                return true;
+            } catch (err) {
+                rememberFrontendError('storage_remove', err);
+                return false;
+            }
+        }
+
         document.addEventListener('gesturestart', event => event.preventDefault());
         document.addEventListener('gesturechange', event => event.preventDefault());
         document.addEventListener('gestureend', event => event.preventDefault());
@@ -2687,8 +2738,8 @@
             document.getElementById('user-display-id').innerText = "Sandbox Mode";
         }
 
-        const referralUserId = user?.id ? String(user.id) : (localStorage.getItem('vidiPayGuestId') || ('guest_' + Math.random().toString(36).slice(2, 10)));
-        if (!user?.id && !localStorage.getItem('vidiPayGuestId')) localStorage.setItem('vidiPayGuestId', referralUserId);
+        const referralUserId = user?.id ? String(user.id) : (safeStorageGet('vidiPayGuestId') || ('guest_' + Math.random().toString(36).slice(2, 10)));
+        if (!user?.id && !safeStorageGet('vidiPayGuestId')) safeStorageSet('vidiPayGuestId', referralUserId);
         const referralLink = `https://t.me/${BOT_USERNAME}?start=ref_${referralUserId}`;
         const referralStartParam =
             pageParams.get('ref') ||
@@ -2702,24 +2753,24 @@
             ? String(referralStartParam).slice(4)
             : String(referralStartParam || '');
         if (parsedReferrerId && String(parsedReferrerId) !== String(referralUserId)) {
-            localStorage.setItem('vidiPayPendingReferrerId', parsedReferrerId);
+            safeStorageSet('vidiPayPendingReferrerId', parsedReferrerId);
         }
-        const storedReferrerId = localStorage.getItem('vidiPayPendingReferrerId') || '';
+        const storedReferrerId = safeStorageGet('vidiPayPendingReferrerId') || '';
         const referrerId = storedReferrerId && String(storedReferrerId) !== String(referralUserId)
             ? storedReferrerId
             : '';
         const refLinkEl = document.getElementById('ref-link');
         if (refLinkEl) refLinkEl.innerText = referralLink;
 
-        let currentLang = localStorage.getItem('vidiPayLang') || 'en';
+        let currentLang = safeStorageGet('vidiPayLang') || 'en';
         if (currentLang === 'uz' || !['en','ru','fr','hi','es','zh','de'].includes(currentLang)) {
             currentLang = 'en';
-            localStorage.setItem('vidiPayLang', 'en');
+            safeStorageSet('vidiPayLang', 'en');
         }
         const TARGET_URL = "https://www.youtube.com/@MrBeast";
         const apiOverrideParam = pageParams.get('api');
         if (apiOverrideParam && /^https:\/\/.+/i.test(apiOverrideParam)) {
-            localStorage.setItem('vidiPayApiBase', apiOverrideParam.replace(/\/$/, ''));
+            safeStorageSet('vidiPayApiBase', apiOverrideParam.replace(/\/$/, ''));
         }
         const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
@@ -2749,14 +2800,14 @@
                 apiOverrideParam,
                 window.VIDIPAY_API_BASE,
                 getCurrentOriginApiBase(),
-                localStorage.getItem('vidiPayApiBase'),
+                safeStorageGet('vidiPayApiBase'),
                 ...FALLBACK_API_BASE_URLS
             ].map(normalizeApiBaseUrl).filter(Boolean);
             return [...new Set(candidates)];
         }
 
         let API_BASE_URL = getApiBaseCandidates()[0] || PRODUCTION_API_BASE_URL;
-        localStorage.setItem('vidiPayApiBase', API_BASE_URL);
+        safeStorageSet('vidiPayApiBase', API_BASE_URL);
         const MRBEAST_RANDOM_START_MAX = 40;
         const DAY_MS = 24 * 60 * 60 * 1000;
         const BONUS_PER_FRIEND = 9.99;
@@ -2876,7 +2927,7 @@
                     }
 
                     API_BASE_URL = baseUrl;
-                    localStorage.setItem('vidiPayApiBase', baseUrl);
+                    safeStorageSet('vidiPayApiBase', baseUrl);
                     return data;
                 } catch (err) {
                     lastError = err;
@@ -3022,7 +3073,7 @@
 
             applyBackendUser(result.user);
             if (result.referral?.applied) {
-                localStorage.removeItem('vidiPayPendingReferrerId');
+                safeStorageRemove('vidiPayPendingReferrerId');
                 addNotification(t('bonus_title'), t('referral_bonus_added'));
             }
             updateWatchDisplays();
@@ -3409,7 +3460,7 @@
         function handleLocalCardMethodChange() {
             const select = document.getElementById('local-card-method');
             selectedLocalCardMethod = select?.value || DEFAULT_LOCAL_CARD_METHOD;
-            localStorage.setItem('vidiPayLocalCardMethodV2', selectedLocalCardMethod);
+            safeStorageSet('vidiPayLocalCardMethodV2', selectedLocalCardMethod);
             updateLocalCardMethodUi();
         }
 
@@ -3571,7 +3622,7 @@
             const depositRefund = paymentStatus.deposit_refund || {};
             const refundRequested = Boolean(depositRefund.requested);
             const refundStatus = String(depositRefund.status || '').toLowerCase();
-            const savedRefundWallet = String(depositRefund.wallet_address || localStorage.getItem('vidiPayDepositRefundWalletAddress') || '').trim();
+            const savedRefundWallet = String(depositRefund.wallet_address || safeStorageGet('vidiPayDepositRefundWalletAddress') || '').trim();
             const refundAmount = Number(backendSettings.activation_refund_amount || getTonActivationAmount() || TON_ACTIVATION_AMOUNT);
             const minWithdraw = refundAmount;
 
@@ -3789,7 +3840,7 @@
                 applyBackendUser(result.user);
                 if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
                 const savedRefundWallet = result.deposit_refund?.wallet_address || walletAddress;
-                if (savedRefundWallet) localStorage.setItem('vidiPayDepositRefundWalletAddress', savedRefundWallet);
+                if (savedRefundWallet) safeStorageSet('vidiPayDepositRefundWalletAddress', savedRefundWallet);
                 latestPaymentStatus = {
                     ...latestPaymentStatus,
                     withdraw_unlocked: true,
@@ -5527,7 +5578,7 @@
         function changeLang(lang) {
             if (!languages[lang] || lang === 'uz') lang = 'en';
             currentLang = lang;
-            localStorage.setItem('vidiPayLang', lang);
+            safeStorageSet('vidiPayLang', lang);
 
             document.querySelectorAll('.lang-opt-btn').forEach(btn => btn.classList.remove('active'));
             const activeBtn = document.getElementById(`btn-lang-${lang}`);
@@ -6005,14 +6056,14 @@
 
         function loadAppState() {
             try {
-                return { ...defaultState, ...(JSON.parse(localStorage.getItem(storageKey)) || {}) };
+                return { ...defaultState, ...(JSON.parse(safeStorageGet(storageKey)) || {}) };
             } catch (e) {
                 return { ...defaultState };
             }
         }
 
         function saveAppState() {
-            localStorage.setItem(storageKey, JSON.stringify(appState));
+            safeStorageSet(storageKey, JSON.stringify(appState));
         }
 
         function resetDailyStatsIfNeeded() {
@@ -6592,31 +6643,31 @@
         }
 
         function getNotificationStorageKey(baseName) {
-            const scope = String(referralUserId || localStorage.getItem('vidiPayReferralUserId') || 'guest').trim() || 'guest';
+            const scope = String(referralUserId || safeStorageGet('vidiPayReferralUserId') || 'guest').trim() || 'guest';
             return `${baseName}_${scope}`;
         }
 
         function getNotifications() {
             const key = getNotificationStorageKey('vidiPayNotifications');
             let items;
-            try { items = JSON.parse(localStorage.getItem(key)); } catch(e) { items = null; }
+            try { items = JSON.parse(safeStorageGet(key)); } catch(e) { items = null; }
             if (!Array.isArray(items) || !items.length) {
                 items = [
                     { titleKey: 'noti_alert', textKey: 'noti_msg', date: new Date().toLocaleString() },
                     { titleKey: 'daily_info_title', textKey: 'daily_info_msg', date: new Date().toLocaleString() }
                 ];
-                localStorage.setItem(key, JSON.stringify(items));
+                safeStorageSet(key, JSON.stringify(items));
             }
             return items;
         }
 
         function getUnreadNotificationCount() {
-            return Number(localStorage.getItem(getNotificationStorageKey('vidiPayUnreadNotifications')) || 0);
+            return Number(safeStorageGet(getNotificationStorageKey('vidiPayUnreadNotifications')) || 0);
         }
 
         function setUnreadNotificationCount(count) {
             const safeCount = Math.max(0, Number(count || 0));
-            localStorage.setItem(getNotificationStorageKey('vidiPayUnreadNotifications'), String(safeCount));
+            safeStorageSet(getNotificationStorageKey('vidiPayUnreadNotifications'), String(safeCount));
             const badge = document.querySelector('.badge');
             if (badge) {
                 badge.innerText = String(safeCount);
@@ -6647,7 +6698,7 @@
                 const existingKeys = new Set(localItems.map(item => item.key).filter(Boolean));
                 const newItems = mapped.filter(item => !existingKeys.has(item.key));
                 const merged = [...newItems, ...localItems].slice(0, 50);
-                localStorage.setItem(getNotificationStorageKey('vidiPayNotifications'), JSON.stringify(merged));
+                safeStorageSet(getNotificationStorageKey('vidiPayNotifications'), JSON.stringify(merged));
                 if (newItems.length) setUnreadNotificationCount(getUnreadNotificationCount() + newItems.length);
                 notificationsFetchedAt = Date.now();
             } catch (err) {}
@@ -6680,7 +6731,7 @@
             const key = getNotificationStorageKey('vidiPayNotifications');
             const items = getNotifications();
             items.unshift({ title, text, date: new Date().toLocaleString() });
-            localStorage.setItem(key, JSON.stringify(items));
+            safeStorageSet(key, JSON.stringify(items));
             setUnreadNotificationCount(getUnreadNotificationCount() + 1);
             renderNotifications();
         }
@@ -6800,7 +6851,7 @@
         function getWithdrawHistory() {
             const key = 'vidiPayWithdrawHistory';
             let items;
-            try { items = JSON.parse(localStorage.getItem(key)); } catch(e) { items = null; }
+            try { items = JSON.parse(safeStorageGet(key)); } catch(e) { items = null; }
             if (!Array.isArray(items)) items = [];
             return items;
         }
@@ -6814,7 +6865,7 @@
                 method: 'TON',
                 date: new Date().toLocaleString()
             });
-            localStorage.setItem(key, JSON.stringify(items));
+            safeStorageSet(key, JSON.stringify(items));
         }
 
         async function renderWithdrawHistory() {
@@ -6907,10 +6958,10 @@
         const TIMER_36H_MS = 36 * 60 * 60 * 1000;
 
         function getOrCreateTimerEnd(storageName) {
-            let end = Number(localStorage.getItem(storageName));
+            let end = Number(safeStorageGet(storageName));
             if (!end || end <= Date.now()) {
                 end = Date.now() + TIMER_36H_MS;
-                localStorage.setItem(storageName, String(end));
+                safeStorageSet(storageName, String(end));
             }
             return end;
         }
