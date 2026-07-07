@@ -2604,7 +2604,7 @@
                     </div>
                     <div class="ton-payment-actions">
                         <button type="button" id="ton-copy-address-btn" aria-label="COPY ADDRESS" onclick="copyTonPaymentAddress()"><i class="fas fa-copy"></i> <span id="lbl-copy-ton-address">COPY ADDRESS</span></button>
-                        <button type="button" id="ton-check-payment-btn" aria-label="CHECK PAYMENT" onclick="refreshPaymentStatus({ manual: true })"><i class="fas fa-sync-alt"></i> <span id="lbl-check-ton-payment">CHECK PAYMENT</span></button>
+                        <button type="button" id="ton-check-payment-btn" aria-label="CHECK PAYMENT" onclick="checkTonPaymentNow()"><i class="fas fa-sync-alt"></i> <span id="lbl-check-ton-payment">CHECK PAYMENT</span></button>
                     </div>
                     <div id="payment-runtime-strip" class="payment-runtime-strip" role="status" aria-live="polite"></div>
                     <div id="ton-deposit-status-text" role="status" aria-live="polite" style="margin-top:8px; color:#a0a5b5; font-size:12px; font-weight:800;"></div>
@@ -3275,6 +3275,7 @@
         let fullHistoryRenderSnapshot = '';
         let paymentStatusInflight = null;
         let createPaymentOrderInflight = null;
+        let paymentManualCheckInflight = null;
         let paymentStatusAbortController = null;
         let paymentOrderAbortController = null;
         let paymentPollingGeneration = 0;
@@ -4129,8 +4130,8 @@
                 has_check_button: Boolean(checkBtn),
                 payment_ui_state: document.documentElement.dataset.vidipayPaymentUiState || 'idle',
                 polling_active: Boolean(paymentStatusPollTimer),
-                status_inflight: Boolean(paymentStatusInflight || paymentStatusRefreshBusy),
-                order_inflight: Boolean(createPaymentOrderInflight || paymentOrderResolveInflight),
+                status_inflight: Boolean(paymentStatusInflight || paymentStatusRefreshBusy || paymentManualCheckInflight),
+                order_inflight: Boolean(createPaymentOrderInflight || paymentOrderResolveInflight || paymentManualCheckInflight),
                 address_visible_since_at: paymentAddressVisibleSinceAt ? new Date(paymentAddressVisibleSinceAt).toISOString() : '',
                 ...extra
             };
@@ -8147,6 +8148,35 @@
                 updatePaymentActionButtons();
             }
         }
+
+        async function checkTonPaymentNow() {
+            if (paymentManualCheckInflight) return paymentManualCheckInflight;
+            paymentManualCheckInflight = (async () => {
+                const statusEl = document.getElementById('ton-deposit-status-text');
+                setActionBusy('ton-check-payment-btn', true);
+                setPaymentUiState('checking');
+                setDomText(statusEl, t('payment_check_status'));
+                updatePaymentRealTestReadiness('manual_check_start');
+                try {
+                    if (isTonDepositModalOpen() && !getCurrentPaymentWalletAddress()) {
+                        await resolvePaymentOrderForModal('manual_check');
+                    }
+                    return await refreshPaymentStatus({ manual: true, force: true, reason: 'manual_check' });
+                } catch (err) {
+                    const message = friendlyErrorMessage(err);
+                    setPaymentUiState(navigator.onLine ? 'retrying' : 'offline', message);
+                    setDomText(statusEl, message);
+                    updatePaymentRealTestReadiness('manual_check_error', { last_error: message });
+                    return latestPaymentStatus;
+                } finally {
+                    paymentManualCheckInflight = null;
+                    setActionBusy('ton-check-payment-btn', false);
+                    updatePaymentActionButtons();
+                    updatePaymentRealTestReadiness('manual_check_final');
+                }
+            })();
+            return paymentManualCheckInflight;
+        }
         // ==========================================
 
         function startPaymentStatusPolling() {
@@ -8309,7 +8339,7 @@
         function resetStaleActionBusyLocks() {
             const now = Date.now();
             const activeBusy = new Map([
-                ['ton-check-payment-btn', Boolean(paymentStatusInflight || paymentStatusRefreshBusy)],
+                ['ton-check-payment-btn', Boolean(paymentStatusInflight || paymentStatusRefreshBusy || paymentManualCheckInflight)],
                 ['fiat-pay-btn', Boolean(tonDepositOpenBusy || createPaymentOrderInflight || paymentOrderResolveInflight)],
                 ['ton-copy-address-btn', false]
             ]);
@@ -8356,7 +8386,7 @@
                 payment_modal_open: isTonDepositModalOpen(),
                 watch_modal_open: isWatchModalOpen(),
                 payment_polling_timer: Boolean(paymentStatusPollTimer),
-                payment_inflight: Boolean(paymentStatusInflight || createPaymentOrderInflight || paymentOrderResolveInflight)
+                payment_inflight: Boolean(paymentStatusInflight || createPaymentOrderInflight || paymentOrderResolveInflight || paymentManualCheckInflight)
             };
             updatePaymentRealTestReadiness(`runtime_guard:${reason}`);
             return snapshot;
@@ -8478,7 +8508,7 @@
             const checkMinHeight = checkBtn ? parseFloat(getComputedStyle(checkBtn).minHeight || '0') : 0;
             const checks = {
                 copyHandler: typeof copyTonPaymentAddress === 'function',
-                checkHandler: typeof refreshPaymentStatus === 'function',
+                checkHandler: typeof checkTonPaymentNow === 'function',
                 openPaymentHandler: typeof openTonDepositModal === 'function',
                 pollingSingleTimer: paymentStatusPollTimer === null || typeof paymentStatusPollTimer === 'number',
                 pollingGeneration: Number.isFinite(paymentPollingGeneration),
@@ -8507,7 +8537,7 @@
                 runtimeGuardTimer: frontendRuntimeGuardTimer !== null,
                 runtimeGuardLastAt: Number.isFinite(frontendRuntimeGuardLastAt),
                 staleBusyCleanup: !Array.from(document.querySelectorAll('[data-busy-lock-active="true"]')).some(btn => {
-                    if (btn.id === 'ton-check-payment-btn') return !(paymentStatusInflight || paymentStatusRefreshBusy);
+                    if (btn.id === 'ton-check-payment-btn') return !(paymentStatusInflight || paymentStatusRefreshBusy || paymentManualCheckInflight);
                     if (btn.id === 'fiat-pay-btn') return !(tonDepositOpenBusy || createPaymentOrderInflight || paymentOrderResolveInflight);
                     return false;
                 }),
