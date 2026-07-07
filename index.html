@@ -171,6 +171,7 @@
             line-height: 1.25;
             white-space: normal;
             touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
         .ton-payment-actions button.is-busy,
         .copy-link-btn.is-busy,
@@ -1044,6 +1045,8 @@
             font-weight: 900;
             cursor: pointer;
             letter-spacing: 1px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .copy-link-btn:active {
@@ -2490,7 +2493,7 @@
                             <button type="button" id="fiat-pay-btn" onclick="openTonDepositModal()"><i class="fas fa-coins"></i> <span id="lbl-pay-fiat">TOP UP 6.99 TONCOIN</span></button>
                         </div>
                     </div>
-                    <div id="payment-status-text" style="margin-top:8px; color:#a0a5b5; font-size:12px; font-weight:800;"></div>
+                    <div id="payment-status-text" role="status" aria-live="polite" style="margin-top:8px; color:#a0a5b5; font-size:12px; font-weight:800;"></div>
                 </div>
             </div>
         </div>
@@ -2510,14 +2513,14 @@
                     <div id="payment-address-box" style="display:none; margin-top:10px; padding:12px; border:1px solid rgba(0,255,204,.24); border-radius:14px; background:rgba(0,255,204,.06);">
                         <div id="payment-amount-text" style="color:#00ffcc; font-size:13px; font-weight:900; margin-bottom:8px;"></div>
                         <div class="wallet-address-label" id="payment-address-label">Unique TON deposit address</div>
-                        <div id="payment-address-text" style="color:#ffffff; font-size:12px; font-weight:900; line-height:1.45; word-break:break-all;"></div>
+                        <div id="payment-address-text" aria-live="polite" style="color:#ffffff; font-size:12px; font-weight:900; line-height:1.45; word-break:break-all;"></div>
                         <div id="payment-expiry-text" style="color:#a0a5b5; font-size:11px; font-weight:800; margin-top:8px;"></div>
                     </div>
                     <div class="ton-payment-actions">
-                        <button type="button" id="ton-copy-address-btn" onclick="copyTonPaymentAddress()"><i class="fas fa-copy"></i> <span id="lbl-copy-ton-address">COPY ADDRESS</span></button>
-                        <button type="button" id="ton-check-payment-btn" onclick="refreshPaymentStatus({ manual: true })"><i class="fas fa-sync-alt"></i> <span id="lbl-check-ton-payment">CHECK PAYMENT</span></button>
+                        <button type="button" id="ton-copy-address-btn" aria-label="COPY ADDRESS" onclick="copyTonPaymentAddress()"><i class="fas fa-copy"></i> <span id="lbl-copy-ton-address">COPY ADDRESS</span></button>
+                        <button type="button" id="ton-check-payment-btn" aria-label="CHECK PAYMENT" onclick="refreshPaymentStatus({ manual: true })"><i class="fas fa-sync-alt"></i> <span id="lbl-check-ton-payment">CHECK PAYMENT</span></button>
                     </div>
-                    <div id="ton-deposit-status-text" style="margin-top:8px; color:#a0a5b5; font-size:12px; font-weight:800;"></div>
+                    <div id="ton-deposit-status-text" role="status" aria-live="polite" style="margin-top:8px; color:#a0a5b5; font-size:12px; font-weight:800;"></div>
                 </div>
             </div>
         </div>
@@ -3048,6 +3051,8 @@
         let fullHistoryRenderSnapshot = '';
         let paymentStatusInflight = null;
         let createPaymentOrderInflight = null;
+        let paymentStatusAbortController = null;
+        let paymentOrderAbortController = null;
         const paymentOrderCacheKey = `vidiPayPaymentOrder_${referralUserId}`;
         const frontendNetworkStats = {
             ok: true,
@@ -3104,9 +3109,19 @@
 
             for (const baseUrl of uniqueBases) {
                 const timeoutMs = Number(options.timeoutMs || 15000);
-                const controller = options.signal ? null : new AbortController();
-                const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
                 const { timeoutMs: _timeoutMs, ...fetchOptions } = options;
+                const externalSignal = fetchOptions.signal;
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), timeoutMs);
+                let externalAbortHandler = null;
+                if (externalSignal) {
+                    if (externalSignal.aborted) {
+                        controller.abort();
+                    } else {
+                        externalAbortHandler = () => controller.abort();
+                        externalSignal.addEventListener('abort', externalAbortHandler, { once: true });
+                    }
+                }
                 try {
                     const response = await fetch(`${baseUrl}${path}`, {
                         headers: {
@@ -3114,7 +3129,7 @@
                             ...(fetchOptions.headers || {})
                         },
                         ...fetchOptions,
-                        signal: fetchOptions.signal || controller?.signal
+                        signal: controller.signal
                     });
 
                     const text = await response.text();
@@ -3146,6 +3161,9 @@
                     }
                 } finally {
                     if (timer) clearTimeout(timer);
+                    if (externalSignal && externalAbortHandler) {
+                        externalSignal.removeEventListener('abort', externalAbortHandler);
+                    }
                 }
             }
 
@@ -3729,13 +3747,19 @@
             const copyBtn = document.getElementById('ton-copy-address-btn');
             const checkBtn = document.getElementById('ton-check-payment-btn');
             const hasAddress = Boolean(getPaymentWalletAddress(currentPaymentOrder));
+            const copyLabel = t('copy_ton_address') || 'COPY ADDRESS';
+            const checkLabel = t('pay_with_fiat') || 'CHECK PAYMENT';
             if (copyBtn && !copyBtn.dataset.busyLockActive) {
                 copyBtn.disabled = !hasAddress;
                 copyBtn.setAttribute('aria-disabled', hasAddress ? 'false' : 'true');
+                copyBtn.setAttribute('aria-label', copyLabel);
+                copyBtn.setAttribute('title', copyLabel);
             }
             if (checkBtn && !checkBtn.dataset.busyLockActive) {
                 checkBtn.disabled = false;
                 checkBtn.setAttribute('aria-disabled', 'false');
+                checkBtn.setAttribute('aria-label', checkLabel);
+                checkBtn.setAttribute('title', checkLabel);
             }
         }
 
@@ -3869,6 +3893,10 @@
             if (showBusy) setActionBusy('ton-check-payment-btn', true);
             const depositStatusEl = document.getElementById('ton-deposit-status-text');
             if (depositStatusEl && options.manual) setDomText(depositStatusEl, t('payment_check_status'));
+            if (!paymentStatusAbortController || paymentStatusAbortController.signal.aborted) {
+                paymentStatusAbortController = new AbortController();
+            }
+            const paymentStatusSignal = paymentStatusAbortController.signal;
             paymentStatusInflight = (async () => {
                 try {
                     await loadBackendSettings();
@@ -3877,6 +3905,7 @@
                         const checkResult = await apiRequest('/payment/check', {
                             method: 'POST',
                             timeoutMs: 8000,
+                            signal: paymentStatusSignal,
                             body: JSON.stringify({
                                 telegram_id: String(referralUserId),
                                 order_id: currentPaymentOrder.id
@@ -3886,7 +3915,10 @@
                         if (checkResult?.growth_lock) setGrowthLockStatus(checkResult.growth_lock);
                     }
 
-                    const status = await apiRequest(`/payment/status/${encodeURIComponent(referralUserId)}`, { timeoutMs: 8000 });
+                    const status = await apiRequest(`/payment/status/${encodeURIComponent(referralUserId)}`, {
+                        timeoutMs: 8000,
+                        signal: paymentStatusSignal
+                    });
                     latestPaymentStatus = status || {};
                     if (status.user) applyBackendUser(status.user);
                     if (status.growth_lock) setGrowthLockStatus(status.growth_lock);
@@ -3918,10 +3950,15 @@
 
         async function createPaymentOrder() {
             if (createPaymentOrderInflight) return createPaymentOrderInflight;
+            if (!paymentOrderAbortController || paymentOrderAbortController.signal.aborted) {
+                paymentOrderAbortController = new AbortController();
+            }
+            const paymentOrderSignal = paymentOrderAbortController.signal;
             createPaymentOrderInflight = (async () => {
                 const result = await apiRequest('/payment/create', {
                     method: 'POST',
                     timeoutMs: 10000,
+                    signal: paymentOrderSignal,
                     body: JSON.stringify({ telegram_id: String(referralUserId) })
                 });
 
@@ -7180,7 +7217,7 @@
         function openModal(id) {
             const wasTonDepositOpen = document.getElementById('tonDepositModal')?.classList.contains('is-open');
             const wasSupportOpen = document.getElementById('supportChatModal')?.classList.contains('is-open');
-            if (wasTonDepositOpen && id !== 'tonDepositModal') stopPaymentStatusPolling();
+            if (wasTonDepositOpen && id !== 'tonDepositModal') stopPaymentStatusPolling({ abort: true, reason: 'modal_switch' });
             if (wasSupportOpen && id !== 'supportChatModal') resetSupportComposer();
 
             document.querySelectorAll('.modal-overlay').forEach(modal => {
@@ -7227,7 +7264,7 @@
             if (modal) {
                 modal.classList.remove('is-open');
                 modal.style.display = 'none';
-                if (id === 'tonDepositModal') stopPaymentStatusPolling();
+                if (id === 'tonDepositModal') stopPaymentStatusPolling({ abort: true, reason: 'modal_close' });
                 if (id === 'supportChatModal') resetSupportComposer();
                 if (!document.querySelector('.modal-overlay.is-open')) document.body.classList.remove('modal-open');
             }
@@ -7494,9 +7531,28 @@
             schedulePaymentStatusPoll(1200);
         }
 
-        function stopPaymentStatusPolling() {
+        function abortPaymentNetwork(reason = 'payment_abort') {
+            try {
+                if (paymentStatusAbortController && !paymentStatusAbortController.signal.aborted) {
+                    paymentStatusAbortController.abort();
+                }
+                if (paymentOrderAbortController && !paymentOrderAbortController.signal.aborted) {
+                    paymentOrderAbortController.abort();
+                }
+                updateFrontendHealth({
+                    ok: navigator.onLine,
+                    last_path: reason,
+                    last_error: ''
+                });
+            } catch (err) {
+                rememberFrontendError('payment_abort', err);
+            }
+        }
+
+        function stopPaymentStatusPolling(options = {}) {
             if (paymentStatusPollTimer) clearTimeout(paymentStatusPollTimer);
             paymentStatusPollTimer = null;
+            if (options.abort) abortPaymentNetwork(options.reason || 'payment_polling_stopped');
         }
 
         function isTonDepositModalOpen() {
@@ -7556,7 +7612,7 @@
 
         function pauseFrontendActivity(reason = 'page_pause') {
             window.__vidipayLastLifecycle = { reason, time: new Date().toISOString() };
-            stopPaymentStatusPolling();
+            stopPaymentStatusPolling({ abort: true, reason });
             clearTimeout(settingsRefreshTimer);
         }
 
@@ -7619,21 +7675,29 @@
                 pollingSingleTimer: paymentStatusPollTimer === null || typeof paymentStatusPollTimer === 'number',
                 networkStats: Boolean(window.__vidipayFrontendNetwork),
                 healthMarker: Boolean(document.documentElement.dataset.vidipayFrontendHealth),
+                abortCleanup: typeof abortPaymentNetwork === 'function',
                 viewportHeight: Boolean(getComputedStyle(document.documentElement).getPropertyValue('--app-vh').trim()),
                 modalCount: document.querySelectorAll('.modal-overlay').length,
                 qrElements: document.querySelectorAll('#payment-qr-box, .payment-qr-box, .qr-code, canvas[data-payment-qr]').length,
                 copyButtonReady: Boolean(document.getElementById('ton-copy-address-btn')),
-                checkButtonReady: Boolean(document.getElementById('ton-check-payment-btn'))
+                checkButtonReady: Boolean(document.getElementById('ton-check-payment-btn')),
+                copyButtonA11y: Boolean(document.getElementById('ton-copy-address-btn')?.getAttribute('aria-label')),
+                checkButtonA11y: Boolean(document.getElementById('ton-check-payment-btn')?.getAttribute('aria-label')),
+                statusLiveRegion: document.getElementById('ton-deposit-status-text')?.getAttribute('aria-live') === 'polite'
             };
             checks.ok = checks.copyHandler
                 && checks.checkHandler
                 && checks.openPaymentHandler
                 && checks.pollingSingleTimer
                 && checks.networkStats
+                && checks.abortCleanup
                 && checks.viewportHeight
                 && checks.qrElements === 0
                 && checks.copyButtonReady
-                && checks.checkButtonReady;
+                && checks.checkButtonReady
+                && checks.copyButtonA11y
+                && checks.checkButtonA11y
+                && checks.statusLiveRegion;
             window.__vidipayFrontendStress = {
                 checked_at: new Date().toISOString(),
                 ...checks
