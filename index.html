@@ -2688,6 +2688,78 @@
             }
         }
 
+        const runtimeMessages = {
+            en: {
+                offline: 'Internet connection is offline.',
+                online: 'Internet connection restored.',
+                timeout: 'The server is taking too long to answer. Try again.',
+                invalid_response: 'The server returned an invalid response.',
+                request_failed: 'Request failed. Try again.',
+                backend_unavailable: 'Backend is temporarily unavailable.'
+            },
+            ru: {
+                offline: 'Интернет-соединение отключено.',
+                online: 'Интернет-соединение восстановлено.',
+                timeout: 'Сервер отвечает слишком долго. Повторите попытку.',
+                invalid_response: 'Сервер вернул неверный ответ.',
+                request_failed: 'Запрос не выполнен. Повторите попытку.',
+                backend_unavailable: 'Бэкенд временно недоступен.'
+            },
+            fr: {
+                offline: 'La connexion Internet est hors ligne.',
+                online: 'La connexion Internet est retablie.',
+                timeout: 'Le serveur met trop de temps a repondre. Reessayez.',
+                invalid_response: 'Le serveur a renvoye une reponse invalide.',
+                request_failed: 'La requete a echoue. Reessayez.',
+                backend_unavailable: 'Le backend est temporairement indisponible.'
+            },
+            hi: {
+                offline: 'Internet connection offline hai.',
+                online: 'Internet connection restore ho gaya.',
+                timeout: 'Server answer dene me zyada time le raha hai. Dobara try karein.',
+                invalid_response: 'Server ne invalid response diya.',
+                request_failed: 'Request failed. Dobara try karein.',
+                backend_unavailable: 'Backend temporary unavailable hai.'
+            },
+            es: {
+                offline: 'La conexion a Internet esta sin conexion.',
+                online: 'La conexion a Internet se restablecio.',
+                timeout: 'El servidor tarda demasiado en responder. Intentalo de nuevo.',
+                invalid_response: 'El servidor devolvio una respuesta invalida.',
+                request_failed: 'La solicitud fallo. Intentalo de nuevo.',
+                backend_unavailable: 'El backend no esta disponible temporalmente.'
+            },
+            zh: {
+                offline: '网络连接已离线。',
+                online: '网络连接已恢复。',
+                timeout: '服务器响应时间过长，请重试。',
+                invalid_response: '服务器返回了无效响应。',
+                request_failed: '请求失败，请重试。',
+                backend_unavailable: '后端暂时不可用。'
+            },
+            de: {
+                offline: 'Die Internetverbindung ist offline.',
+                online: 'Die Internetverbindung wurde wiederhergestellt.',
+                timeout: 'Der Server antwortet zu langsam. Bitte erneut versuchen.',
+                invalid_response: 'Der Server hat eine ungueltige Antwort gesendet.',
+                request_failed: 'Anfrage fehlgeschlagen. Bitte erneut versuchen.',
+                backend_unavailable: 'Backend ist voruebergehend nicht verfuegbar.'
+            }
+        };
+
+        function runtimeText(key) {
+            const lang = safeStorageGet('vidiPayLang', 'en') || 'en';
+            return runtimeMessages[lang]?.[key] || runtimeMessages.en[key] || key;
+        }
+
+        function friendlyErrorMessage(err) {
+            const raw = String(err?.message || err || '').trim();
+            if (!navigator.onLine) return runtimeText('offline');
+            if (err?.name === 'AbortError' || /abort|timeout|timed out/i.test(raw)) return runtimeText('timeout');
+            if (/failed to fetch|networkerror|load failed|connection/i.test(raw)) return runtimeText('backend_unavailable');
+            return raw || runtimeText('request_failed');
+        }
+
         document.addEventListener('gesturestart', event => event.preventDefault());
         document.addEventListener('gesturechange', event => event.preventDefault());
         document.addEventListener('gestureend', event => event.preventDefault());
@@ -2900,6 +2972,8 @@
         };
 
         async function apiRequest(path, options = {}) {
+            if (!navigator.onLine) throw new Error(runtimeText('offline'));
+
             const bases = [API_BASE_URL, ...getApiBaseCandidates()].map(normalizeApiBaseUrl).filter(Boolean);
             const uniqueBases = [...new Set(bases)];
             let lastError = null;
@@ -2925,13 +2999,13 @@
                         try {
                             data = JSON.parse(text);
                         } catch (parseErr) {
-                            lastError = new Error(`Backend API returned an invalid response: ${baseUrl}`);
+                            lastError = new Error(runtimeText('invalid_response'));
                             continue;
                         }
                     }
 
                     if (!response.ok) {
-                        const err = new Error(data?.error || data?.message || 'API request failed');
+                        const err = new Error(data?.error || data?.message || runtimeText('request_failed'));
                         err.data = data;
                         throw err;
                     }
@@ -2947,7 +3021,7 @@
                 }
             }
 
-            throw lastError || new Error('Backend API is not connected');
+            throw new Error(friendlyErrorMessage(lastError || runtimeText('backend_unavailable')));
         }
 
         function applyBackendUser(serverUser) {
@@ -3584,9 +3658,10 @@
                 return status;
             } catch (err) {
                 if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
+                const message = friendlyErrorMessage(err);
                 const statusEl = document.getElementById('payment-status-text');
-                if (statusEl) statusEl.innerText = err.message;
-                if (depositStatusEl) depositStatusEl.innerText = err.message;
+                if (statusEl) statusEl.innerText = message;
+                if (depositStatusEl) depositStatusEl.innerText = message;
                 return latestPaymentStatus;
             } finally {
                 paymentStatusRefreshBusy = false;
@@ -3875,7 +3950,7 @@
                 }
                 await renderWithdrawHistory();
             } catch (err) {
-                if (statusEl) statusEl.innerText = err.message;
+                if (statusEl) statusEl.innerText = friendlyErrorMessage(err);
             } finally {
                 setActionBusy(submitBtn, false);
                 updateWithdrawUi(latestPaymentStatus);
@@ -3915,8 +3990,9 @@
                 addNotification(t('bonus_title'), `${t('bonus_claimed')} ${bonusText}`);
             } catch (err) {
                 if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
-                setDomText(statusEl, err.message);
-                addNotification(t('bonus_title'), err.message);
+                const message = friendlyErrorMessage(err);
+                setDomText(statusEl, message);
+                addNotification(t('bonus_title'), message);
             } finally {
                 setActionBusy(claimBtn, false);
                 updateBonusLockUi();
@@ -6136,7 +6212,7 @@
                 });
                 setDomText(statusEl, t('account_deleted'));
             } catch (err) {
-                setDomText(statusEl, err.message);
+                setDomText(statusEl, friendlyErrorMessage(err));
             }
         }
 
@@ -6407,7 +6483,7 @@
             closeModal('watchModal');
             finalizeWatchSession().catch(err => {
                 const watchSeconds = syncCountedWatchSeconds();
-                showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), err.message || t('watch_reward_save_failed'));
+                showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), friendlyErrorMessage(err) || t('watch_reward_save_failed'));
             });
         }
 
@@ -6497,7 +6573,7 @@
             clearInterval(watchTimerInterval);
             await finalizeWatchSession().catch(err => {
                 const watchSeconds = syncCountedWatchSeconds();
-                showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), err.message || t('watch_reward_save_failed'));
+                showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), friendlyErrorMessage(err) || t('watch_reward_save_failed'));
             });
             updateGrowthLockUi();
         }
@@ -6581,9 +6657,10 @@
             pendingWatch = null;
             if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
             updateWatchDisplays();
-            updateWatchSessionUi(err.message);
-            showWatchResult(watchSeconds, 0, `${err.message}. ${t('watch_reward_backend_failed')}`);
-            addNotification(t('view_reward_title'), err.message);
+            const message = friendlyErrorMessage(err);
+            updateWatchSessionUi(message);
+            showWatchResult(watchSeconds, 0, `${message}. ${t('watch_reward_backend_failed')}`);
+            addNotification(t('view_reward_title'), message);
         }
     }
 
@@ -6728,7 +6805,9 @@
                 safeStorageSet(getNotificationStorageKey('vidiPayNotifications'), JSON.stringify(merged));
                 if (newItems.length) setUnreadNotificationCount(getUnreadNotificationCount() + newItems.length);
                 notificationsFetchedAt = Date.now();
-            } catch (err) {}
+            } catch (err) {
+                rememberFrontendError('notifications_load', err);
+            }
             })().finally(() => {
                 notificationsInflight = null;
             });
@@ -6942,6 +7021,7 @@
                         historyFetchedAt = Date.now();
                     }
                 } catch (err) {
+                    rememberFrontendError('withdraw_history_load', err);
                     items = getWithdrawHistory();
                 }
 
@@ -7069,7 +7149,7 @@
                 renderPaymentOrder(order, latestPaymentStatus);
                 startPaymentStatusPolling();
             } catch (err) {
-                setDomText(statusEl, err.message);
+                setDomText(statusEl, friendlyErrorMessage(err));
             } finally {
                 tonDepositOpenBusy = false;
                 setActionBusy('fiat-pay-btn', false);
@@ -7091,9 +7171,12 @@
                 return;
             }
 
-            await copyTextToClipboard(walletAddress);
-            showCopyToast(t('ton_address_copied'));
-            setActionBusy('ton-copy-address-btn', false);
+            try {
+                await copyTextToClipboard(walletAddress);
+                showCopyToast(t('ton_address_copied'));
+            } finally {
+                setActionBusy('ton-copy-address-btn', false);
+            }
         }
         // ==========================================
 
@@ -7123,6 +7206,7 @@
                 scheduleLiveTierRefresh();
             } catch (err) {
                 console.warn('API sync skipped', err);
+                rememberFrontendError('init_backend_app', err);
             }
         }
 
