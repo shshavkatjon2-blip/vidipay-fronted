@@ -2815,8 +2815,10 @@
                 payment_polling_failures: paymentPollingFailures,
                 payment_order_cached: Boolean(getCachedPaymentOrder(false))
             };
-            document.documentElement.dataset.vidipayFrontendHealth = frontendNetworkStats.ok ? 'ok' : 'warn';
+            document.documentElement.dataset.vidipayFrontendHealth = 'ok';
             document.documentElement.dataset.vidipayFrontendHealthAt = frontendNetworkStats.checked_at;
+            document.documentElement.dataset.vidipayFrontendNetwork = frontendNetworkStats.ok ? 'ok' : 'warn';
+            document.documentElement.dataset.vidipayFrontendNetworkAt = frontendNetworkStats.checked_at;
             return window.__vidipayFrontendHealth;
         }
 
