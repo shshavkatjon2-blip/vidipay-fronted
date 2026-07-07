@@ -2903,7 +2903,8 @@
                 payment_polling_last_scheduled_delay_ms: paymentPollingLastScheduledDelayMs,
                 payment_polling_last_jitter_ms: paymentPollingLastJitterMs,
                 payment_order_cached: Boolean(getCachedPaymentOrder(false)),
-                payment_status_cached: Boolean(getCachedPaymentStatus(false))
+                payment_status_cached: Boolean(getCachedPaymentStatus(false)),
+                real_test: window.__vidipayFrontendRealTest || null
             };
             document.documentElement.dataset.vidipayFrontendHealth = 'ok';
             document.documentElement.dataset.vidipayFrontendHealthAt = frontendNetworkStats.checked_at;
@@ -2915,6 +2916,7 @@
                     frontendNetworkStats.ok ? '' : frontendNetworkStats.last_error
                 );
             }
+            if (typeof updatePaymentRealTestReadiness === 'function') updatePaymentRealTestReadiness('frontend_health');
             return window.__vidipayFrontendHealth;
         }
 
@@ -3278,8 +3280,12 @@
         let paymentPollingGeneration = 0;
         let paymentStatusRequestSeq = 0;
         let paymentOrderRequestSeq = 0;
+        let paymentOrderResolveInflight = null;
+        let paymentRealTestReadinessLastSnapshot = '';
+        let paymentAddressVisibleSinceAt = 0;
         const paymentOrderCacheKey = `vidiPayPaymentOrder_${referralUserId}`;
         const paymentStatusCacheKey = `vidiPayPaymentStatus_${referralUserId}`;
+        const paymentRealTestReadinessKey = `vidiPayRealTestReady_${referralUserId}`;
         const frontendPollJitterSeed = String(referralUserId || user?.id || 'guest');
         const frontendNetworkStats = {
             ok: true,
@@ -4064,6 +4070,132 @@
             return true;
         }
 
+        function getCurrentPaymentWalletAddress() {
+            return getPaymentWalletAddress(currentPaymentOrder)
+                || findPaymentWalletAddressInPayload(latestPaymentStatus)
+                || getPaymentWalletAddress(getCachedPaymentOrder(false))
+                || '';
+        }
+
+        function setPaymentAddressVisibility(walletAddress = '') {
+            const address = normalizePaymentAddress(walletAddress);
+            const visible = Boolean(address && isLikelyTonWalletAddress(address));
+            const addressBox = document.getElementById('payment-address-box');
+            const addressEl = document.getElementById('payment-address-text');
+            const modal = document.getElementById('tonDepositModal');
+            if (visible && !paymentAddressVisibleSinceAt) paymentAddressVisibleSinceAt = Date.now();
+            if (!visible) paymentAddressVisibleSinceAt = 0;
+            document.documentElement.dataset.vidipayPaymentAddressVisible = visible ? 'yes' : 'no';
+            document.documentElement.dataset.vidipayPaymentAddressVisibleAt = visible ? new Date(paymentAddressVisibleSinceAt).toISOString() : '';
+            document.documentElement.dataset.vidipayPaymentAddressReady = visible ? 'ready' : 'waiting';
+            if (modal) modal.dataset.paymentAddressReady = visible ? 'ready' : 'waiting';
+            if (addressBox) {
+                addressBox.dataset.paymentAddressReady = visible ? 'ready' : 'waiting';
+                addressBox.setAttribute('aria-busy', visible ? 'false' : 'true');
+            }
+            if (addressEl) {
+                addressEl.dataset.paymentAddressReady = visible ? 'ready' : 'waiting';
+                addressEl.setAttribute('aria-live', 'polite');
+            }
+            return visible;
+        }
+
+        function updatePaymentRealTestReadiness(reason = 'sync', extra = {}) {
+            const walletAddress = getCurrentPaymentWalletAddress();
+            setPaymentAddressVisibility(walletAddress);
+            const modalOpen = isTonDepositModalOpen();
+            const copyBtn = document.getElementById('ton-copy-address-btn');
+            const checkBtn = document.getElementById('ton-check-payment-btn');
+            const statusEl = document.getElementById('ton-deposit-status-text');
+            const ready = Boolean(
+                isWalletEarningUnlocked()
+                && walletAddress
+                && isLikelyTonWalletAddress(walletAddress)
+                && API_BASE_URL === PRODUCTION_API_BASE_URL
+                && copyBtn
+                && checkBtn
+                && navigator.onLine
+            );
+            const snapshot = {
+                checked_at: new Date().toISOString(),
+                reason: String(reason || 'sync').slice(0, 80),
+                ready,
+                modal_open: modalOpen,
+                earning_unlocked: isWalletEarningUnlocked(),
+                backend_url_ok: API_BASE_URL === PRODUCTION_API_BASE_URL,
+                online: navigator.onLine,
+                has_wallet_address: Boolean(walletAddress),
+                has_copy_button: Boolean(copyBtn),
+                has_check_button: Boolean(checkBtn),
+                payment_ui_state: document.documentElement.dataset.vidipayPaymentUiState || 'idle',
+                polling_active: Boolean(paymentStatusPollTimer),
+                status_inflight: Boolean(paymentStatusInflight || paymentStatusRefreshBusy),
+                order_inflight: Boolean(createPaymentOrderInflight || paymentOrderResolveInflight),
+                address_visible_since_at: paymentAddressVisibleSinceAt ? new Date(paymentAddressVisibleSinceAt).toISOString() : '',
+                ...extra
+            };
+            const serialized = JSON.stringify(snapshot);
+            if (serialized !== paymentRealTestReadinessLastSnapshot) {
+                paymentRealTestReadinessLastSnapshot = serialized;
+                safeStorageSet(paymentRealTestReadinessKey, serialized);
+            }
+            window.__vidipayFrontendRealTest = snapshot;
+            document.documentElement.dataset.vidipayFrontendRealTest = ready ? 'ready' : 'waiting';
+            document.documentElement.dataset.vidipayFrontendRealTestAt = snapshot.checked_at;
+            document.documentElement.dataset.vidipayFrontendRealTestReason = snapshot.reason;
+            document.documentElement.dataset.vidipayFrontendRealTestWallet = walletAddress ? 'present' : 'missing';
+            if (statusEl) statusEl.dataset.realTestReady = ready ? 'ready' : 'waiting';
+            return snapshot;
+        }
+
+        async function resolvePaymentOrderForModal(reason = 'modal_open') {
+            if (paymentOrderResolveInflight) return paymentOrderResolveInflight;
+            paymentOrderResolveInflight = (async () => {
+                updatePaymentRealTestReadiness(`resolve_start:${reason}`);
+                const cacheSeeded = seedPaymentStatusFromCache() || seedPaymentOrderFromCache();
+                if (getCurrentPaymentWalletAddress()) {
+                    setPaymentUiState(cacheSeeded ? 'cached' : 'ready');
+                    updatePaymentRealTestReadiness(`resolve_cache:${reason}`);
+                    return currentPaymentOrder;
+                }
+
+                await loadBackendSettings();
+
+                try {
+                    await refreshPaymentStatus({ poll: true, force: true, reason: `resolve_status:${reason}` });
+                } catch (err) {
+                    rememberFrontendError('payment_resolve_status_probe', err);
+                }
+                if (getCurrentPaymentWalletAddress()) {
+                    setPaymentUiState('ready');
+                    updatePaymentRealTestReadiness(`resolve_status_ready:${reason}`);
+                    return currentPaymentOrder;
+                }
+
+                const order = await createPaymentOrder();
+                if (getPaymentWalletAddress(order) || getCurrentPaymentWalletAddress()) {
+                    setPaymentUiState('ready');
+                    updatePaymentRealTestReadiness(`resolve_create_ready:${reason}`);
+                    return order || currentPaymentOrder;
+                }
+
+                try {
+                    await refreshPaymentStatus({ poll: true, force: true, reason: `resolve_after_create:${reason}` });
+                } catch (err) {
+                    rememberFrontendError('payment_resolve_after_create', err);
+                }
+                updatePaymentRealTestReadiness(`resolve_done:${reason}`);
+                return currentPaymentOrder || order || getCachedPaymentOrder(false);
+            })();
+            try {
+                return await paymentOrderResolveInflight;
+            } finally {
+                paymentOrderResolveInflight = null;
+                updatePaymentActionButtons();
+                updatePaymentRealTestReadiness(`resolve_final:${reason}`);
+            }
+        }
+
         function paymentRuntimeToneForState(state) {
             const value = String(state || '').toLowerCase();
             if (value === 'ready' || value === 'verified' || value === 'cached') return 'ok';
@@ -4132,6 +4264,7 @@
             if (addressBox) addressBox.dataset.paymentState = value;
             if (detail) document.documentElement.dataset.vidipayPaymentUiDetail = String(detail).slice(0, 80);
             refreshPaymentRuntimeStrip(value, detail);
+            updatePaymentRealTestReadiness(`ui_state:${value}`);
         }
 
         function updatePaymentActionButtons() {
@@ -4145,13 +4278,18 @@
                 copyBtn.setAttribute('aria-disabled', hasAddress ? 'false' : 'true');
                 copyBtn.setAttribute('aria-label', copyLabel);
                 copyBtn.setAttribute('title', copyLabel);
+                copyBtn.dataset.paymentAddressReady = hasAddress ? 'ready' : 'waiting';
+                copyBtn.classList.toggle('is-ready', hasAddress);
             }
             if (checkBtn && !checkBtn.dataset.busyLockActive) {
                 checkBtn.disabled = false;
                 checkBtn.setAttribute('aria-disabled', 'false');
                 checkBtn.setAttribute('aria-label', checkLabel);
                 checkBtn.setAttribute('title', checkLabel);
+                checkBtn.dataset.paymentPollingActive = paymentStatusPollTimer ? 'yes' : 'no';
+                checkBtn.classList.toggle('is-ready', Boolean(getCurrentPaymentWalletAddress()));
             }
+            updatePaymentRealTestReadiness('action_buttons');
         }
 
         function isActiveLocalCardMethod() {
@@ -4205,6 +4343,7 @@
             updatePaymentActionButtons();
 
             const walletAddress = getPaymentWalletAddress(currentPaymentOrder);
+            setPaymentAddressVisibility(walletAddress);
             const amount = Number(currentPaymentOrder?.required_amount || currentPaymentOrder?.amount || backendSettings.activation_deposit_amount || TON_ACTIVATION_AMOUNT || 6.99);
 
             if (statusData?.withdraw_unlocked) {
@@ -4217,8 +4356,10 @@
                 renderTonPaymentQr('');
                 if (statusEl) statusEl.innerText = walletAddress ? t('payment_verified_wallet') : t('card_order_loading');
                 if (depositStatusEl) depositStatusEl.innerText = walletAddress ? t('payment_verified_wallet') : t('card_order_loading');
+                setPaymentAddressVisibility(walletAddress);
                 updateLocalCardMethodUi();
                 updatePaymentActionButtons();
+                updatePaymentRealTestReadiness('render_verified');
                 return;
             }
 
@@ -4232,7 +4373,9 @@
                 renderTonPaymentQr('');
                 if (statusEl) statusEl.innerText = isWalletEarningUnlocked() ? t('wallet_payment_ready') : t('wallet_locked_until_20');
                 if (depositStatusEl) depositStatusEl.innerText = t('card_order_loading');
+                setPaymentAddressVisibility('');
                 updatePaymentActionButtons();
+                updatePaymentRealTestReadiness('render_empty_order');
                 return;
             }
 
@@ -4271,6 +4414,7 @@
             }
             updateLocalCardMethodUi();
             updatePaymentActionButtons();
+            updatePaymentRealTestReadiness(walletAddress ? 'render_ready' : 'render_waiting');
         }
 
         async function refreshPaymentStatus(options = {}) {
@@ -4278,7 +4422,7 @@
             if (options.manual && isActionThrottled('payment-manual-check', 900)) {
                 return paymentStatusInflight || latestPaymentStatus;
             }
-            if (!options.manual && paymentStatusLastRefreshAt && now - paymentStatusLastRefreshAt < 1500) {
+            if (!options.force && !options.manual && paymentStatusLastRefreshAt && now - paymentStatusLastRefreshAt < 1500) {
                 return latestPaymentStatus;
             }
             if (paymentStatusRefreshBusy) return paymentStatusInflight || latestPaymentStatus;
@@ -4329,6 +4473,7 @@
                     setPaymentPollingHealthy(true);
                     updateFrontendHealth({ ok: true });
                     refreshPaymentRuntimeStrip(getPaymentWalletAddress(latestOrder) ? 'ready' : 'loading');
+                    updatePaymentRealTestReadiness(options.reason || (options.manual ? 'manual_status_success' : 'poll_status_success'));
                     return status;
                 } catch (err) {
                     if (paymentStatusSignal.aborted) return latestPaymentStatus;
@@ -4340,12 +4485,14 @@
                     setPaymentUiState(navigator.onLine ? 'retrying' : 'offline', message);
                     setPaymentPollingHealthy(false);
                     updateFrontendHealth({ ok: false, last_error: message });
+                    updatePaymentRealTestReadiness(options.reason || 'status_retrying', { last_error: message });
                     return latestPaymentStatus;
                 } finally {
                     paymentStatusRefreshBusy = false;
                     paymentStatusInflight = null;
                     if (showBusy) setActionBusy('ton-check-payment-btn', false);
                     updatePaymentActionButtons();
+                    updatePaymentRealTestReadiness(options.reason || 'status_final');
                 }
             })();
             return paymentStatusInflight;
@@ -4383,6 +4530,7 @@
             } finally {
                 createPaymentOrderInflight = null;
                 updatePaymentActionButtons();
+                updatePaymentRealTestReadiness('create_order_final');
             }
         }
 
@@ -7711,6 +7859,7 @@
                 if (id === 'tonDepositModal') {
                     renderPaymentOrder(currentPaymentOrder, latestPaymentStatus);
                     refreshPaymentRuntimeStrip(document.documentElement.dataset.vidipayPaymentUiState || 'loading');
+                    updatePaymentRealTestReadiness('modal_open');
                     startPaymentStatusPolling();
                 }
                 normalizeFrontendActionElements(modal);
@@ -7726,6 +7875,7 @@
                 if (id === 'tonDepositModal') {
                     stopPaymentStatusPolling({ abort: true, reason: 'modal_close' });
                     refreshPaymentRuntimeStrip('idle');
+                    updatePaymentRealTestReadiness('modal_close');
                 }
                 if (id === 'supportChatModal') resetSupportComposer();
                 if (!document.querySelector('.modal-overlay.is-open')) document.body.classList.remove('modal-open');
@@ -7950,16 +8100,17 @@
             }
 
             try {
-                await loadBackendSettings();
-                const order = await createPaymentOrder();
+                const order = await resolvePaymentOrderForModal('open_ton_deposit');
                 renderPaymentOrder(order, latestPaymentStatus);
                 startPaymentStatusPolling();
             } catch (err) {
                 setPaymentUiState('error', friendlyErrorMessage(err));
                 setDomText(statusEl, friendlyErrorMessage(err));
+                updatePaymentRealTestReadiness('open_modal_error', { last_error: friendlyErrorMessage(err) });
             } finally {
                 tonDepositOpenBusy = false;
                 setActionBusy('fiat-pay-btn', false);
+                updatePaymentRealTestReadiness('open_modal_final');
             }
         }
 
@@ -7997,6 +8148,7 @@
             paymentPollingGeneration += 1;
             stopPaymentStatusPolling({ preserveGeneration: true });
             if (!document.getElementById('tonDepositModal')?.classList.contains('is-open')) return;
+            updatePaymentRealTestReadiness('polling_start');
             schedulePaymentStatusPoll(1200, paymentPollingGeneration);
         }
 
@@ -8016,6 +8168,7 @@
                     last_path: reason,
                     last_error: ''
                 });
+                updatePaymentRealTestReadiness(`abort:${reason}`);
             } catch (err) {
                 rememberFrontendError('payment_abort', err);
             }
@@ -8026,6 +8179,7 @@
             if (paymentStatusPollTimer) clearTimeout(paymentStatusPollTimer);
             paymentStatusPollTimer = null;
             if (options.abort) abortPaymentNetwork(options.reason || 'payment_polling_stopped');
+            else updatePaymentRealTestReadiness(options.reason || 'polling_stopped');
         }
 
         function isTonDepositModalOpen() {
@@ -8097,6 +8251,7 @@
                 }
                 if (isTonDepositModalOpen() && generation === paymentPollingGeneration) schedulePaymentStatusPoll(undefined, generation);
             }, paymentPollingLastScheduledDelayMs);
+            updatePaymentRealTestReadiness('polling_scheduled', { next_delay_ms: paymentPollingLastScheduledDelayMs });
         }
 
         window.addEventListener('offline', () => {
@@ -8150,7 +8305,7 @@
             const now = Date.now();
             const activeBusy = new Map([
                 ['ton-check-payment-btn', Boolean(paymentStatusInflight || paymentStatusRefreshBusy)],
-                ['fiat-pay-btn', Boolean(tonDepositOpenBusy || createPaymentOrderInflight)],
+                ['fiat-pay-btn', Boolean(tonDepositOpenBusy || createPaymentOrderInflight || paymentOrderResolveInflight)],
                 ['ton-copy-address-btn', false]
             ]);
             activeBusy.forEach((isActive, id) => {
@@ -8196,8 +8351,9 @@
                 payment_modal_open: isTonDepositModalOpen(),
                 watch_modal_open: isWatchModalOpen(),
                 payment_polling_timer: Boolean(paymentStatusPollTimer),
-                payment_inflight: Boolean(paymentStatusInflight || createPaymentOrderInflight)
+                payment_inflight: Boolean(paymentStatusInflight || createPaymentOrderInflight || paymentOrderResolveInflight)
             };
+            updatePaymentRealTestReadiness(`runtime_guard:${reason}`);
         }
 
         function installFrontendRuntimeGuard() {
@@ -8260,6 +8416,9 @@
                 statsDedupeReady: Number.isFinite(statsFetchedAt),
                 userSyncDedupeReady: Number.isFinite(userSyncFetchedAt),
                 paymentStatusCacheReady: typeof getCachedPaymentStatus === 'function' && typeof rememberPaymentStatus === 'function',
+                paymentResolverReady: typeof resolvePaymentOrderForModal === 'function',
+                realTestReadinessReady: typeof updatePaymentRealTestReadiness === 'function' && Boolean(window.__vidipayFrontendRealTest),
+                addressVisibilityReady: document.documentElement.dataset.vidipayPaymentAddressReady === 'ready' || document.documentElement.dataset.vidipayPaymentAddressReady === 'waiting',
                 adaptivePollingReady: typeof stableFrontendJitter === 'function' && typeof getConnectionAwarePollingBaseDelay === 'function',
                 paymentRuntimeStripReady: Boolean(runtimeStrip) && typeof refreshPaymentRuntimeStrip === 'function',
                 actionGuardReady: document.documentElement.dataset.vidipayActionGuard === 'ready',
@@ -8284,6 +8443,9 @@
                 && checks.statsDedupeReady
                 && checks.userSyncDedupeReady
                 && checks.paymentStatusCacheReady
+                && checks.paymentResolverReady
+                && checks.realTestReadinessReady
+                && checks.addressVisibilityReady
                 && checks.adaptivePollingReady
                 && checks.paymentRuntimeStripReady
                 && checks.actionGuardReady
@@ -8323,6 +8485,9 @@
                 statsDedupe: Number.isFinite(statsFetchedAt) && (statsInflight === null || typeof statsInflight?.then === 'function'),
                 userSyncDedupe: Number.isFinite(userSyncFetchedAt) && (userSyncInflight === null || typeof userSyncInflight?.then === 'function'),
                 paymentStatusCache: typeof getCachedPaymentStatus === 'function' && typeof rememberPaymentStatus === 'function',
+                paymentResolver: typeof resolvePaymentOrderForModal === 'function' && (paymentOrderResolveInflight === null || typeof paymentOrderResolveInflight?.then === 'function'),
+                realTestReadiness: typeof updatePaymentRealTestReadiness === 'function' && Boolean(window.__vidipayFrontendRealTest),
+                addressVisibility: document.documentElement.dataset.vidipayPaymentAddressReady === 'ready' || document.documentElement.dataset.vidipayPaymentAddressReady === 'waiting',
                 adaptivePolling: typeof stableFrontendJitter === 'function' && Number.isFinite(paymentPollingLastScheduledDelayMs) && Number.isFinite(paymentPollingLastJitterMs),
                 paymentRuntimeStrip: Boolean(runtimeStrip) && typeof refreshPaymentRuntimeStrip === 'function',
                 paymentRuntimeSnapshot: typeof paymentRuntimeLastSnapshot === 'string',
@@ -8365,6 +8530,9 @@
                 && checks.statsDedupe
                 && checks.userSyncDedupe
                 && checks.paymentStatusCache
+                && checks.paymentResolver
+                && checks.realTestReadiness
+                && checks.addressVisibility
                 && checks.adaptivePolling
                 && checks.paymentRuntimeStrip
                 && checks.paymentRuntimeSnapshot
