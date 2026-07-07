@@ -7449,6 +7449,8 @@
                 checked_at: new Date().toISOString(),
                 ...checks
             };
+            document.documentElement.dataset.vidipayFrontendContract = checks.ok ? 'ok' : 'failed';
+            document.documentElement.dataset.vidipayFrontendContractAt = window.__vidipayFrontendContract.checked_at;
             if (!checks.ok) {
                 rememberFrontendError('frontend_contract', JSON.stringify(checks));
             }
@@ -7456,6 +7458,7 @@
         }
 
         function scheduleFrontendContractSelfCheck() {
+            document.documentElement.dataset.vidipayFrontendContract = 'pending';
             setTimeout(() => {
                 try { runFrontendContractSelfCheck(); } catch (err) { rememberFrontendError('frontend_contract_exception', err); }
             }, 1200);
