@@ -4006,6 +4006,9 @@
                 orders: orders.map(order => attachWalletAddressToOrder(order, getPaymentWalletAddress(order) || walletAddress)).filter(Boolean),
                 payment: statusData.payment || null,
                 withdraw_unlocked: Boolean(statusData.withdraw_unlocked),
+                main_withdraw_unlocked: Boolean(statusData.main_withdraw_unlocked || statusData.withdraw_unlocked),
+                activation_deposit_verified: Boolean(statusData.activation_deposit_verified),
+                deposit_refund_available: Boolean(statusData.deposit_refund_available || statusData.activation_deposit_verified),
                 deposit_refund: statusData.deposit_refund || null,
                 growth_lock: statusData.growth_lock || null,
                 wallet_address: walletAddress || ''
@@ -4458,7 +4461,7 @@
             setPaymentAddressVisibility(walletAddress);
             const amount = Number(currentPaymentOrder?.required_amount || currentPaymentOrder?.amount || backendSettings.activation_deposit_amount || TON_ACTIVATION_AMOUNT || 6.99);
 
-            if (statusData?.withdraw_unlocked) {
+            if (statusData?.activation_deposit_verified || statusData?.deposit_refund_available || statusData?.withdraw_unlocked) {
                 setPaymentUiState(walletAddress ? 'verified' : 'loading');
                 box.style.display = 'block';
                 if (addressBox) addressBox.style.display = 'block';
@@ -4665,9 +4668,14 @@
             const growth = currentGrowthLockStatus();
             if (title) title.classList.remove('withdraw-red-title');
 
-            const isUnlocked = Boolean(paymentStatus.withdraw_unlocked);
             const depositRefund = paymentStatus.deposit_refund || {};
             const refundRequested = Boolean(depositRefund.requested);
+            const depositRefundAvailable = Boolean(
+                paymentStatus.activation_deposit_verified
+                || paymentStatus.deposit_refund_available
+                || paymentStatus.withdraw_unlocked
+                || refundRequested
+            );
             const refundStatus = String(depositRefund.status || '').toLowerCase();
             const savedRefundWallet = String(depositRefund.wallet_address || safeStorageGet('vidiPayDepositRefundWalletAddress') || '').trim();
             const refundAmount = Number(backendSettings.activation_refund_amount || getTonActivationAmount() || TON_ACTIVATION_AMOUNT);
@@ -4684,7 +4692,8 @@
             setDomText(dateValue, windowState.dateText);
 
             const stableSnapshot = JSON.stringify({
-                unlocked: isUnlocked,
+                depositRefundAvailable,
+                mainWithdrawUnlocked: Boolean(paymentStatus.withdraw_unlocked),
                 status: windowState.status,
                 min: minWithdraw,
                 refund: refundAmount,
@@ -4701,7 +4710,7 @@
 
             updateWalletLockUi(windowState);
 
-            if (isUnlocked) {
+            if (depositRefundAvailable) {
                 setDomText(title, t('deposit_refund_title'));
                 setDomStyle(title, 'color', '#22c55e');
                 setDomDisplay(formBox, 'block');
@@ -4890,7 +4899,9 @@
                 if (savedRefundWallet) safeStorageSet('vidiPayDepositRefundWalletAddress', savedRefundWallet);
                 latestPaymentStatus = {
                     ...latestPaymentStatus,
-                    withdraw_unlocked: true,
+                    withdraw_unlocked: Boolean(result.user?.withdraw_unlocked || latestPaymentStatus.withdraw_unlocked),
+                    activation_deposit_verified: true,
+                    deposit_refund_available: true,
                     deposit_refund: result.deposit_refund || {
                         requested: true,
                         status: result.withdraw?.status || 'pending',
