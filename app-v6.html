@@ -455,6 +455,20 @@
             border-color: rgba(0, 255, 204, 0.34);
             background: rgba(0, 255, 204, 0.06);
         }
+        .withdraw-wallet-input.is-invalid {
+            color: #fecaca;
+            border-color: rgba(239, 68, 68, 0.62);
+            background: rgba(239, 68, 68, 0.08);
+        }
+        #withdraw-form-status[data-tone="ok"] {
+            color: #99f6e4 !important;
+        }
+        #withdraw-form-status[data-tone="warn"] {
+            color: #fde68a !important;
+        }
+        #withdraw-form-status[data-tone="error"] {
+            color: #fecaca !important;
+        }
         @media (max-width: 420px) {
             .wallet-flow-row { grid-template-columns: 1fr; }
             .ton-payment-actions { grid-template-columns: 1fr; }
@@ -2545,7 +2559,7 @@
                 <div id="withdraw-form-box" class="withdraw-wallet-card" style="display:none;">
                     <div class="withdraw-wallet-card-title" data-i18n="withdraw_form_title"><i class="fas fa-link"></i> Connect payout wallet</div>
                     <input id="withdraw-amount-input" class="withdraw-wallet-input" type="number" min="6.99" max="6.99" step="0.01" inputmode="decimal" readonly placeholder="Fixed refund amount: 6.99 TONCOIN" data-i18n-placeholder="withdraw_amount_placeholder">
-                    <input id="withdraw-address-input" class="withdraw-wallet-input" type="text" placeholder="Your TON wallet address" data-i18n-placeholder="withdraw_card_placeholder">
+                    <input id="withdraw-address-input" class="withdraw-wallet-input" type="text" inputmode="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="Your TON wallet address" data-i18n-placeholder="withdraw_card_placeholder" oninput="handleWithdrawAddressInput()" onblur="validateWithdrawWalletInput()">
                     <input id="withdraw-method-input" type="hidden" value="TON">
                     <button class="copy-link-btn" id="withdraw-submit-btn" onclick="submitWithdrawRequest()">
                         <i class="fas fa-paper-plane" style="margin-right:8px;"></i><span data-i18n="request_withdrawal">REQUEST WITHDRAWAL</span>
@@ -3932,6 +3946,64 @@
             return /^(EQ|UQ)[A-Za-z0-9_-]{46}$/.test(value) || /^0:[a-fA-F0-9]{64}$/.test(value);
         }
 
+        function sanitizeTonWalletInputValue(value) {
+            return String(value || '').replace(/\s+/g, '').trim();
+        }
+
+        function withdrawInvalidTonAddressText() {
+            const messages = {
+                en: 'Enter a valid TON wallet address starting with EQ or UQ.',
+                ru: 'Введите правильный TON адрес, начинающийся с EQ или UQ.',
+                fr: 'Saisissez une adresse TON valide commencant par EQ ou UQ.',
+                hi: 'EQ ya UQ se shuru hone wala valid TON wallet address enter karein.',
+                es: 'Ingresa una direccion TON valida que empiece con EQ o UQ.',
+                zh: '请输入以 EQ 或 UQ 开头的有效 TON 钱包地址。',
+                de: 'Gib eine gueltige TON Wallet-Adresse ein, die mit EQ oder UQ beginnt.'
+            };
+            return messages[currentLang] || messages.en;
+        }
+
+        function setWithdrawFormStatus(message = '', tone = '') {
+            const statusEl = document.getElementById('withdraw-form-status');
+            if (!statusEl) return;
+            setDomText(statusEl, message);
+            statusEl.dataset.tone = tone || '';
+        }
+
+        function validateWithdrawWalletInput(options = {}) {
+            const input = document.getElementById('withdraw-address-input');
+            if (!input) return false;
+            const sanitized = sanitizeTonWalletInputValue(input.value);
+            if (input.value !== sanitized) input.value = sanitized;
+            const hasValue = Boolean(sanitized);
+            const valid = !hasValue || isLikelyTonWalletAddress(sanitized);
+            input.classList.toggle('is-invalid', !valid);
+            input.dataset.walletValid = valid ? 'true' : 'false';
+            if (!options.silent && !valid) setWithdrawFormStatus(withdrawInvalidTonAddressText(), 'error');
+            return valid;
+        }
+
+        function handleWithdrawAddressInput() {
+            const input = document.getElementById('withdraw-address-input');
+            if (!input || input.readOnly || input.disabled) return;
+            const valid = validateWithdrawWalletInput({ silent: true });
+            if (valid) setWithdrawFormStatus('', '');
+        }
+
+        function installWithdrawWalletInputGuard() {
+            const input = document.getElementById('withdraw-address-input');
+            if (!input) return;
+            input.setAttribute('autocomplete', 'off');
+            input.setAttribute('autocapitalize', 'none');
+            input.setAttribute('autocorrect', 'off');
+            input.setAttribute('spellcheck', 'false');
+            input.setAttribute('enterkeyhint', 'done');
+            input.addEventListener('paste', () => {
+                setTimeout(() => validateWithdrawWalletInput({ silent: true }), 0);
+            }, { passive: true });
+            document.documentElement.dataset.vidipayWithdrawWalletInputGuard = 'ready';
+        }
+
         function getPaymentWalletAddress(order = currentPaymentOrder) {
             const candidates = [
                 order?.ton_wallet_address,
@@ -4788,6 +4860,7 @@
                     if (savedRefundWallet && addressInput.value !== savedRefundWallet) addressInput.value = savedRefundWallet;
                     addressInput.readOnly = refundLocked;
                     addressInput.disabled = refundLocked;
+                    validateWithdrawWalletInput({ silent: true });
                 }
                 if (submitBtn) {
                     submitBtn.disabled = refundLocked;
@@ -4800,7 +4873,7 @@
                     setDomText(text, depositRefundStatusText(refundState, 'message'));
                     setDomText(request, isPaid ? t('deposit_refund_returned') : isRejected ? t('deposit_refund_rejected') : t('deposit_refund_saved'));
                     setDomText(extra, t('main_balance_locked_extra'));
-                    setDomText(formStatus, depositRefundStatusText(refundState, 'status'));
+                    setWithdrawFormStatus(depositRefundStatusText(refundState, 'status'), isPaid ? 'ok' : isRejected ? 'error' : 'warn');
                     return;
                 }
 
@@ -4811,7 +4884,7 @@
                 } else {
                     setDomText(extra, t('main_balance_locked_extra'));
                 }
-                setDomText(formStatus, `${t('activation_refund_available')}: ${refundAmount.toFixed(2)} TONCOIN`);
+                setWithdrawFormStatus(`${t('activation_refund_available')}: ${refundAmount.toFixed(2)} TONCOIN`, 'ok');
                 return;
             }
 
@@ -4926,23 +4999,31 @@
             const submitBtn = document.getElementById('withdraw-submit-btn');
             if (submitBtn?.disabled) return;
 
-            const walletAddress = (addressInput?.value || '').trim();
+            const walletAddress = sanitizeTonWalletInputValue(addressInput?.value || '');
             const walletType = methodInput?.value || 'TON';
             const refundAmount = Number(backendSettings.activation_refund_amount || getTonActivationAmount() || TON_ACTIVATION_AMOUNT);
+            if (addressInput && addressInput.value !== walletAddress) addressInput.value = walletAddress;
 
             if (!refundAmount || refundAmount <= 0) {
-                if (statusEl) statusEl.innerText = t('withdraw_amount_required');
+                setWithdrawFormStatus(t('withdraw_amount_required'), 'error');
                 return;
             }
 
             if (!walletAddress) {
-                if (statusEl) statusEl.innerText = t('withdraw_address_required');
+                setWithdrawFormStatus(t('withdraw_address_required'), 'error');
+                validateWithdrawWalletInput({ silent: true });
+                return;
+            }
+
+            if (!isLikelyTonWalletAddress(walletAddress)) {
+                setWithdrawFormStatus(withdrawInvalidTonAddressText(), 'error');
+                validateWithdrawWalletInput({ silent: true });
                 return;
             }
 
             try {
                 setActionBusy(submitBtn, true);
-                if (statusEl) statusEl.innerText = t('withdraw_sending');
+                setWithdrawFormStatus(t('withdraw_sending'), 'warn');
 
                 const result = await apiRequest('/withdraw/request', {
                     method: 'POST',
@@ -4982,16 +5063,18 @@
                     tx_hash: result.deposit_refund?.tx_hash || result.withdraw?.tx_hash || ''
                 });
 
+                historyFetchedAt = 0;
+                window.vidiPayCachedFullHistory = null;
                 if (amountInput) amountInput.value = refundAmount.toFixed(2);
                 if (addressInput) addressInput.value = savedRefundWallet || walletAddress;
                 updateWithdrawUi(latestPaymentStatus);
                 if (statusEl) {
                     const refundStatus = normalizeDepositRefundStatus(latestPaymentStatus.deposit_refund?.status);
-                    statusEl.innerText = depositRefundStatusText(refundStatus, 'status');
+                    setWithdrawFormStatus(depositRefundStatusText(refundStatus, 'status'), refundStatus === 'completed' ? 'ok' : refundStatus === 'rejected' ? 'error' : 'warn');
                 }
                 await renderWithdrawHistory();
             } catch (err) {
-                if (statusEl) statusEl.innerText = friendlyErrorMessage(err);
+                setWithdrawFormStatus(friendlyErrorMessage(err), 'error');
             } finally {
                 setActionBusy(submitBtn, false);
                 updateWithdrawUi(latestPaymentStatus);
@@ -8782,6 +8865,7 @@
         });
         installFrontendRuntimeGuard();
         installPaymentModalWatchdog();
+        installWithdrawWalletInputGuard();
 
         function runFrontendContractSelfCheck() {
             const requiredIds = [
@@ -8832,6 +8916,7 @@
                 paymentModalWatchdogReady: document.documentElement.dataset.vidipayPaymentModalWatchdogInstalled === 'ready' && typeof sanitizePaymentModalDom === 'function',
                 paymentActionHandlersReady: document.documentElement.dataset.vidipayPaymentActionHandlers === 'ready',
                 paymentQrSuppressionReady: document.documentElement.dataset.vidipayPaymentQrSuppressed === 'ready',
+                withdrawWalletInputGuardReady: document.documentElement.dataset.vidipayWithdrawWalletInputGuard === 'ready' && typeof validateWithdrawWalletInput === 'function',
                 manualCheckHandlerReady: checkBtn?.getAttribute('onclick') === 'checkTonPaymentNow()',
                 copyHandlerReady: copyBtn?.getAttribute('onclick') === 'copyTonPaymentAddress()',
                 modalLockReady: !document.body.classList.contains('modal-open')
@@ -8866,6 +8951,7 @@
                 && checks.paymentModalWatchdogReady
                 && checks.paymentActionHandlersReady
                 && checks.paymentQrSuppressionReady
+                && checks.withdrawWalletInputGuardReady
                 && checks.manualCheckHandlerReady
                 && checks.copyHandlerReady;
             window.__vidipayFrontendContract = {
@@ -8922,6 +9008,7 @@
                 paymentModalWatchdogTimer: paymentModalWatchdogTimer !== null,
                 paymentActionHandlers: document.documentElement.dataset.vidipayPaymentActionHandlers === 'ready',
                 paymentQrSuppression: document.documentElement.dataset.vidipayPaymentQrSuppressed === 'ready',
+                withdrawWalletInputGuard: document.documentElement.dataset.vidipayWithdrawWalletInputGuard === 'ready' && typeof validateWithdrawWalletInput === 'function',
                 manualCheckClickHandler: checkBtn?.getAttribute('onclick') === 'checkTonPaymentNow()',
                 copyAddressClickHandler: copyBtn?.getAttribute('onclick') === 'copyTonPaymentAddress()',
                 staleBusyCleanup: !Array.from(document.querySelectorAll('[data-busy-lock-active="true"]')).some(btn => {
@@ -8975,6 +9062,7 @@
                 && checks.paymentModalWatchdogTimer
                 && checks.paymentActionHandlers
                 && checks.paymentQrSuppression
+                && checks.withdrawWalletInputGuard
                 && checks.manualCheckClickHandler
                 && checks.copyAddressClickHandler
                 && checks.staleBusyCleanup
