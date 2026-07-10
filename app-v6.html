@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="wallet-toncoin-v8-reward-admin-20260621">
+    <meta name="vidipay-build" content="frontend-admin-readiness-20260709-v2">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=wallet-toncoin-v8-reward-admin-20260621"></script>
+    <script src="./config.js?v=frontend-admin-readiness-20260709-v2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -268,6 +268,25 @@
             flex: 0 0 auto;
             color: currentColor;
         }
+        #payment-expiry-text {
+            display: block;
+            min-height: 16px;
+            line-height: 1.35;
+        }
+        #payment-expiry-text .payment-expiry-line {
+            display: block;
+        }
+        #payment-expiry-text .payment-expiry-countdown {
+            margin-top: 2px;
+            color: #c4f1e8;
+        }
+        #payment-expiry-text.is-expired {
+            color: #fca5a5 !important;
+        }
+        .ton-payment-actions button.is-ready:not(:disabled) {
+            border-color: rgba(0, 255, 204, .42);
+            background: rgba(0, 255, 204, .14);
+        }
         @keyframes actionSpin {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
@@ -446,6 +465,17 @@
                 top: 10px;
                 right: 10px;
                 z-index: 5;
+            }
+            #tonDepositModal .modal-content,
+            #withdrawModal .modal-content,
+            #withdrawHistoryModal .modal-content {
+                padding-left: 22px;
+                padding-right: 22px;
+            }
+            #payment-address-text,
+            .receipt-value,
+            .withdraw-wallet-input {
+                overflow-wrap: anywhere;
             }
         }
 
@@ -2222,17 +2252,27 @@
         }
 
         .receipt-status.verified,
-        .receipt-status.approved {
+        .receipt-status.approved,
+        .receipt-status.completed,
+        .receipt-status.paid,
+        .receipt-status.auto_paid,
+        .receipt-status.success {
             color: #22c55e;
             background: rgba(34,197,94,.12);
         }
 
-        .receipt-status.pending {
+        .receipt-status.pending,
+        .receipt-status.processing,
+        .receipt-status.queued,
+        .receipt-status.requested {
             color: #f59e0b;
             background: rgba(245,158,11,.12);
         }
 
-        .receipt-status.rejected {
+        .receipt-status.rejected,
+        .receipt-status.failed,
+        .receipt-status.error,
+        .receipt-status.cancelled {
             color: #ef4444;
             background: rgba(239,68,68,.12);
         }
@@ -2600,7 +2640,7 @@
                         <div id="payment-amount-text" style="color:#00ffcc; font-size:13px; font-weight:900; margin-bottom:8px;"></div>
                         <div class="wallet-address-label" id="payment-address-label">Unique TON deposit address</div>
                         <div id="payment-address-text" aria-live="polite" style="color:#ffffff; font-size:12px; font-weight:900; line-height:1.45; word-break:break-all;"></div>
-                        <div id="payment-expiry-text" style="color:#a0a5b5; font-size:11px; font-weight:800; margin-top:8px;"></div>
+                        <div id="payment-expiry-text" role="status" aria-live="polite" style="color:#a0a5b5; font-size:11px; font-weight:800; margin-top:8px;"></div>
                     </div>
                     <div class="ton-payment-actions">
                         <button type="button" id="ton-copy-address-btn" aria-label="COPY ADDRESS" onclick="copyTonPaymentAddress()"><i class="fas fa-copy"></i> <span id="lbl-copy-ton-address">COPY ADDRESS</span></button>
@@ -3162,6 +3202,8 @@
         }
         const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260709-v2';
+        document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
             const raw = String(value || '').trim().replace(/\/$/, '');
@@ -4467,7 +4509,11 @@
                 if (addressBox) addressBox.style.display = 'block';
                 if (amountEl) amountEl.innerText = amount ? `${amount.toFixed(2)} TONCOIN` : `${getTonActivationAmount().toFixed(2)} TONCOIN`;
                 if (addressEl) addressEl.innerText = walletAddress || t('card_order_loading');
-                if (expiryEl) expiryEl.innerText = '';
+                if (expiryEl) {
+                    expiryEl.innerText = '';
+                    expiryEl.classList.remove('is-expired');
+                    expiryEl.removeAttribute('aria-label');
+                }
                 renderTonPaymentQr('');
                 if (statusEl) statusEl.innerText = walletAddress ? t('payment_verified_wallet') : t('card_order_loading');
                 if (depositStatusEl) depositStatusEl.innerText = walletAddress ? t('payment_verified_wallet') : t('card_order_loading');
@@ -4484,7 +4530,11 @@
                 if (addressBox) addressBox.style.display = isWalletEarningUnlocked() ? 'block' : 'none';
                 if (amountEl) amountEl.innerText = `${getTonActivationAmount().toFixed(2)} TONCOIN`;
                 if (addressEl) addressEl.innerText = t('card_order_loading');
-                if (expiryEl) expiryEl.innerText = '';
+                if (expiryEl) {
+                    expiryEl.innerText = '';
+                    expiryEl.classList.remove('is-expired');
+                    expiryEl.removeAttribute('aria-label');
+                }
                 renderTonPaymentQr('');
                 if (statusEl) statusEl.innerText = isWalletEarningUnlocked() ? t('wallet_payment_ready') : t('wallet_locked_until_20');
                 if (depositStatusEl) depositStatusEl.innerText = t('card_order_loading');
@@ -4499,21 +4549,7 @@
             if (addressBox) addressBox.style.display = 'block';
             if (amountEl) amountEl.innerText = amount ? `${amount.toFixed(2)} TONCOIN` : `${getTonActivationAmount().toFixed(2)} TONCOIN`;
             if (addressEl) addressEl.innerText = walletAddress || t('card_order_loading');
-            if (expiryEl) {
-                const paymentValidUntilLabels = {
-                    en: 'Valid until',
-                    ru: '\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0442\u0435\u043b\u044c\u043d\u043e \u0434\u043e',
-                    fr: "Valable jusqu'a",
-                    hi: 'Valid until',
-                    es: 'Valido hasta',
-                    zh: '\u6709\u6548\u671f\u81f3',
-                    de: 'Gueltig bis'
-                };
-                const validUntilLabel = paymentValidUntilLabels[currentLang] || paymentValidUntilLabels.en;
-                expiryEl.innerText = currentPaymentOrder.expires_at
-                    ? `${validUntilLabel}: ${new Date(currentPaymentOrder.expires_at).toLocaleString()}`
-                    : '';
-            }
+            renderPaymentExpiryText(currentPaymentOrder);
             renderTonPaymentQr('');
             if (statusEl) {
                 const depositAmount = Number(backendSettings.activation_deposit_amount || amount || TON_ACTIVATION_AMOUNT);
@@ -4649,6 +4685,25 @@
             }
         }
 
+        function normalizeDepositRefundStatus(status) {
+            const value = String(status || '').toLowerCase();
+            if (['approved', 'completed', 'complete', 'paid', 'auto_paid', 'success', 'sent', 'verified'].includes(value)) return 'completed';
+            if (['rejected', 'failed', 'error', 'cancelled', 'canceled'].includes(value)) return 'rejected';
+            if (['pending', 'processing', 'queued', 'requested', 'created', 'submitted'].includes(value)) return 'processing';
+            return value || 'not_requested';
+        }
+
+        function depositRefundStatusText(state, kind = 'status') {
+            const normalized = normalizeDepositRefundStatus(state);
+            if (normalized === 'completed') {
+                return kind === 'message' ? t('deposit_refund_paid_message') : t('deposit_refund_paid_status');
+            }
+            if (normalized === 'rejected') {
+                return kind === 'message' ? t('deposit_refund_rejected_message') : t('deposit_refund_rejected_status');
+            }
+            return kind === 'message' ? t('deposit_refund_locked_message') : t('deposit_refund_pending_status');
+        }
+
         function updateWithdrawUi(paymentStatus = {}) {
             latestPaymentStatus = paymentStatus || latestPaymentStatus || {};
             const title = document.getElementById('lbl-mdl-withdraw-title');
@@ -4677,6 +4732,8 @@
                 || refundRequested
             );
             const refundStatus = String(depositRefund.status || '').toLowerCase();
+            const refundState = normalizeDepositRefundStatus(refundStatus);
+            const refundLocked = refundRequested && refundState !== 'rejected';
             const savedRefundWallet = String(depositRefund.wallet_address || safeStorageGet('vidiPayDepositRefundWalletAddress') || '').trim();
             const refundAmount = Number(backendSettings.activation_refund_amount || getTonActivationAmount() || TON_ACTIVATION_AMOUNT);
             const minWithdraw = refundAmount;
@@ -4699,8 +4756,9 @@
                 refund: refundAmount,
                 refundRequested,
                 refundStatus,
+                refundState,
                 refundWallet: savedRefundWallet,
-                mainWithdrawUnlocked: Boolean(growth.main_withdraw?.unlocked),
+                growthMainWithdrawUnlocked: Boolean(growth.main_withdraw?.unlocked),
                 mainWithdrawRemaining: Number(growth.main_withdraw?.remaining || 0),
                 lang: currentLang
             });
@@ -4714,7 +4772,7 @@
                 setDomText(title, t('deposit_refund_title'));
                 setDomStyle(title, 'color', '#22c55e');
                 setDomDisplay(formBox, 'block');
-                if (formBox) formBox.classList.toggle('is-disabled', refundRequested);
+                if (formBox) formBox.classList.toggle('is-disabled', refundLocked);
                 if (amountInput) {
                     amountInput.value = refundAmount ? refundAmount.toFixed(2) : '';
                     amountInput.min = String(minWithdraw || 0);
@@ -4724,20 +4782,21 @@
                 }
                 if (addressInput) {
                     if (savedRefundWallet && addressInput.value !== savedRefundWallet) addressInput.value = savedRefundWallet;
-                    addressInput.readOnly = refundRequested;
-                    addressInput.disabled = refundRequested;
+                    addressInput.readOnly = refundLocked;
+                    addressInput.disabled = refundLocked;
                 }
                 if (submitBtn) {
-                    submitBtn.disabled = refundRequested;
-                    submitBtn.classList.toggle('locked-action', refundRequested);
+                    submitBtn.disabled = refundLocked;
+                    submitBtn.classList.toggle('locked-action', refundLocked);
                 }
 
                 if (refundRequested) {
-                    const isPaid = refundStatus === 'approved';
-                    setDomText(text, isPaid ? t('deposit_refund_paid_message') : t('deposit_refund_locked_message'));
-                    setDomText(request, isPaid ? t('deposit_refund_returned') : t('deposit_refund_saved'));
+                    const isPaid = refundState === 'completed';
+                    const isRejected = refundState === 'rejected';
+                    setDomText(text, depositRefundStatusText(refundState, 'message'));
+                    setDomText(request, isPaid ? t('deposit_refund_returned') : isRejected ? t('deposit_refund_rejected') : t('deposit_refund_saved'));
                     setDomText(extra, t('main_balance_locked_extra'));
-                    setDomText(formStatus, isPaid ? t('deposit_refund_paid_status') : t('deposit_refund_pending_status'));
+                    setDomText(formStatus, depositRefundStatusText(refundState, 'status'));
                     return;
                 }
 
@@ -4910,16 +4969,21 @@
                     }
                 };
                 updateWatchDisplays();
-                addWithdrawHistory(result.amount, result.withdraw?.status || 'pending');
+                const createdRefundStatus = result.deposit_refund?.status || result.withdraw?.status || 'pending';
+                addWithdrawHistory(result.amount || refundAmount, createdRefundStatus, {
+                    type: 'deposit_refund',
+                    method: 'TON_DEPOSIT_REFUND',
+                    currency: 'TONCOIN',
+                    wallet: savedRefundWallet || walletAddress,
+                    tx_hash: result.deposit_refund?.tx_hash || result.withdraw?.tx_hash || ''
+                });
 
                 if (amountInput) amountInput.value = refundAmount.toFixed(2);
                 if (addressInput) addressInput.value = savedRefundWallet || walletAddress;
                 updateWithdrawUi(latestPaymentStatus);
                 if (statusEl) {
-                    const refundStatus = String(latestPaymentStatus.deposit_refund?.status || '').toLowerCase();
-                    statusEl.innerText = refundStatus === 'approved'
-                        ? t('deposit_refund_paid_status')
-                        : t('deposit_refund_pending_status');
+                    const refundStatus = normalizeDepositRefundStatus(latestPaymentStatus.deposit_refund?.status);
+                    statusEl.innerText = depositRefundStatusText(refundStatus, 'status');
                 }
                 await renderWithdrawHistory();
             } catch (err) {
@@ -5684,6 +5748,10 @@
             deposit_refund_paid_message: "Your activation deposit has been returned. This one-time window is now locked until main balance withdrawal opens.",
             deposit_refund_pending_status: "Refund request saved. Payout is being processed.",
             deposit_refund_paid_status: "Deposit returned to your saved wallet.",
+            deposit_refund_rejected: "Refund rejected",
+            deposit_refund_rejected_message: "Refund was rejected. Check your wallet address and try again.",
+            deposit_refund_rejected_status: "Refund rejected. Check your wallet address and try again.",
+            payment_checking: "CHECKING...",
             main_balance_locked_extra: "Main balance withdrawal is locked until the scheduled withdrawal time.",
             main_balance_ready_extra: "Main balance withdrawal condition is complete. It opens only during withdrawal time.",
             main_withdraw_referral_required: "Main balance withdrawal needs 1 more deposited friend through your referral link.",
@@ -7508,6 +7576,86 @@
             });
         }
 
+        function localeForCurrentLang() {
+            const localeByLang = {
+                en: 'en-US',
+                ru: 'ru-RU',
+                fr: 'fr-FR',
+                hi: 'hi-IN',
+                es: 'es-ES',
+                zh: 'zh-CN',
+                de: 'de-DE'
+            };
+            return localeByLang[currentLang] || 'en-US';
+        }
+
+        function getPaymentOrderExpiryTime(order = currentPaymentOrder) {
+            const candidates = [
+                order?.expires_at,
+                order?.valid_until,
+                order?.expiresAt,
+                order?.expiresAtMs
+            ];
+            for (const candidate of candidates) {
+                if (!candidate) continue;
+                const timestamp = typeof candidate === 'number' ? candidate : new Date(candidate).getTime();
+                if (Number.isFinite(timestamp) && timestamp > 0) return timestamp;
+            }
+            return 0;
+        }
+
+        function formatPaymentCountdown(endTime) {
+            const remainingMs = Math.max(0, Number(endTime || 0) - Date.now());
+            const totalSeconds = Math.ceil(remainingMs / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function paymentValidityLabels() {
+            const labels = {
+                en: ['Valid until', 'Time left'],
+                ru: ['Действительно до', 'Осталось'],
+                fr: ["Valable jusqu'a", 'Temps restant'],
+                hi: ['Valid until', 'Time left'],
+                es: ['Valido hasta', 'Tiempo restante'],
+                zh: ['有效期至', '剩余时间'],
+                de: ['Gueltig bis', 'Restzeit']
+            };
+            return labels[currentLang] || labels.en;
+        }
+
+        function renderPaymentExpiryText(order = currentPaymentOrder) {
+            const expiryEl = document.getElementById('payment-expiry-text');
+            if (!expiryEl) return false;
+            const expiresAt = getPaymentOrderExpiryTime(order);
+            if (!expiresAt) {
+                expiryEl.classList.remove('is-expired');
+                expiryEl.dataset.paymentExpiresAt = '';
+                expiryEl.dataset.paymentRemainingMs = '';
+                expiryEl.removeAttribute('aria-label');
+                setDomText(expiryEl, '');
+                return false;
+            }
+            const remainingMs = Math.max(0, expiresAt - Date.now());
+            const [validUntilLabel, timeLeftLabel] = paymentValidityLabels();
+            const untilText = new Date(expiresAt).toLocaleString(localeForCurrentLang());
+            const countdown = formatPaymentCountdown(expiresAt);
+            expiryEl.dataset.paymentExpiresAt = new Date(expiresAt).toISOString();
+            expiryEl.dataset.paymentRemainingMs = String(remainingMs);
+            expiryEl.classList.toggle('is-expired', remainingMs <= 0);
+            expiryEl.textContent = '';
+            const untilLine = document.createElement('span');
+            untilLine.className = 'payment-expiry-line payment-expiry-until';
+            setDomText(untilLine, `${validUntilLabel}: ${untilText}`);
+            const countdownLine = document.createElement('span');
+            countdownLine.className = 'payment-expiry-line payment-expiry-countdown';
+            setDomText(countdownLine, `${timeLeftLabel}: ${countdown}`);
+            expiryEl.append(untilLine, countdownLine);
+            expiryEl.setAttribute('aria-label', `${validUntilLabel}: ${untilText}. ${timeLeftLabel}: ${countdown}`);
+            return remainingMs > 0;
+        }
+
         function onMrBeastPlayerStateChange(event) {
             if (event.data === YT.PlayerState.PLAYING) {
                 const videoData = mrbeastPlayer?.getVideoData ? mrbeastPlayer.getVideoData() : {};
@@ -8021,13 +8169,17 @@
             return items;
         }
 
-        function addWithdrawHistory(amount, status) {
+        function addWithdrawHistory(amount, status, extra = {}) {
             const key = 'vidiPayWithdrawHistory';
             const items = getWithdrawHistory();
             items.unshift({
                 amount: Number(amount || 0).toFixed(2),
                 status: status || 'Pending',
-                method: 'TON',
+                method: extra.method || 'TON',
+                currency: extra.currency || (extra.method === 'TON_DEPOSIT_REFUND' ? 'TONCOIN' : ''),
+                type: extra.type || 'withdraw',
+                wallet: extra.wallet || '',
+                tx_hash: extra.tx_hash || '',
                 date: new Date().toLocaleString()
             });
             safeStorageSet(key, JSON.stringify(items));
@@ -8044,6 +8196,10 @@
                     amount: Number(item.amount || 0).toFixed(2),
                     status: item.status || 'pending',
                     method: item.wallet_type || 'TON',
+                    currency: item.currency || '',
+                    type: item.withdraw_scope || item.type || '',
+                    wallet: item.wallet_address || item.wallet || '',
+                    tx_hash: item.tx_hash || '',
                     date: item.created_at ? new Date(item.created_at).toLocaleString() : ''
                 }));
             } catch (err) {}
@@ -8054,8 +8210,8 @@
             }
             box.innerHTML = items.map(item => `
                 <div class="history-item">
-                    <b>$${escapeHtml(item.amount)} - ${escapeHtml(item.method)}</b>
-                    <div>${escapeHtml(t('status_label'))}: ${escapeHtml(item.status)}</div>
+                    <b>${escapeHtml(receiptAmountText(item))} - ${escapeHtml(receiptNetworkText(item))}</b>
+                    <div>${escapeHtml(t('status_label'))}: ${escapeHtml(receiptStatusLabel(item.status))}</div>
                     <div>${escapeHtml(item.date)}</div>
                 </div>
             `).join('');
@@ -8102,13 +8258,74 @@
             return historyInflight;
         }
 
+        function isTonDepositRefundReceipt(item = {}) {
+            const raw = [
+                item.type,
+                item.withdraw_scope,
+                item.method,
+                item.network,
+                item.currency,
+                item.title
+            ].join(' ').toLowerCase();
+            return raw.includes('deposit_refund') || (raw.includes('activation') && raw.includes('refund'));
+        }
+
+        function isTonReceipt(item = {}) {
+            const raw = [
+                item.type,
+                item.withdraw_scope,
+                item.method,
+                item.network,
+                item.currency,
+                item.title
+            ].join(' ').toLowerCase();
+            return isTonDepositRefundReceipt(item) || raw.includes('ton');
+        }
+
+        function receiptStatusLabel(status) {
+            const normalized = normalizeDepositRefundStatus(status);
+            if (normalized === 'completed') return 'completed';
+            if (normalized === 'rejected') return 'rejected';
+            if (normalized === 'processing') return 'processing';
+            return String(status || 'pending');
+        }
+
+        function receiptStatusClass(status) {
+            return receiptStatusLabel(status).replace(/[^a-z0-9_-]/gi, '').toLowerCase() || 'pending';
+        }
+
+        function receiptTypeLabel(item = {}) {
+            if (item.title) return item.title;
+            if (isTonDepositRefundReceipt(item)) return 'Activation deposit refund';
+            if (String(item.type || '').toLowerCase() === 'payment') return t('history_wallet_payment');
+            return t('history_withdraw');
+        }
+
+        function receiptAmountText(item = {}) {
+            const amountValue = Number(item.amount || 0).toFixed(2);
+            if (isTonReceipt(item)) return `${amountValue} TONCOIN`;
+            return `$${amountValue} ${item.currency || item.method || ''}`.trim();
+        }
+
+        function receiptWalletText(item = {}) {
+            return item.wallet || item.wallet_address || item.to_wallet || item.address || '-';
+        }
+
+        function receiptNetworkText(item = {}) {
+            if (isTonDepositRefundReceipt(item)) return 'TON_DEPOSIT_REFUND';
+            if (isTonReceipt(item)) return 'TON';
+            return item.network || item.method || '-';
+        }
+
         function renderReceiptItem(item) {
             const created = item.created_at ? new Date(item.created_at).toLocaleString() : (item.date || '-');
             const processed = item.processed_at ? new Date(item.processed_at).toLocaleString() : '-';
-            const typeText = item.title || (item.type === 'payment' ? t('history_wallet_payment') : t('history_withdraw'));
-            const amount = `$${Number(item.amount || 0).toFixed(2)} ${item.currency || item.method || ''}`;
-            const status = item.status || 'pending';
-            const statusClass = String(status).replace(/[^a-z0-9_-]/gi, '').toLowerCase() || 'pending';
+            const typeText = receiptTypeLabel(item);
+            const amount = receiptAmountText(item);
+            const status = receiptStatusLabel(item.status);
+            const statusClass = receiptStatusClass(item.status);
+            const walletText = receiptWalletText(item);
+            const networkText = receiptNetworkText(item);
 
             return `
                 <div class="history-item">
@@ -8120,8 +8337,8 @@
                         <div class="receipt-status ${statusClass}">${escapeHtml(status)}</div>
                     </div>
                     <div class="receipt-row"><span class="receipt-label">${escapeHtml(t('receipt_date_time'))}</span><span class="receipt-value">${escapeHtml(created)}</span></div>
-                    <div class="receipt-row"><span class="receipt-label">${escapeHtml(t('receipt_network'))}</span><span class="receipt-value">${escapeHtml(item.network || item.method || '-')}</span></div>
-                    <div class="receipt-row"><span class="receipt-label">${escapeHtml(t('receipt_wallet_label'))}</span><span class="receipt-value">${escapeHtml(item.wallet || '-')}</span></div>
+                    <div class="receipt-row"><span class="receipt-label">${escapeHtml(t('receipt_network'))}</span><span class="receipt-value">${escapeHtml(networkText)}</span></div>
+                    <div class="receipt-row"><span class="receipt-label">${escapeHtml(t('receipt_wallet_label'))}</span><span class="receipt-value">${escapeHtml(walletText)}</span></div>
                     <div class="receipt-row"><span class="receipt-label">${escapeHtml(t('receipt_verified_at'))}</span><span class="receipt-value">${escapeHtml(processed)}</span></div>
                     ${item.tx_hash ? `<div class="receipt-row"><span class="receipt-label">TX</span><span class="receipt-value">${escapeHtml(item.tx_hash)}</span></div>` : ''}
                     ${item.admin_note ? `<div class="receipt-row"><span class="receipt-label">${escapeHtml(t('receipt_note'))}</span><span class="receipt-value">${escapeHtml(item.admin_note)}</span></div>` : ''}
@@ -8155,6 +8372,7 @@
         function updateUnifiedTimers() {
             updateWithdrawUi(latestPaymentStatus);
             updateBonusLockUi();
+            if (isTonDepositModalOpen()) renderPaymentExpiryText(currentPaymentOrder);
 
             const bonusTitle = document.querySelector('#bonusModal .modal-title');
             if (bonusTitle) bonusTitle.classList.toggle('bonus-timer-title', !isWithdrawWindowOpen());
@@ -8213,7 +8431,11 @@
             if (addressBox) addressBox.style.display = 'block';
             if (amountEl) amountEl.innerText = `${getTonActivationAmount().toFixed(2)} TONCOIN`;
             if (addressEl) addressEl.innerText = t('card_order_loading');
-            if (expiryEl) expiryEl.innerText = '';
+            if (expiryEl) {
+                expiryEl.innerText = '';
+                expiryEl.classList.remove('is-expired');
+                expiryEl.removeAttribute('aria-label');
+            }
             setDomText(statusEl, t('card_order_loading'));
             updatePaymentActionButtons();
             const seededStatusFromCache = seedPaymentStatusFromCache();
@@ -8241,6 +8463,8 @@
 
         async function copyTonPaymentAddress() {
             if (isActionThrottled('copy-ton-address', 500)) return;
+            const labelEl = document.getElementById('lbl-copy-ton-address');
+            const originalLabel = labelEl?.innerText || t('copy_ton_address') || 'COPY ADDRESS';
             setActionBusy('ton-copy-address-btn', true);
             if (!currentPaymentOrder || !getPaymentWalletAddress(currentPaymentOrder)) {
                 const cachedOrder = getCachedPaymentOrder();
@@ -8264,11 +8488,13 @@
 
             try {
                 await copyTextToClipboard(walletAddress);
+                if (labelEl) setDomText(labelEl, t('copied') || 'Copied');
                 showCopyToast(t('ton_address_copied'));
                 updatePaymentRealTestReadiness('copy_address_success');
             } finally {
                 setActionBusy('ton-copy-address-btn', false);
                 updatePaymentActionButtons();
+                if (labelEl) setTimeout(() => setDomText(labelEl, originalLabel), 900);
             }
         }
 
@@ -8276,7 +8502,10 @@
             if (paymentManualCheckInflight) return paymentManualCheckInflight;
             paymentManualCheckInflight = (async () => {
                 const statusEl = document.getElementById('ton-deposit-status-text');
+                const labelEl = document.getElementById('lbl-check-ton-payment');
+                const originalLabel = labelEl?.innerText || t('pay_with_fiat') || 'CHECK PAYMENT';
                 setActionBusy('ton-check-payment-btn', true);
+                if (labelEl) setDomText(labelEl, t('payment_checking'));
                 setPaymentUiState('checking');
                 setDomText(statusEl, t('payment_check_status'));
                 updatePaymentRealTestReadiness('manual_check_start');
@@ -8295,6 +8524,7 @@
                     paymentManualCheckInflight = null;
                     setActionBusy('ton-check-payment-btn', false);
                     updatePaymentActionButtons();
+                    if (labelEl) setTimeout(() => setDomText(labelEl, originalLabel), 900);
                     updatePaymentRealTestReadiness('manual_check_final');
                 }
             })();
@@ -8582,6 +8812,8 @@
                 addressVisibilityReady: document.documentElement.dataset.vidipayPaymentAddressReady === 'ready' || document.documentElement.dataset.vidipayPaymentAddressReady === 'waiting',
                 adaptivePollingReady: typeof stableFrontendJitter === 'function' && typeof getConnectionAwarePollingBaseDelay === 'function',
                 paymentRuntimeStripReady: Boolean(runtimeStrip) && typeof refreshPaymentRuntimeStrip === 'function',
+                paymentExpiryReady: typeof renderPaymentExpiryText === 'function' && typeof getPaymentOrderExpiryTime === 'function',
+                receiptFormatterReady: typeof renderReceiptItem === 'function' && typeof receiptAmountText === 'function',
                 actionGuardReady: document.documentElement.dataset.vidipayActionGuard === 'ready',
                 actionNormalizerReady: document.documentElement.dataset.vidipayFrontendActionNormalizerInstalled === 'ready',
                 modalStateGuardReady: document.documentElement.dataset.vidipayModalStateGuard === 'ready',
@@ -8614,6 +8846,8 @@
                 && checks.addressVisibilityReady
                 && checks.adaptivePollingReady
                 && checks.paymentRuntimeStripReady
+                && checks.paymentExpiryReady
+                && checks.receiptFormatterReady
                 && checks.actionGuardReady
                 && checks.actionNormalizerReady
                 && checks.modalStateGuardReady
@@ -8662,6 +8896,8 @@
                 adaptivePolling: typeof stableFrontendJitter === 'function' && Number.isFinite(paymentPollingLastScheduledDelayMs) && Number.isFinite(paymentPollingLastJitterMs),
                 paymentRuntimeStrip: Boolean(runtimeStrip) && typeof refreshPaymentRuntimeStrip === 'function',
                 paymentRuntimeSnapshot: typeof paymentRuntimeLastSnapshot === 'string',
+                paymentExpiry: typeof renderPaymentExpiryText === 'function' && typeof formatPaymentCountdown === 'function',
+                receiptFormatter: typeof receiptAmountText === 'function' && typeof receiptStatusLabel === 'function',
                 actionGuard: document.documentElement.dataset.vidipayActionGuard === 'ready',
                 actionNormalizer: document.documentElement.dataset.vidipayFrontendActionNormalizerInstalled === 'ready',
                 actionReadyCount: Array.from(document.querySelectorAll(FRONTEND_ACTION_SELECTOR)).filter(el => el.classList.contains('frontend-action-ready')).length,
@@ -8713,6 +8949,8 @@
                 && checks.adaptivePolling
                 && checks.paymentRuntimeStrip
                 && checks.paymentRuntimeSnapshot
+                && checks.paymentExpiry
+                && checks.receiptFormatter
                 && checks.actionGuard
                 && checks.actionNormalizer
                 && checks.actionReadyCount > 0
