@@ -8464,7 +8464,7 @@
         async function copyTonPaymentAddress() {
             if (isActionThrottled('copy-ton-address', 500)) return;
             const labelEl = document.getElementById('lbl-copy-ton-address');
-            const originalLabel = labelEl?.innerText || t('copy_ton_address') || 'COPY ADDRESS';
+            const originalLabel = t('copy_ton_address') || labelEl?.innerText || 'COPY ADDRESS';
             setActionBusy('ton-copy-address-btn', true);
             if (!currentPaymentOrder || !getPaymentWalletAddress(currentPaymentOrder)) {
                 const cachedOrder = getCachedPaymentOrder();
@@ -8482,6 +8482,7 @@
             if (!walletAddress) {
                 showCopyToast(t('payment_address_unavailable'));
                 setActionBusy('ton-copy-address-btn', false);
+                updatePaymentActionButtons();
                 updatePaymentRealTestReadiness('copy_address_missing');
                 return;
             }
@@ -8503,7 +8504,7 @@
             paymentManualCheckInflight = (async () => {
                 const statusEl = document.getElementById('ton-deposit-status-text');
                 const labelEl = document.getElementById('lbl-check-ton-payment');
-                const originalLabel = labelEl?.innerText || t('pay_with_fiat') || 'CHECK PAYMENT';
+                const originalLabel = t('pay_with_fiat') || labelEl?.innerText || 'CHECK PAYMENT';
                 setActionBusy('ton-check-payment-btn', true);
                 if (labelEl) setDomText(labelEl, t('payment_checking'));
                 setPaymentUiState('checking');
