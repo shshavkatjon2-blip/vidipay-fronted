@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v4">
+    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v5">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=frontend-admin-readiness-20260711-v4"></script>
+    <script src="./config.js?v=frontend-admin-readiness-20260711-v5"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -3223,7 +3223,7 @@
         }
         const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v4';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v5';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
@@ -3327,6 +3327,8 @@
         let notificationsFetchedAt = 0;
         let historyInflight = null;
         let historyFetchedAt = 0;
+        let depositRefundFollowupTimer = null;
+        let depositRefundFollowupAttempt = 0;
         let frontendRuntimeGuardTimer = null;
         let frontendRuntimeGuardLastAt = 0;
         let frontendRuntimeGuardSweepCount = 0;
@@ -4784,6 +4786,57 @@
             return kind === 'message' ? t('deposit_refund_locked_message') : t('deposit_refund_pending_status');
         }
 
+        function clearDepositRefundFollowup(reason = 'clear') {
+            if (depositRefundFollowupTimer) clearTimeout(depositRefundFollowupTimer);
+            depositRefundFollowupTimer = null;
+            depositRefundFollowupAttempt = 0;
+            document.documentElement.dataset.vidipayDepositRefundFollowup = reason;
+        }
+
+        function scheduleDepositRefundFollowup(reason = 'request', delayMs = 3000) {
+            if (depositRefundFollowupTimer) clearTimeout(depositRefundFollowupTimer);
+            const maxAttempts = 7;
+            document.documentElement.dataset.vidipayDepositRefundFollowup = 'scheduled';
+            document.documentElement.dataset.vidipayDepositRefundFollowupReason = reason;
+            document.documentElement.dataset.vidipayDepositRefundFollowupAttempt = String(depositRefundFollowupAttempt);
+            depositRefundFollowupTimer = setTimeout(async () => {
+                depositRefundFollowupTimer = null;
+                depositRefundFollowupAttempt += 1;
+                document.documentElement.dataset.vidipayDepositRefundFollowup = 'refreshing';
+                document.documentElement.dataset.vidipayDepositRefundFollowupAttempt = String(depositRefundFollowupAttempt);
+                try {
+                    const status = await refreshPaymentStatus({ poll: true, reason: `deposit_refund_followup:${reason}` });
+                    historyFetchedAt = 0;
+                    window.vidiPayCachedFullHistory = null;
+                    await renderWithdrawHistory();
+                    updateWithdrawUi(latestPaymentStatus);
+                    const state = normalizeDepositRefundStatus(
+                        status?.deposit_refund?.status
+                        || latestPaymentStatus?.deposit_refund?.status
+                        || ''
+                    );
+                    if (state === 'completed' || state === 'rejected') {
+                        document.documentElement.dataset.vidipayDepositRefundFollowup = state;
+                        clearDepositRefundFollowup(state);
+                        return;
+                    }
+                    if (depositRefundFollowupAttempt < maxAttempts) {
+                        const nextDelay = [3000, 8000, 15000, 30000, 60000, 90000, 120000][depositRefundFollowupAttempt] || 120000;
+                        scheduleDepositRefundFollowup(reason, nextDelay);
+                        return;
+                    }
+                    document.documentElement.dataset.vidipayDepositRefundFollowup = 'watching_limit_reached';
+                } catch (err) {
+                    rememberFrontendError('deposit_refund_followup', err);
+                    if (depositRefundFollowupAttempt < maxAttempts) {
+                        scheduleDepositRefundFollowup('retry_after_error', Math.min(120000, delayMs * 2));
+                    } else {
+                        document.documentElement.dataset.vidipayDepositRefundFollowup = 'error_limit_reached';
+                    }
+                }
+            }, delayMs);
+        }
+
         function updateWithdrawUi(paymentStatus = {}) {
             latestPaymentStatus = paymentStatus || latestPaymentStatus || {};
             const title = document.getElementById('lbl-mdl-withdraw-title');
@@ -5064,7 +5117,8 @@
                 };
                 updateWatchDisplays();
                 const createdRefundStatus = result.deposit_refund?.status || result.withdraw?.status || 'pending';
-                if (submitBtn) submitBtn.dataset.refundRequestState = normalizeDepositRefundStatus(createdRefundStatus);
+                const createdRefundState = normalizeDepositRefundStatus(createdRefundStatus);
+                if (submitBtn) submitBtn.dataset.refundRequestState = createdRefundState;
                 addWithdrawHistory(result.amount || refundAmount, createdRefundStatus, {
                     type: 'deposit_refund',
                     method: 'TON_DEPOSIT_REFUND',
@@ -5083,6 +5137,11 @@
                     setWithdrawFormStatus(depositRefundStatusText(refundStatus, 'status'), refundStatus === 'completed' ? 'ok' : refundStatus === 'rejected' ? 'error' : 'warn');
                 }
                 await renderWithdrawHistory();
+                if (createdRefundState === 'processing' || createdRefundState === 'not_requested') {
+                    scheduleDepositRefundFollowup('submit');
+                } else {
+                    clearDepositRefundFollowup(createdRefundState);
+                }
             } catch (err) {
                 if (submitBtn) submitBtn.dataset.refundRequestState = 'error';
                 setWithdrawFormStatus(friendlyErrorMessage(err), 'error');
@@ -8936,6 +8995,7 @@
                 paymentQrSuppressionReady: document.documentElement.dataset.vidipayPaymentQrSuppressed === 'ready',
                 withdrawWalletInputGuardReady: document.documentElement.dataset.vidipayWithdrawWalletInputGuard === 'ready' && typeof validateWithdrawWalletInput === 'function',
                 withdrawRefundScopeReady: /deposit_refund/.test(String(submitWithdrawRequest)),
+                withdrawRefundFollowupReady: typeof scheduleDepositRefundFollowup === 'function' && typeof clearDepositRefundFollowup === 'function',
                 paymentExpiryHealthDatasetReady: document.getElementById('payment-expiry-text')?.dataset.paymentValidityHealthy !== undefined,
                 manualCheckHandlerReady: checkBtn?.getAttribute('onclick') === 'checkTonPaymentNow()',
                 copyHandlerReady: copyBtn?.getAttribute('onclick') === 'copyTonPaymentAddress()',
@@ -8973,6 +9033,7 @@
                 && checks.paymentQrSuppressionReady
                 && checks.withdrawWalletInputGuardReady
                 && checks.withdrawRefundScopeReady
+                && checks.withdrawRefundFollowupReady
                 && checks.paymentExpiryHealthDatasetReady
                 && checks.manualCheckHandlerReady
                 && checks.copyHandlerReady;
@@ -9032,6 +9093,7 @@
                 paymentQrSuppression: document.documentElement.dataset.vidipayPaymentQrSuppressed === 'ready',
                 withdrawWalletInputGuard: document.documentElement.dataset.vidipayWithdrawWalletInputGuard === 'ready' && typeof validateWithdrawWalletInput === 'function',
                 withdrawRefundScope: /deposit_refund/.test(String(submitWithdrawRequest)),
+                withdrawRefundFollowup: typeof scheduleDepositRefundFollowup === 'function' && typeof clearDepositRefundFollowup === 'function',
                 paymentExpiryHealthDataset: document.getElementById('payment-expiry-text')?.dataset.paymentValidityHealthy !== undefined,
                 manualCheckClickHandler: checkBtn?.getAttribute('onclick') === 'checkTonPaymentNow()',
                 copyAddressClickHandler: copyBtn?.getAttribute('onclick') === 'copyTonPaymentAddress()',
@@ -9088,6 +9150,7 @@
                 && checks.paymentQrSuppression
                 && checks.withdrawWalletInputGuard
                 && checks.withdrawRefundScope
+                && checks.withdrawRefundFollowup
                 && checks.paymentExpiryHealthDataset
                 && checks.manualCheckClickHandler
                 && checks.copyAddressClickHandler

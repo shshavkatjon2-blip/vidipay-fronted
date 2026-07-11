@@ -4,7 +4,7 @@ const vm = require("vm");
 const crypto = require("crypto");
 
 const targetDir = path.resolve(process.argv[2] || __dirname);
-const expectedBuild = "frontend-admin-readiness-20260711-v4";
+const expectedBuild = "frontend-admin-readiness-20260711-v5";
 
 const expectedFiles = [
   "admin.html",
@@ -41,6 +41,7 @@ const appRequiredPatterns = [
   { name: "ton_deposit_warning_i18n", pattern: /ton_deposit_warning/ },
   { name: "wallet_ready_i18n", pattern: /wallet_ready_for_activation/ },
   { name: "deposit_refund_withdrawal", pattern: /submitWithdrawRequest[\s\S]*withdraw_scope:\s*['"]deposit_refund['"]/ },
+  { name: "deposit_refund_followup", pattern: /scheduleDepositRefundFollowup[\s\S]*refreshPaymentStatus/ },
   { name: "admin_notification_translation", pattern: /translateAdminNotificationText/ },
   { name: "notification_list_layout", pattern: /notification-list/ },
   { name: "growth_lock_status", pattern: /currentGrowthLockStatus/ }
