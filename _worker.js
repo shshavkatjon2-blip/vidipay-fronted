@@ -31,7 +31,7 @@ export default {
     headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
     headers.set("Pragma", "no-cache");
     headers.set("Expires", "0");
-    headers.set("X-VidiPay-Frontend-Build", "frontend-admin-readiness-20260711-v8");
+    headers.set("X-VidiPay-Frontend-Build", "frontend-admin-readiness-20260711-v9");
 
     return new Response(response.body, {
       status: response.status,

@@ -4,7 +4,7 @@ const vm = require("vm");
 const crypto = require("crypto");
 
 const targetDir = path.resolve(process.argv[2] || __dirname);
-const expectedBuild = "frontend-admin-readiness-20260711-v8";
+const expectedBuild = "frontend-admin-readiness-20260711-v9";
 
 const expectedFiles = [
   "admin.html",
@@ -42,6 +42,7 @@ const appRequiredPatterns = [
   { name: "wallet_ready_i18n", pattern: /wallet_ready_for_activation/ },
   { name: "deposit_refund_withdrawal", pattern: /submitWithdrawRequest[\s\S]*withdraw_scope:\s*['"]deposit_refund['"]/ },
   { name: "deposit_refund_followup", pattern: /scheduleDepositRefundFollowup[\s\S]*refreshPaymentStatus/ },
+  { name: "deposit_refund_detail", pattern: /depositRefundDetailText[\s\S]*status_reason[\s\S]*vidipayDepositRefundDetail/ },
   { name: "receipt_detail_fallback", pattern: /receiptDetailText[\s\S]*status_reason[\s\S]*failed_reason/ },
   { name: "receipt_mobile_wrap", pattern: /\.receipt-value[\s\S]*overflow-wrap:\s*anywhere[\s\S]*@media \(max-width:\s*380px\)[\s\S]*\.receipt-row[\s\S]*display:\s*block/ },
   { name: "copy_address_feedback", pattern: /copyTonPaymentAddress[\s\S]*payment_copying[\s\S]*vidipayCopyAddressState/ },

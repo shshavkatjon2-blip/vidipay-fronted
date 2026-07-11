@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v8">
+    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v9">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=frontend-admin-readiness-20260711-v8"></script>
+    <script src="./config.js?v=frontend-admin-readiness-20260711-v9"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -3250,7 +3250,7 @@
         }
         const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v8';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v9';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
@@ -4813,6 +4813,18 @@
             return kind === 'message' ? t('deposit_refund_locked_message') : t('deposit_refund_pending_status');
         }
 
+        function depositRefundDetailText(depositRefund = {}) {
+            return firstReceiptValue(depositRefund, [
+                'admin_note',
+                'status_reason',
+                'reason',
+                'reject_reason',
+                'failed_reason',
+                'error',
+                'message'
+            ]);
+        }
+
         function clearDepositRefundFollowup(reason = 'clear') {
             if (depositRefundFollowupTimer) clearTimeout(depositRefundFollowupTimer);
             depositRefundFollowupTimer = null;
@@ -4895,6 +4907,7 @@
             const refundState = normalizeDepositRefundStatus(refundStatus);
             const refundLocked = refundRequested && refundState !== 'rejected';
             const savedRefundWallet = String(depositRefund.wallet_address || safeStorageGet('vidiPayDepositRefundWalletAddress') || '').trim();
+            const refundDetail = depositRefundDetailText(depositRefund);
             const refundAmount = Number(backendSettings.activation_refund_amount || getTonActivationAmount() || TON_ACTIVATION_AMOUNT);
             const minWithdraw = refundAmount;
 
@@ -4917,6 +4930,7 @@
                 refundRequested,
                 refundStatus,
                 refundState,
+                refundDetail,
                 refundWallet: savedRefundWallet,
                 growthMainWithdrawUnlocked: Boolean(growth.main_withdraw?.unlocked),
                 mainWithdrawRemaining: Number(growth.main_withdraw?.remaining || 0),
@@ -4954,10 +4968,13 @@
                 if (refundRequested) {
                     const isPaid = refundState === 'completed';
                     const isRejected = refundState === 'rejected';
+                    const baseStatusText = depositRefundStatusText(refundState, 'status');
+                    const refundStatusText = refundDetail ? `${baseStatusText} ${refundDetail}` : baseStatusText;
+                    document.documentElement.dataset.vidipayDepositRefundDetail = refundDetail ? 'visible' : 'none';
                     setDomText(text, depositRefundStatusText(refundState, 'message'));
                     setDomText(request, isPaid ? t('deposit_refund_returned') : isRejected ? t('deposit_refund_rejected') : t('deposit_refund_saved'));
                     setDomText(extra, t('main_balance_locked_extra'));
-                    setWithdrawFormStatus(depositRefundStatusText(refundState, 'status'), isPaid ? 'ok' : isRejected ? 'error' : 'warn');
+                    setWithdrawFormStatus(refundStatusText, isPaid ? 'ok' : isRejected ? 'error' : 'warn');
                     return;
                 }
 
@@ -9061,6 +9078,7 @@
                 paymentRuntimeStripReady: Boolean(runtimeStrip) && typeof refreshPaymentRuntimeStrip === 'function',
                 paymentExpiryReady: typeof renderPaymentExpiryText === 'function' && typeof getPaymentOrderExpiryTime === 'function',
                 receiptFormatterReady: typeof renderReceiptItem === 'function' && typeof receiptAmountText === 'function' && typeof receiptDetailText === 'function',
+                depositRefundDetailReady: typeof depositRefundDetailText === 'function' && /status_reason/.test(String(depositRefundDetailText)),
                 actionGuardReady: document.documentElement.dataset.vidipayActionGuard === 'ready',
                 actionNormalizerReady: document.documentElement.dataset.vidipayFrontendActionNormalizerInstalled === 'ready',
                 modalStateGuardReady: document.documentElement.dataset.vidipayModalStateGuard === 'ready',
@@ -9100,6 +9118,7 @@
                 && checks.paymentRuntimeStripReady
                 && checks.paymentExpiryReady
                 && checks.receiptFormatterReady
+                && checks.depositRefundDetailReady
                 && checks.actionGuardReady
                 && checks.actionNormalizerReady
                 && checks.modalStateGuardReady
@@ -9155,6 +9174,7 @@
                 paymentRuntimeSnapshot: typeof paymentRuntimeLastSnapshot === 'string',
                 paymentExpiry: typeof renderPaymentExpiryText === 'function' && typeof formatPaymentCountdown === 'function',
                 receiptFormatter: typeof receiptAmountText === 'function' && typeof receiptStatusLabel === 'function' && typeof receiptDetailText === 'function',
+                depositRefundDetail: typeof depositRefundDetailText === 'function' && /status_reason/.test(String(depositRefundDetailText)),
                 actionGuard: document.documentElement.dataset.vidipayActionGuard === 'ready',
                 actionNormalizer: document.documentElement.dataset.vidipayFrontendActionNormalizerInstalled === 'ready',
                 actionReadyCount: Array.from(document.querySelectorAll(FRONTEND_ACTION_SELECTOR)).filter(el => el.classList.contains('frontend-action-ready')).length,
@@ -9213,6 +9233,7 @@
                 && checks.paymentRuntimeSnapshot
                 && checks.paymentExpiry
                 && checks.receiptFormatter
+                && checks.depositRefundDetail
                 && checks.actionGuard
                 && checks.actionNormalizer
                 && checks.actionReadyCount > 0
