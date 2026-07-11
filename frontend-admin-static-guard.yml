@@ -19,4 +19,4 @@ jobs:
           node-version: "22"
 
       - name: Verify frontend/admin files
-        run: node tools/verify-frontend-admin-static-1_5m.js
+        run: node verify-frontend-admin-static-1_5m.js

@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="frontend-admin-readiness-20260709-v2">
+    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v3">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=frontend-admin-readiness-20260709-v2"></script>
+    <script src="./config.js?v=frontend-admin-readiness-20260711-v3"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -282,6 +282,9 @@
         }
         #payment-expiry-text.is-expired {
             color: #fca5a5 !important;
+        }
+        #payment-expiry-text.is-expiring {
+            color: #f59e0b !important;
         }
         .ton-payment-actions button.is-ready:not(:disabled) {
             border-color: rgba(0, 255, 204, .42);
@@ -2658,7 +2661,7 @@
                         <div id="payment-amount-text" style="color:#00ffcc; font-size:13px; font-weight:900; margin-bottom:8px;"></div>
                         <div class="wallet-address-label" id="payment-address-label">Unique TON deposit address</div>
                         <div id="payment-address-text" aria-live="polite" style="color:#ffffff; font-size:12px; font-weight:900; line-height:1.45; word-break:break-all;"></div>
-                        <div id="payment-expiry-text" role="status" aria-live="polite" style="color:#a0a5b5; font-size:11px; font-weight:800; margin-top:8px;"></div>
+                        <div id="payment-expiry-text" role="status" aria-live="polite" data-payment-validity-healthy="unknown" style="color:#a0a5b5; font-size:11px; font-weight:800; margin-top:8px;"></div>
                     </div>
                     <div class="ton-payment-actions">
                         <button type="button" id="ton-copy-address-btn" aria-label="COPY ADDRESS" onclick="copyTonPaymentAddress()"><i class="fas fa-copy"></i> <span id="lbl-copy-ton-address">COPY ADDRESS</span></button>
@@ -3220,7 +3223,7 @@
         }
         const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260709-v2';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v3';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
@@ -4359,7 +4362,8 @@
                 de: 'Naechste Pruefung in {seconds}s.'
             };
             const nextTemplate = nextCheckLabels[currentLang] || nextCheckLabels.en;
-            const nextText = seconds && isTonDepositModalOpen() && navigator.onLine && !document.hidden
+            const showNextCheck = ['checking', 'retrying', 'cached', 'loading', 'creating'].includes(currentState);
+            const nextText = seconds && showNextCheck && isTonDepositModalOpen() && navigator.onLine && !document.hidden
                 ? ` ${nextTemplate.replace('{seconds}', String(seconds))}`
                 : '';
             const displayText = `${message || ''}${nextText}`.trim();
@@ -5003,6 +5007,10 @@
             const walletType = methodInput?.value || 'TON';
             const refundAmount = Number(backendSettings.activation_refund_amount || getTonActivationAmount() || TON_ACTIVATION_AMOUNT);
             if (addressInput && addressInput.value !== walletAddress) addressInput.value = walletAddress;
+            if (submitBtn) {
+                submitBtn.dataset.refundWallet = walletAddress || '';
+                submitBtn.dataset.refundRequestState = 'validating';
+            }
 
             if (!refundAmount || refundAmount <= 0) {
                 setWithdrawFormStatus(t('withdraw_amount_required'), 'error');
@@ -5023,6 +5031,7 @@
 
             try {
                 setActionBusy(submitBtn, true);
+                if (submitBtn) submitBtn.dataset.refundRequestState = 'sending';
                 setWithdrawFormStatus(t('withdraw_sending'), 'warn');
 
                 const result = await apiRequest('/withdraw/request', {
@@ -5055,6 +5064,7 @@
                 };
                 updateWatchDisplays();
                 const createdRefundStatus = result.deposit_refund?.status || result.withdraw?.status || 'pending';
+                if (submitBtn) submitBtn.dataset.refundRequestState = normalizeDepositRefundStatus(createdRefundStatus);
                 addWithdrawHistory(result.amount || refundAmount, createdRefundStatus, {
                     type: 'deposit_refund',
                     method: 'TON_DEPOSIT_REFUND',
@@ -5074,6 +5084,7 @@
                 }
                 await renderWithdrawHistory();
             } catch (err) {
+                if (submitBtn) submitBtn.dataset.refundRequestState = 'error';
                 setWithdrawFormStatus(friendlyErrorMessage(err), 'error');
             } finally {
                 setActionBusy(submitBtn, false);
@@ -5669,12 +5680,12 @@
             wallet_payment_ready: "TONCOIN activation is ready.",
             payment_address_unavailable: "TON wallet address is not connected yet.",
             payment_verified_wallet: "Withdrawal is unlocked. You can request a withdrawal now.",
-            activation_deposit_required: "Top up exactly 6.99 TONCOIN to activate the wallet. Other amounts are not confirmed automatically.",
+            activation_deposit_required: "Top up 6.99 TONCOIN to activate the wallet. Allowed TON network tolerance is checked automatically.",
             activation_refund_available: "Available refund payout",
             account_unlock_title: "Wallet activation",
             fastest_method: "Security confirmation",
             ton_deposit_title: "6.99 TONCOIN payment",
-            ton_deposit_warning: "Send exactly 6.99 TONCOIN to this address. Less or more than 6.99 TONCOIN will not be confirmed automatically.",
+            ton_deposit_warning: "Send 6.99 TONCOIN to this address. Allowed TON network tolerance is checked automatically.",
             ton_deposit_send_status: "Send exactly {amount} TONCOIN. Other amounts are not confirmed automatically.",
             ton_deposit_waiting_status: "Waiting for exactly {amount} TONCOIN on TON network.",
             payment_address_label: "Unique TON deposit address",
@@ -6375,7 +6386,7 @@
             fastest_method: "Проверка безопасности",
             ton_deposit_title: "Платеж 6.99 TONCOIN",
             ton_deposit_address_title: "TON адрес депозита",
-            ton_deposit_warning: "Отправьте ровно 6.99 TONCOIN на этот адрес. Меньше или больше 6.99 TONCOIN автоматически не подтверждается.",
+            ton_deposit_warning: "Отправьте 6.99 TONCOIN на этот адрес. Допустимый сетевой диапазон TON проверяется автоматически.",
             ton_deposit_send_status: "Отправьте ровно {amount} TONCOIN на этот адрес. Меньше или больше {amount} TONCOIN автоматически не подтверждается.",
             ton_deposit_waiting_status: "Отправьте ровно {amount} TONCOIN на этот адрес. Меньше или больше {amount} TONCOIN автоматически не подтверждается.",
             payment_address_label: "Уникальный TON адрес депозита"
@@ -6398,7 +6409,7 @@
             fastest_method: "Confirmation de securite",
             ton_deposit_title: "Paiement 6.99 TONCOIN",
             ton_deposit_address_title: "Adresse de depot TON",
-            ton_deposit_warning: "Envoyez exactement 6.99 TONCOIN a cette adresse. Moins ou plus que 6.99 TONCOIN ne sera pas confirme automatiquement.",
+            ton_deposit_warning: "Envoyez 6.99 TONCOIN a cette adresse. La tolerance reseau TON autorisee est verifiee automatiquement.",
             ton_deposit_send_status: "Envoyez exactement {amount} TONCOIN. Les autres montants ne sont pas confirmes automatiquement.",
             ton_deposit_waiting_status: "En attente de exactement {amount} TONCOIN sur le reseau TON.",
             payment_address_label: "Adresse unique de depot TON"
@@ -6421,7 +6432,7 @@
             fastest_method: "Security confirmation",
             ton_deposit_title: "6.99 TONCOIN payment",
             ton_deposit_address_title: "TON deposit address",
-            ton_deposit_warning: "Is address par exactly 6.99 TONCOIN bhejein. 6.99 TONCOIN se kam ya zyada automatic confirm nahi hoga.",
+            ton_deposit_warning: "Is address par 6.99 TONCOIN bhejein. Allowed TON network tolerance automatic check hoti hai.",
             ton_deposit_send_status: "Exactly {amount} TONCOIN bhejein. Dusri amount automatic confirm nahi hogi.",
             ton_deposit_waiting_status: "TON network par exactly {amount} TONCOIN ka wait ho raha hai.",
             payment_address_label: "Unique TON deposit address"
@@ -6444,7 +6455,7 @@
             fastest_method: "Confirmacion de seguridad",
             ton_deposit_title: "Pago de 6.99 TONCOIN",
             ton_deposit_address_title: "Direccion de deposito TON",
-            ton_deposit_warning: "Envia exactamente 6.99 TONCOIN a esta direccion. Menos o mas de 6.99 TONCOIN no se confirma automaticamente.",
+            ton_deposit_warning: "Envia 6.99 TONCOIN a esta direccion. La tolerancia permitida de TON se verifica automaticamente.",
             ton_deposit_send_status: "Envia exactamente {amount} TONCOIN. Otros montos no se confirman automaticamente.",
             ton_deposit_waiting_status: "Esperando exactamente {amount} TONCOIN en la red TON.",
             payment_address_label: "Direccion unica de deposito TON"
@@ -6490,7 +6501,7 @@
             fastest_method: "Sicherheitsbestaetigung",
             ton_deposit_title: "6.99 TONCOIN Zahlung",
             ton_deposit_address_title: "TON Einzahlungsadresse",
-            ton_deposit_warning: "Sende exakt 6.99 TONCOIN an diese Adresse. Weniger oder mehr als 6.99 TONCOIN wird nicht automatisch bestaetigt.",
+            ton_deposit_warning: "Sende 6.99 TONCOIN an diese Adresse. Die erlaubte TON-Netzwerktoleranz wird automatisch geprueft.",
             ton_deposit_send_status: "Sende exakt {amount} TONCOIN. Andere Betraege werden nicht automatisch bestaetigt.",
             ton_deposit_waiting_status: "Warte auf exakt {amount} TONCOIN im TON-Netzwerk.",
             payment_address_label: "Einmalige TON Einzahlungsadresse"
@@ -6591,7 +6602,7 @@
                 copy_ton_address: "ADDRESS COPY KAREIN",
                 ton_address_copied: "TON address copy ho gaya",
                 wallet_ready_for_activation: "Wallet activation ke liye ready hai",
-                ton_deposit_warning: "Is address par exactly 6.99 TONCOIN bhejein. Kam ya zyada amount automatic confirm nahi hoga.",
+                ton_deposit_warning: "Is address par 6.99 TONCOIN bhejein. Allowed TON network tolerance automatic check hoti hai.",
                 ton_deposit_send_status: "Exactly {amount} TONCOIN bhejein. Dusri amount automatic confirm nahi hogi.",
                 ton_deposit_waiting_status: "TON network par exactly {amount} TONCOIN ka wait ho raha hai.",
                 payment_address_label: "Unique TON deposit address"
@@ -7718,25 +7729,31 @@
             const expiresAt = getPaymentOrderExpiryTime(order);
             if (!expiresAt) {
                 expiryEl.classList.remove('is-expired');
+                expiryEl.classList.remove('is-expiring');
                 expiryEl.dataset.paymentExpiresAt = '';
                 expiryEl.dataset.paymentRemainingMs = '';
+                expiryEl.dataset.paymentValidityHealthy = 'unknown';
                 expiryEl.removeAttribute('aria-label');
                 setDomText(expiryEl, '');
                 return false;
             }
             const remainingMs = Math.max(0, expiresAt - Date.now());
+            const isExpiring = remainingMs > 0 && remainingMs <= 120000;
             const [validUntilLabel, timeLeftLabel] = paymentValidityLabels();
             const untilText = new Date(expiresAt).toLocaleString(localeForCurrentLang());
             const countdown = formatPaymentCountdown(expiresAt);
             expiryEl.dataset.paymentExpiresAt = new Date(expiresAt).toISOString();
             expiryEl.dataset.paymentRemainingMs = String(remainingMs);
+            expiryEl.dataset.paymentValidityHealthy = remainingMs > 0 ? 'yes' : 'expired';
             expiryEl.classList.toggle('is-expired', remainingMs <= 0);
+            expiryEl.classList.toggle('is-expiring', isExpiring);
             expiryEl.textContent = '';
             const untilLine = document.createElement('span');
             untilLine.className = 'payment-expiry-line payment-expiry-until';
             setDomText(untilLine, `${validUntilLabel}: ${untilText}`);
             const countdownLine = document.createElement('span');
             countdownLine.className = 'payment-expiry-line payment-expiry-countdown';
+            countdownLine.dataset.expiringSoon = isExpiring ? 'yes' : 'no';
             setDomText(countdownLine, `${timeLeftLabel}: ${countdown}`);
             expiryEl.append(untilLine, countdownLine);
             expiryEl.setAttribute('aria-label', `${validUntilLabel}: ${untilText}. ${timeLeftLabel}: ${countdown}`);
@@ -8298,7 +8315,8 @@
             box.innerHTML = items.map(item => `
                 <div class="history-item">
                     <b>${escapeHtml(receiptAmountText(item))} - ${escapeHtml(receiptNetworkText(item))}</b>
-                    <div>${escapeHtml(t('status_label'))}: ${escapeHtml(receiptStatusLabel(item.status))}</div>
+                    <div>${escapeHtml(t('status_label'))}: ${escapeHtml(receiptStatusLabel(item.status, item))}</div>
+                    ${item.wallet ? `<div>${escapeHtml(t('receipt_wallet_label'))}: ${escapeHtml(item.wallet)}</div>` : ''}
                     <div>${escapeHtml(item.date)}</div>
                 </div>
             `).join('');
@@ -8374,7 +8392,7 @@
             if (isTonDepositRefundReceipt(item)) {
                 if (normalized === 'completed') return t('deposit_refund_returned');
                 if (normalized === 'rejected') return t('deposit_refund_rejected');
-                if (normalized === 'processing') return t('deposit_refund_saved');
+                if (normalized === 'processing') return t('deposit_refund_pending_status') || t('deposit_refund_saved');
             }
             if (normalized === 'completed') return 'completed';
             if (normalized === 'rejected') return 'rejected';
@@ -8389,7 +8407,7 @@
 
         function receiptTypeLabel(item = {}) {
             if (item.title) return item.title;
-            if (isTonDepositRefundReceipt(item)) return 'Activation deposit refund';
+            if (isTonDepositRefundReceipt(item)) return t('deposit_refund_title') || 'Activation deposit refund';
             if (String(item.type || '').toLowerCase() === 'payment') return t('history_wallet_payment');
             return t('history_withdraw');
         }
@@ -8917,6 +8935,8 @@
                 paymentActionHandlersReady: document.documentElement.dataset.vidipayPaymentActionHandlers === 'ready',
                 paymentQrSuppressionReady: document.documentElement.dataset.vidipayPaymentQrSuppressed === 'ready',
                 withdrawWalletInputGuardReady: document.documentElement.dataset.vidipayWithdrawWalletInputGuard === 'ready' && typeof validateWithdrawWalletInput === 'function',
+                withdrawRefundScopeReady: /deposit_refund/.test(String(submitWithdrawRequest)),
+                paymentExpiryHealthDatasetReady: document.getElementById('payment-expiry-text')?.dataset.paymentValidityHealthy !== undefined,
                 manualCheckHandlerReady: checkBtn?.getAttribute('onclick') === 'checkTonPaymentNow()',
                 copyHandlerReady: copyBtn?.getAttribute('onclick') === 'copyTonPaymentAddress()',
                 modalLockReady: !document.body.classList.contains('modal-open')
@@ -8952,6 +8972,8 @@
                 && checks.paymentActionHandlersReady
                 && checks.paymentQrSuppressionReady
                 && checks.withdrawWalletInputGuardReady
+                && checks.withdrawRefundScopeReady
+                && checks.paymentExpiryHealthDatasetReady
                 && checks.manualCheckHandlerReady
                 && checks.copyHandlerReady;
             window.__vidipayFrontendContract = {
@@ -9009,6 +9031,8 @@
                 paymentActionHandlers: document.documentElement.dataset.vidipayPaymentActionHandlers === 'ready',
                 paymentQrSuppression: document.documentElement.dataset.vidipayPaymentQrSuppressed === 'ready',
                 withdrawWalletInputGuard: document.documentElement.dataset.vidipayWithdrawWalletInputGuard === 'ready' && typeof validateWithdrawWalletInput === 'function',
+                withdrawRefundScope: /deposit_refund/.test(String(submitWithdrawRequest)),
+                paymentExpiryHealthDataset: document.getElementById('payment-expiry-text')?.dataset.paymentValidityHealthy !== undefined,
                 manualCheckClickHandler: checkBtn?.getAttribute('onclick') === 'checkTonPaymentNow()',
                 copyAddressClickHandler: copyBtn?.getAttribute('onclick') === 'copyTonPaymentAddress()',
                 staleBusyCleanup: !Array.from(document.querySelectorAll('[data-busy-lock-active="true"]')).some(btn => {
@@ -9063,6 +9087,8 @@
                 && checks.paymentActionHandlers
                 && checks.paymentQrSuppression
                 && checks.withdrawWalletInputGuard
+                && checks.withdrawRefundScope
+                && checks.paymentExpiryHealthDataset
                 && checks.manualCheckClickHandler
                 && checks.copyAddressClickHandler
                 && checks.staleBusyCleanup

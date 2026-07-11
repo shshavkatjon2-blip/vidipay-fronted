@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="vidipay-admin-build" content="frontend-admin-readiness-20260709-v2">
+  <meta name="vidipay-admin-build" content="frontend-admin-readiness-20260711-v3">
   <title>VidiPay Admin Panel</title>
-  <script src="./config.js?v=frontend-admin-readiness-20260709-v2"></script>
+  <script src="./config.js?v=frontend-admin-readiness-20260711-v3"></script>
   <style>
     :root {
       --bg: #080d10;
@@ -661,7 +661,16 @@
 
     function statusCell(value) {
       const status = normalizeAdminStatus(value);
-      return `<span class="status ${escapeHtml(status)}">${escapeHtml(status)}</span>`;
+      const raw = String(value || '').trim();
+      return `<span class="status ${escapeHtml(status)}" title="${escapeHtml(raw || status)}">${escapeHtml(status)}</span>`;
+    }
+
+    function adminScopeLabel(scope, walletType) {
+      const value = String(scope || walletType || '').toLowerCase();
+      if (value.includes('deposit_refund') || value.includes('ton_deposit_refund')) return 'ACTIVATION DEPOSIT REFUND';
+      if (value.includes('deposit')) return 'ACTIVATION DEPOSIT';
+      if (value.includes('withdraw')) return 'MAIN WITHDRAWAL';
+      return String(scope || walletType || '-');
     }
 
     function adminAddress(value) {
@@ -1036,6 +1045,7 @@
         const withdrawStatus = normalizeAdminStatus(w.status);
         const walletType = w.wallet_type || w.method || 'TON';
         const scope = w.withdraw_scope || w.scope || (walletType === 'TON_DEPOSIT_REFUND' ? 'deposit_refund' : 'withdraw');
+        const scopeLabel = adminScopeLabel(scope, walletType);
         const canApprove = withdrawStatus === 'processing' || String(w.status || '').toLowerCase() === 'pending';
         return `
         <tr>
@@ -1043,10 +1053,10 @@
           <td>${escapeHtml(w.telegram_id)}</td>
           <td>${formatTon(w.amount)}</td>
           <td><div class="admin-muted">${escapeHtml(walletType)}</div>${adminAddress(w.wallet_address)}</td>
-          <td>${escapeHtml(scope)}</td>
+          <td>${escapeHtml(scopeLabel)}</td>
           <td>${statusCell(w.status)}</td>
           <td>${adminTx(w.tx_hash || w.payout_tx_hash)}</td>
-          <td>${adminDate(w.created_at)}</td>
+          <td>${adminDate(w.created_at || w.requested_at)}</td>
           <td>
             ${canApprove ? `<button class="ok" onclick='approveWithdraw(${safeJsString(w.id)})'>Mark as paid</button>
             <button class="danger" onclick='rejectWithdraw(${safeJsString(w.id)})'>Reject</button>` : '<span class="admin-muted">No action</span>'}
@@ -1075,6 +1085,7 @@
         const wallet = p.wallet_address || p.ton_wallet_address || p.to_wallet || p.admin_wallet || '';
         const paidAmount = p.paid_amount || p.detected_amount || p.amount_paid || '';
         const canManualApprove = paymentStatus === 'processing' || String(p.status || '').toLowerCase() === 'pending';
+        const paymentTx = p.tx_hash || p.payment_tx_hash || p.detected_tx_hash || '';
         return `
         <tr>
           <td>${escapeHtml(p.id)}</td>
@@ -1084,7 +1095,7 @@
           <td>${adminAddress(wallet)}</td>
           <td>${adminDate(p.expires_at || p.valid_until)}</td>
           <td>${statusCell(p.status)}</td>
-          <td>${adminTx(p.tx_hash || p.payment_tx_hash)}</td>
+          <td>${adminTx(paymentTx)}</td>
           <td>
             ${canManualApprove ? `<button class="warning" onclick='approvePaymentOrder(${safeJsString(p.id)})'>Manual backup</button>` : '<span style="color:var(--ok);">Completed</span>'}
           </td>

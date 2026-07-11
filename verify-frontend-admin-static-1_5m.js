@@ -3,7 +3,8 @@ const path = require("path");
 const vm = require("vm");
 const crypto = require("crypto");
 
-const targetDir = path.resolve(process.argv[2] || path.join(__dirname, ".."));
+const targetDir = path.resolve(process.argv[2] || __dirname);
+const expectedBuild = "frontend-admin-readiness-20260711-v3";
 
 const expectedFiles = [
   "admin.html",
@@ -75,9 +76,13 @@ function checkFilesExist() {
 
 function checkConfig() {
   const config = readText("config.js").trim();
-  const expected = 'window.VIDIPAY_API_BASE = "https://vidipay-backend-1.onrender.com";';
-  if (config !== expected) {
-    fail(`config.js must be exactly: ${expected}`);
+  const expectedApi = 'window.VIDIPAY_API_BASE = "https://vidipay-backend-1.onrender.com";';
+  const expectedBuildLine = `window.VIDIPAY_FRONTEND_BUILD = "${expectedBuild}";`;
+  if (!config.includes(expectedApi)) {
+    fail(`config.js must include: ${expectedApi}`);
+  }
+  if (!config.includes(expectedBuildLine)) {
+    fail(`config.js must include: ${expectedBuildLine}`);
   }
 }
 
@@ -136,6 +141,11 @@ function main() {
   checkRequiredPatterns("app-v6.html", appRequiredPatterns);
   checkRequiredPatterns("index.html", appRequiredPatterns);
   checkRequiredPatterns("admin.html", adminRequiredPatterns);
+  for (const file of expectedFiles) {
+    if (file.endsWith(".html") && !readText(file).includes(expectedBuild)) {
+      fail(`${file} is missing current build marker: ${expectedBuild}`);
+    }
+  }
   ["admin.html", "app-v3.html", "app-v4.html", "app-v5.html", "app-v6.html", "index.html"].forEach(checkInlineScripts);
 
   console.log("VidiPay frontend/admin static guard: OK");
