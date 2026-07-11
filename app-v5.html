@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v3">
+    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v4">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=frontend-admin-readiness-20260711-v3"></script>
+    <script src="./config.js?v=frontend-admin-readiness-20260711-v4"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -21,7 +21,7 @@
             --text-muted: #a0a5b5;
             --card-bg: rgba(17, 26, 30, 0.75);
             --panel-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
-            
+
             /* Cyber-Hamster Mint Neon */
             --bg-gradient: radial-gradient(circle at center, #111a1e 0%, #090e12 70%, #05070a 100%);
             --accent-color: #00ffcc;
@@ -528,11 +528,11 @@
             transition: all 0.2s ease;
         }
 
-        .top-btn:active { 
-            transform: scale(0.9); 
+        .top-btn:active {
+            transform: scale(0.9);
             background: rgba(0, 255, 204, 0.1);
         }
-        
+
         .badge {
             position: absolute;
             top: -2px; right: -2px;
@@ -816,10 +816,10 @@
         .modal-close {
             position: absolute;
             top: 16px; right: 16px;
-            background: rgba(255,255,255,0.04); 
+            background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.08);
-            color: #ffffff; 
-            font-size: 14px; 
+            color: #ffffff;
+            font-size: 14px;
             cursor: pointer;
             width: 32px;
             height: 32px;
@@ -967,7 +967,7 @@
             font-family: monospace;
             margin-top: 10px;
         }
-    
+
         .tier-panel{
             width:100%;
             margin-top:20px;
@@ -2383,7 +2383,7 @@
             </button>
             <button class="top-btn top-invite-btn" onclick="triggerInvite()" aria-label="Add Friend"><i class="fas fa-user-plus"></i></button>
         </div>
-        
+
         <div class="nav-center">
             <div class="app-title">VIDIPAY</div>
         </div>
@@ -2398,7 +2398,7 @@
     </div>
 
     <div class="main-container">
-        
+
         <div class="balance-bonus-row">
             <div class="balance-card">
                 <div class="balance-label" id="lbl-total-balance">TOTAL BALANCE</div>
@@ -2428,7 +2428,7 @@
                 <span class="stat-title" id="lbl-total-watch-time">Total watch time</span>
                 <span class="stat-main-val" id="total-watch-hours">0</span>
             </div>
-            
+
             <div class="stat-card-row glow-cyan">
                 <span class="stat-title" id="lbl-time-spent">Daily watch time</span>
                 <span class="stat-main-val" id="video-time">0</span>
@@ -2489,7 +2489,7 @@
                     <i class="fas fa-user-astronaut" style="font-size: 50px; color: var(--accent-color); margin-bottom: 8px;"></i>
                     <div style="font-weight: bold; font-size: 18px; color: #fff;" id="user-display-name">Loading...</div>
                 </div>
-                
+
                 <div class="profile-data-field">
                     <span class="profile-data-label" id="lbl-prof-account-id">Account ID:</span>
                     <span class="profile-data-value" id="user-display-id">00000000</span>
@@ -2627,7 +2627,7 @@
                 </div>
                 <div class="withdraw-locked-row" id="wallet-lock-row"><i class="fas fa-lock" style="margin-right:8px;"></i>Wallet locked</div>
                 <div class="withdraw-extra-row" id="wallet-lock-extra">Earn $20.00 in total to unlock wallet activation.</div>
-                
+
                 <div id="payment-unlock-box" class="wallet-activation-card" style="display:none;">
                     <div style="font-weight:900; color:var(--accent-color); margin-bottom:12px; font-size:16px; text-align:center;" id="lbl-unlock-title">Wallet activation</div>
                     <div class="wallet-pay-card">
@@ -2635,7 +2635,7 @@
                             <span id="lbl-fastest-method"><i class="fas fa-shield-alt"></i> Security confirmation</span>
                             <span class="wallet-network-pill">TON</span>
                         </div>
-                        <div class="wallet-help-text" id="lbl-fiat-desc">Confirm that you are not a bot and connect your personal TON wallet to the VidiPay system. To activate it, top up exactly 6.99 TONCOIN and after confirmation you can request withdrawal to your TON wallet. Blockchain network commission may apply.</div>
+                        <div class="wallet-help-text" id="lbl-fiat-desc">Confirm that you are not a bot and connect your personal TON wallet to the VidiPay system. To activate it, top up 6.99 TONCOIN; the allowed TON network tolerance is checked automatically and after confirmation you can request withdrawal to your TON wallet. Blockchain network commission may apply.</div>
                         <div class="ton-payment-actions">
                             <button type="button" id="fiat-pay-btn" onclick="openTonDepositModal()"><i class="fas fa-coins"></i> <span id="lbl-pay-fiat">TOP UP 6.99 TONCOIN</span></button>
                         </div>
@@ -2656,7 +2656,7 @@
                         <span id="ton-deposit-address-title"><i class="fas fa-wallet"></i> TON deposit address</span>
                         <span class="wallet-network-pill">TON</span>
                     </div>
-                    <div class="wallet-help-text" id="ton-deposit-warning">Send exactly 6.99 TONCOIN to this address. Less or more than 6.99 TONCOIN will not be confirmed automatically.</div>
+                    <div class="wallet-help-text" id="ton-deposit-warning">Send 6.99 TONCOIN to this address. The allowed TON network tolerance is checked automatically.</div>
                     <div id="payment-address-box" style="display:none; margin-top:10px; padding:12px; border:1px solid rgba(0,255,204,.24); border-radius:14px; background:rgba(0,255,204,.06);">
                         <div id="payment-amount-text" style="color:#00ffcc; font-size:13px; font-weight:900; margin-bottom:8px;"></div>
                         <div class="wallet-address-label" id="payment-address-label">Unique TON deposit address</div>
@@ -2768,9 +2768,9 @@
         <div class="modal-content">
             <button class="modal-close" onclick="closeModal('settingsModal')"><i class="fas fa-times"></i></button>
             <div class="modal-title" id="lbl-mdl-settings">Settings</div>
-            
+
             <div class="info-sub-block" style="padding: 10px 15px; display: flex; flex-direction: column; gap: 5px;">
-                
+
                 <div class="settings-row-item">
                     <div class="lang-select-group">
                         <div class="lang-label" id="lbl-lang-title">Language</div>
@@ -3151,7 +3151,7 @@
         resetModalOverlays();
         window.addEventListener('pageshow', resetModalOverlays);
 
-        const BOT_USERNAME = "magapatron_bot"; 
+        const BOT_USERNAME = "magapatron_bot";
         const pageParams = new URLSearchParams(window.location.search);
         const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
 
@@ -3223,7 +3223,7 @@
         }
         const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v3';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v4';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
@@ -5247,7 +5247,7 @@
                 tier1_countries: "United States, Australia, Canada, Norway, Switzerland, Germany, United Kingdom, Netherlands, Sweden, Denmark",
                 tier2_countries: "France, Belgium, Austria, Finland, Ireland, New Zealand, Italy, Spain, Japan, South Korea",
                 tier3_countries: "All remaining countries worldwide",
-                
+
                 /* YAGNI QO'SHILDI: FIAT TARJIMALARI */
                 pay_with_fiat: "CHECK PAYMENT",
                 fastest_method: "FASTEST METHOD",
@@ -5672,7 +5672,7 @@
             pay_with_fiat: "CHECK PAYMENT",
             top_up_toncoin: "TOP UP 6.99 TONCOIN",
             copy_ton_address: "COPY ADDRESS",
-            fiat_desc: "Confirm that you are not a bot and connect your personal TON wallet to VidiPay. Top up exactly 6.99 TONCOIN to activate it. Blockchain network commission may apply.",
+            fiat_desc: "Confirm that you are not a bot and connect your personal TON wallet to VidiPay. Top up 6.99 TONCOIN; the allowed TON network tolerance is checked automatically to activate it. Blockchain network commission may apply.",
             card_selector_title: "TONCOIN wallet",
             card_maintenance: "Maintenance. This payment route is temporarily unavailable.",
             card_order_loading: "Payment order is loading. Please wait.",
@@ -5686,8 +5686,8 @@
             fastest_method: "Security confirmation",
             ton_deposit_title: "6.99 TONCOIN payment",
             ton_deposit_warning: "Send 6.99 TONCOIN to this address. Allowed TON network tolerance is checked automatically.",
-            ton_deposit_send_status: "Send exactly {amount} TONCOIN. Other amounts are not confirmed automatically.",
-            ton_deposit_waiting_status: "Waiting for exactly {amount} TONCOIN on TON network.",
+            ton_deposit_send_status: "Send {amount} TONCOIN. The allowed TON network tolerance is checked automatically.",
+            ton_deposit_waiting_status: "Waiting for {amount} TONCOIN on TON network. Allowed tolerance is checked automatically.",
             payment_address_label: "Unique TON deposit address",
             wallet_method_value: "TONCOIN"
         });
@@ -6380,15 +6380,15 @@
             wallet_ready_for_activation: "Кошелек готов к активации",
             payment_address_available: "Подтвердите, что вы не бот, и подключите личный TON кошелек.",
             top_up_toncoin: "ПОПОЛНИТЬ 6.99 TONCOIN",
-            fiat_desc: "Подтвердите, что вы не бот, и подключите личный TON кошелек к VidiPay. Пополните ровно 6.99 TONCOIN для активации. Может взиматься комиссия блокчейн-сети.",
+            fiat_desc: "Подтвердите, что вы не бот, и подключите личный TON кошелек к VidiPay. Пополните 6.99 TONCOIN для активации. Может взиматься комиссия блокчейн-сети.",
             wallet_payment_ready: "Активация TONCOIN готова.",
             account_unlock_title: "Активация кошелька",
             fastest_method: "Проверка безопасности",
             ton_deposit_title: "Платеж 6.99 TONCOIN",
             ton_deposit_address_title: "TON адрес депозита",
             ton_deposit_warning: "Отправьте 6.99 TONCOIN на этот адрес. Допустимый сетевой диапазон TON проверяется автоматически.",
-            ton_deposit_send_status: "Отправьте ровно {amount} TONCOIN на этот адрес. Меньше или больше {amount} TONCOIN автоматически не подтверждается.",
-            ton_deposit_waiting_status: "Отправьте ровно {amount} TONCOIN на этот адрес. Меньше или больше {amount} TONCOIN автоматически не подтверждается.",
+            ton_deposit_send_status: "Отправьте {amount} TONCOIN на этот адрес. Допустимый диапазон TON проверяется автоматически.",
+            ton_deposit_waiting_status: "Отправьте {amount} TONCOIN на этот адрес. Допустимый диапазон TON проверяется автоматически.",
             payment_address_label: "Уникальный TON адрес депозита"
         });
 
@@ -6403,15 +6403,15 @@
             wallet_ready_for_activation: "Le wallet est pret pour l'activation",
             payment_address_available: "Confirmez que vous n'etes pas un bot et connectez votre wallet TON personnel.",
             top_up_toncoin: "RECHARGER 6.99 TONCOIN",
-            fiat_desc: "Confirmez que vous n'etes pas un bot et connectez votre wallet TON personnel a VidiPay. Rechargez exactement 6.99 TONCOIN pour l'activer. Une commission blockchain peut s'appliquer.",
+            fiat_desc: "Confirmez que vous n'etes pas un bot et connectez votre wallet TON personnel a VidiPay. Rechargez 6.99 TONCOIN; la tolerance reseau TON autorisee est verifiee automatiquement pour l'activer. Une commission blockchain peut s'appliquer.",
             wallet_payment_ready: "Activation TONCOIN prete.",
             account_unlock_title: "Activation du wallet",
             fastest_method: "Confirmation de securite",
             ton_deposit_title: "Paiement 6.99 TONCOIN",
             ton_deposit_address_title: "Adresse de depot TON",
             ton_deposit_warning: "Envoyez 6.99 TONCOIN a cette adresse. La tolerance reseau TON autorisee est verifiee automatiquement.",
-            ton_deposit_send_status: "Envoyez exactement {amount} TONCOIN. Les autres montants ne sont pas confirmes automatiquement.",
-            ton_deposit_waiting_status: "En attente de exactement {amount} TONCOIN sur le reseau TON.",
+            ton_deposit_send_status: "Envoyez {amount} TONCOIN. La tolerance reseau TON autorisee est verifiee automatiquement.",
+            ton_deposit_waiting_status: "En attente de {amount} TONCOIN sur le reseau TON. La tolerance autorisee est verifiee automatiquement.",
             payment_address_label: "Adresse unique de depot TON"
         });
 
@@ -6426,15 +6426,15 @@
             wallet_ready_for_activation: "Wallet activation ke liye ready hai",
             payment_address_available: "Bot nahi hain ye confirm karein aur apna personal TON wallet connect karein.",
             top_up_toncoin: "6.99 TONCOIN TOP UP",
-            fiat_desc: "Bot nahi hain ye confirm karein aur apna personal TON wallet VidiPay se connect karein. Activation ke liye exactly 6.99 TONCOIN top up karein. Blockchain network commission lag sakti hai.",
+            fiat_desc: "Bot nahi hain ye confirm karein aur apna personal TON wallet VidiPay se connect karein. Activation ke liye 6.99 TONCOIN top up karein; allowed TON network tolerance automatic check hoti hai. Blockchain network commission lag sakti hai.",
             wallet_payment_ready: "TONCOIN activation ready hai.",
             account_unlock_title: "Wallet activation",
             fastest_method: "Security confirmation",
             ton_deposit_title: "6.99 TONCOIN payment",
             ton_deposit_address_title: "TON deposit address",
             ton_deposit_warning: "Is address par 6.99 TONCOIN bhejein. Allowed TON network tolerance automatic check hoti hai.",
-            ton_deposit_send_status: "Exactly {amount} TONCOIN bhejein. Dusri amount automatic confirm nahi hogi.",
-            ton_deposit_waiting_status: "TON network par exactly {amount} TONCOIN ka wait ho raha hai.",
+            ton_deposit_send_status: "{amount} TONCOIN bhejein. Allowed TON network tolerance automatic check hoti hai.",
+            ton_deposit_waiting_status: "TON network par {amount} TONCOIN ka wait ho raha hai. Allowed tolerance automatic check hoti hai.",
             payment_address_label: "Unique TON deposit address"
         });
 
@@ -6449,15 +6449,15 @@
             wallet_ready_for_activation: "La billetera esta lista para activarse",
             payment_address_available: "Confirma que no eres un bot y conecta tu billetera TON personal.",
             top_up_toncoin: "RECARGAR 6.99 TONCOIN",
-            fiat_desc: "Confirma que no eres un bot y conecta tu billetera TON personal a VidiPay. Recarga exactamente 6.99 TONCOIN para activarla. Puede aplicarse comision de blockchain.",
+            fiat_desc: "Confirma que no eres un bot y conecta tu billetera TON personal a VidiPay. Recarga 6.99 TONCOIN; la tolerancia permitida de TON se verifica automaticamente para activarla. Puede aplicarse comision de blockchain.",
             wallet_payment_ready: "Activacion TONCOIN lista.",
             account_unlock_title: "Activacion de billetera",
             fastest_method: "Confirmacion de seguridad",
             ton_deposit_title: "Pago de 6.99 TONCOIN",
             ton_deposit_address_title: "Direccion de deposito TON",
             ton_deposit_warning: "Envia 6.99 TONCOIN a esta direccion. La tolerancia permitida de TON se verifica automaticamente.",
-            ton_deposit_send_status: "Envia exactamente {amount} TONCOIN. Otros montos no se confirman automaticamente.",
-            ton_deposit_waiting_status: "Esperando exactamente {amount} TONCOIN en la red TON.",
+            ton_deposit_send_status: "Envia {amount} TONCOIN. La tolerancia permitida de TON se verifica automaticamente.",
+            ton_deposit_waiting_status: "Esperando {amount} TONCOIN en la red TON. La tolerancia permitida se verifica automaticamente.",
             payment_address_label: "Direccion unica de deposito TON"
         });
 
@@ -6472,15 +6472,15 @@
             wallet_ready_for_activation: "钱包已准备好激活",
             payment_address_available: "请确认您不是机器人，并连接您的个人 TON 钱包。",
             top_up_toncoin: "充值 6.99 TONCOIN",
-            fiat_desc: "请确认您不是机器人，并将个人 TON 钱包连接到 VidiPay。请准确充值 6.99 TONCOIN 以激活。可能会收取区块链网络手续费。",
+            fiat_desc: "请确认您不是机器人，并将个人 TON 钱包连接到 VidiPay。请充值 6.99 TONCOIN 以激活。可能会收取区块链网络手续费。",
             wallet_payment_ready: "TONCOIN 激活已准备好。",
             account_unlock_title: "钱包激活",
             fastest_method: "安全确认",
             ton_deposit_title: "6.99 TONCOIN 付款",
             ton_deposit_address_title: "TON 存款地址",
-            ton_deposit_warning: "请向此地址准确发送 6.99 TONCOIN。少于或多于 6.99 TONCOIN 将不会自动确认。",
-            ton_deposit_send_status: "请向此地址准确发送 {amount} TONCOIN。少于或多于 {amount} TONCOIN 将不会自动确认。",
-            ton_deposit_waiting_status: "请向此地址准确发送 {amount} TONCOIN。少于或多于 {amount} TONCOIN 将不会自动确认。",
+            ton_deposit_warning: "请向此地址发送 6.99 TONCOIN。允许的 TON 网络容差会自动检查。",
+            ton_deposit_send_status: "请向此地址发送 {amount} TONCOIN。允许的 TON 网络容差会自动检查。",
+            ton_deposit_waiting_status: "请向此地址发送 {amount} TONCOIN。允许的 TON 网络容差会自动检查。",
             payment_address_label: "唯一 TON 存款地址"
         });
 
@@ -6495,15 +6495,15 @@
             wallet_ready_for_activation: "Wallet ist bereit zur Aktivierung",
             payment_address_available: "Bestaetige, dass du kein Bot bist, und verbinde deine persoenliche TON Wallet.",
             top_up_toncoin: "6.99 TONCOIN AUFLADEN",
-            fiat_desc: "Bestaetige, dass du kein Bot bist, und verbinde deine persoenliche TON Wallet mit VidiPay. Lade exakt 6.99 TONCOIN zur Aktivierung auf. Eine Blockchain-Netzwerkgebuehr kann anfallen.",
+            fiat_desc: "Bestaetige, dass du kein Bot bist, und verbinde deine persoenliche TON Wallet mit VidiPay. Lade 6.99 TONCOIN; die erlaubte TON-Netzwerktoleranz wird automatisch geprueft zur Aktivierung auf. Eine Blockchain-Netzwerkgebuehr kann anfallen.",
             wallet_payment_ready: "TONCOIN-Aktivierung ist bereit.",
             account_unlock_title: "Wallet-Aktivierung",
             fastest_method: "Sicherheitsbestaetigung",
             ton_deposit_title: "6.99 TONCOIN Zahlung",
             ton_deposit_address_title: "TON Einzahlungsadresse",
             ton_deposit_warning: "Sende 6.99 TONCOIN an diese Adresse. Die erlaubte TON-Netzwerktoleranz wird automatisch geprueft.",
-            ton_deposit_send_status: "Sende exakt {amount} TONCOIN. Andere Betraege werden nicht automatisch bestaetigt.",
-            ton_deposit_waiting_status: "Warte auf exakt {amount} TONCOIN im TON-Netzwerk.",
+            ton_deposit_send_status: "Sende {amount} TONCOIN. Die erlaubte TON-Netzwerktoleranz wird automatisch geprueft.",
+            ton_deposit_waiting_status: "Warte auf {amount} TONCOIN im TON-Netzwerk. Die erlaubte Toleranz wird automatisch geprueft.",
             payment_address_label: "Einmalige TON Einzahlungsadresse"
         });
 
@@ -6603,8 +6603,8 @@
                 ton_address_copied: "TON address copy ho gaya",
                 wallet_ready_for_activation: "Wallet activation ke liye ready hai",
                 ton_deposit_warning: "Is address par 6.99 TONCOIN bhejein. Allowed TON network tolerance automatic check hoti hai.",
-                ton_deposit_send_status: "Exactly {amount} TONCOIN bhejein. Dusri amount automatic confirm nahi hogi.",
-                ton_deposit_waiting_status: "TON network par exactly {amount} TONCOIN ka wait ho raha hai.",
+                ton_deposit_send_status: "{amount} TONCOIN bhejein. Allowed TON network tolerance automatic check hoti hai.",
+                ton_deposit_waiting_status: "TON network par {amount} TONCOIN ka wait ho raha hai. Allowed tolerance automatic check hoti hai.",
                 payment_address_label: "Unique TON deposit address"
             },
             es: {
@@ -6757,7 +6757,7 @@
             withdraw_enter_details: "Apna TON wallet dhyan se enter karein. Activation refund payout 6.99 TONCOIN hai.",
             payment_verified_withdraw: "Payment verify ho gaya. Withdrawal available hai.",
             payment_required_withdraw: "Withdrawal activate karne ke liye TON par 6.99 TONCOIN deposit karein.",
-            activation_deposit_required: "Wallet activate karne ke liye exactly 6.99 TONCOIN deposit karein. Blockchain service commission lag sakti hai.",
+            activation_deposit_required: "Wallet activate karne ke liye 6.99 TONCOIN deposit karein. Allowed TON network tolerance automatic check hoti hai. Blockchain service commission lag sakti hai.",
             activation_refund_available: "Available refund payout",
             payout_request_now: "Ab payout request submit kar sakte hain.",
             payment_check_status: "Required payment complete karke status check karein.",

@@ -4,7 +4,7 @@ const vm = require("vm");
 const crypto = require("crypto");
 
 const targetDir = path.resolve(process.argv[2] || __dirname);
-const expectedBuild = "frontend-admin-readiness-20260711-v3";
+const expectedBuild = "frontend-admin-readiness-20260711-v4";
 
 const expectedFiles = [
   "admin.html",
