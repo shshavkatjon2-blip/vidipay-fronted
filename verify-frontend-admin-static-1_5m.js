@@ -4,7 +4,7 @@ const vm = require("vm");
 const crypto = require("crypto");
 
 const targetDir = path.resolve(process.argv[2] || __dirname);
-const expectedBuild = "frontend-admin-readiness-20260711-v5";
+const expectedBuild = "frontend-admin-readiness-20260711-v6";
 
 const expectedFiles = [
   "admin.html",
@@ -42,6 +42,7 @@ const appRequiredPatterns = [
   { name: "wallet_ready_i18n", pattern: /wallet_ready_for_activation/ },
   { name: "deposit_refund_withdrawal", pattern: /submitWithdrawRequest[\s\S]*withdraw_scope:\s*['"]deposit_refund['"]/ },
   { name: "deposit_refund_followup", pattern: /scheduleDepositRefundFollowup[\s\S]*refreshPaymentStatus/ },
+  { name: "receipt_detail_fallback", pattern: /receiptDetailText[\s\S]*status_reason[\s\S]*failed_reason/ },
   { name: "admin_notification_translation", pattern: /translateAdminNotificationText/ },
   { name: "notification_list_layout", pattern: /notification-list/ },
   { name: "growth_lock_status", pattern: /currentGrowthLockStatus/ }
@@ -52,7 +53,8 @@ const adminRequiredPatterns = [
   { name: "admin_ton_scanner_panel", pattern: /Automatic TON scanner/ },
   { name: "admin_payment_wallets_endpoint", pattern: /\/admin\/payment-wallets/ },
   { name: "admin_notification_endpoint", pattern: /\/admin\/notification\/send/ },
-  { name: "admin_manual_backup_text", pattern: /Manual backup/ }
+  { name: "admin_manual_backup_text", pattern: /Manual backup/ },
+  { name: "admin_detail_fallback", pattern: /adminDetail[\s\S]*status_reason[\s\S]*failed_reason/ }
 ];
 
 function readText(file) {

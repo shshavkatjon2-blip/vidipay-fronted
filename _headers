@@ -2,7 +2,7 @@
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
   Pragma: no-cache
   Expires: 0
-  X-VidiPay-Frontend-Build: frontend-admin-readiness-20260711-v5
+  X-VidiPay-Frontend-Build: frontend-admin-readiness-20260711-v6
   X-Frame-Options: SAMEORIGIN
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin

@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v5">
+    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v6">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=frontend-admin-readiness-20260711-v5"></script>
+    <script src="./config.js?v=frontend-admin-readiness-20260711-v6"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -3223,7 +3223,7 @@
         }
         const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v5';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v6';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
@@ -8487,6 +8487,37 @@
             return item.network || item.method || '-';
         }
 
+        function firstReceiptValue(item = {}, keys = []) {
+            for (const key of keys) {
+                const value = item[key];
+                if (value !== undefined && value !== null && String(value).trim()) return value;
+            }
+            return '';
+        }
+
+        function receiptTxText(item = {}) {
+            return firstReceiptValue(item, [
+                'tx_hash',
+                'payout_tx_hash',
+                'refund_tx_hash',
+                'payment_tx_hash',
+                'detected_tx_hash',
+                'external_hash'
+            ]);
+        }
+
+        function receiptDetailText(item = {}) {
+            return firstReceiptValue(item, [
+                'admin_note',
+                'status_reason',
+                'reason',
+                'reject_reason',
+                'failed_reason',
+                'error',
+                'message'
+            ]);
+        }
+
         function renderReceiptItem(item) {
             const created = item.created_at ? new Date(item.created_at).toLocaleString() : (item.date || '-');
             const processed = item.processed_at ? new Date(item.processed_at).toLocaleString() : '-';
@@ -8496,6 +8527,8 @@
             const statusClass = receiptStatusClass(item.status);
             const walletText = receiptWalletText(item);
             const networkText = receiptNetworkText(item);
+            const txText = receiptTxText(item);
+            const detailText = receiptDetailText(item);
 
             return `
                 <div class="history-item">
@@ -8510,8 +8543,8 @@
                     <div class="receipt-row"><span class="receipt-label">${escapeHtml(t('receipt_network'))}</span><span class="receipt-value">${escapeHtml(networkText)}</span></div>
                     <div class="receipt-row"><span class="receipt-label">${escapeHtml(t('receipt_wallet_label'))}</span><span class="receipt-value">${escapeHtml(walletText)}</span></div>
                     <div class="receipt-row"><span class="receipt-label">${escapeHtml(t('receipt_verified_at'))}</span><span class="receipt-value">${escapeHtml(processed)}</span></div>
-                    ${item.tx_hash ? `<div class="receipt-row"><span class="receipt-label">TX</span><span class="receipt-value">${escapeHtml(item.tx_hash)}</span></div>` : ''}
-                    ${item.admin_note ? `<div class="receipt-row"><span class="receipt-label">${escapeHtml(t('receipt_note'))}</span><span class="receipt-value">${escapeHtml(item.admin_note)}</span></div>` : ''}
+                    ${txText ? `<div class="receipt-row"><span class="receipt-label">TX</span><span class="receipt-value">${escapeHtml(txText)}</span></div>` : ''}
+                    ${detailText ? `<div class="receipt-row"><span class="receipt-label">${escapeHtml(t('receipt_note'))}</span><span class="receipt-value">${escapeHtml(detailText)}</span></div>` : ''}
                 </div>
             `;
         }
@@ -8985,7 +9018,7 @@
                 adaptivePollingReady: typeof stableFrontendJitter === 'function' && typeof getConnectionAwarePollingBaseDelay === 'function',
                 paymentRuntimeStripReady: Boolean(runtimeStrip) && typeof refreshPaymentRuntimeStrip === 'function',
                 paymentExpiryReady: typeof renderPaymentExpiryText === 'function' && typeof getPaymentOrderExpiryTime === 'function',
-                receiptFormatterReady: typeof renderReceiptItem === 'function' && typeof receiptAmountText === 'function',
+                receiptFormatterReady: typeof renderReceiptItem === 'function' && typeof receiptAmountText === 'function' && typeof receiptDetailText === 'function',
                 actionGuardReady: document.documentElement.dataset.vidipayActionGuard === 'ready',
                 actionNormalizerReady: document.documentElement.dataset.vidipayFrontendActionNormalizerInstalled === 'ready',
                 modalStateGuardReady: document.documentElement.dataset.vidipayModalStateGuard === 'ready',
@@ -9077,7 +9110,7 @@
                 paymentRuntimeStrip: Boolean(runtimeStrip) && typeof refreshPaymentRuntimeStrip === 'function',
                 paymentRuntimeSnapshot: typeof paymentRuntimeLastSnapshot === 'string',
                 paymentExpiry: typeof renderPaymentExpiryText === 'function' && typeof formatPaymentCountdown === 'function',
-                receiptFormatter: typeof receiptAmountText === 'function' && typeof receiptStatusLabel === 'function',
+                receiptFormatter: typeof receiptAmountText === 'function' && typeof receiptStatusLabel === 'function' && typeof receiptDetailText === 'function',
                 actionGuard: document.documentElement.dataset.vidipayActionGuard === 'ready',
                 actionNormalizer: document.documentElement.dataset.vidipayFrontendActionNormalizerInstalled === 'ready',
                 actionReadyCount: Array.from(document.querySelectorAll(FRONTEND_ACTION_SELECTOR)).filter(el => el.classList.contains('frontend-action-ready')).length,
