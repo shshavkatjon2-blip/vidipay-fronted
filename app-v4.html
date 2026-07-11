@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v6">
+    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v7">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=frontend-admin-readiness-20260711-v6"></script>
+    <script src="./config.js?v=frontend-admin-readiness-20260711-v7"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -3223,7 +3223,7 @@
         }
         const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v6';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v7';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
@@ -5909,6 +5909,7 @@
             deposit_refund_rejected_message: "Refund was rejected. Check your wallet address and try again.",
             deposit_refund_rejected_status: "Refund rejected. Check your wallet address and try again.",
             payment_checking: "CHECKING...",
+            payment_copying: "COPYING...",
             main_balance_locked_extra: "Main balance withdrawal is locked until the scheduled withdrawal time.",
             main_balance_ready_extra: "Main balance withdrawal condition is complete. It opens only during withdrawal time.",
             main_withdraw_referral_required: "Main balance withdrawal needs 1 more deposited friend through your referral link.",
@@ -8669,6 +8670,8 @@
             const labelEl = document.getElementById('lbl-copy-ton-address');
             const originalLabel = t('copy_ton_address') || labelEl?.innerText || 'COPY ADDRESS';
             setActionBusy('ton-copy-address-btn', true);
+            if (labelEl) setDomText(labelEl, t('payment_copying') || 'COPYING...');
+            document.documentElement.dataset.vidipayCopyAddressState = 'copying';
             if (!currentPaymentOrder || !getPaymentWalletAddress(currentPaymentOrder)) {
                 const cachedOrder = getCachedPaymentOrder();
                 if (cachedOrder) currentPaymentOrder = cachedOrder;
@@ -8685,6 +8688,8 @@
             if (!walletAddress) {
                 showCopyToast(t('payment_address_unavailable'));
                 setActionBusy('ton-copy-address-btn', false);
+                if (labelEl) setDomText(labelEl, originalLabel);
+                document.documentElement.dataset.vidipayCopyAddressState = 'missing_address';
                 updatePaymentActionButtons();
                 updatePaymentRealTestReadiness('copy_address_missing');
                 return;
@@ -8694,11 +8699,21 @@
                 await copyTextToClipboard(walletAddress);
                 if (labelEl) setDomText(labelEl, t('copied') || 'Copied');
                 showCopyToast(t('ton_address_copied'));
+                document.documentElement.dataset.vidipayCopyAddressState = 'copied';
                 updatePaymentRealTestReadiness('copy_address_success');
+            } catch (err) {
+                document.documentElement.dataset.vidipayCopyAddressState = 'error';
+                showCopyToast(friendlyErrorMessage(err));
+                throw err;
             } finally {
                 setActionBusy('ton-copy-address-btn', false);
                 updatePaymentActionButtons();
-                if (labelEl) setTimeout(() => setDomText(labelEl, originalLabel), 900);
+                if (labelEl) {
+                    setTimeout(() => {
+                        setDomText(labelEl, originalLabel);
+                        document.documentElement.dataset.vidipayCopyAddressState = 'ready';
+                    }, 900);
+                }
             }
         }
 
@@ -9032,6 +9047,7 @@
                 paymentExpiryHealthDatasetReady: document.getElementById('payment-expiry-text')?.dataset.paymentValidityHealthy !== undefined,
                 manualCheckHandlerReady: checkBtn?.getAttribute('onclick') === 'checkTonPaymentNow()',
                 copyHandlerReady: copyBtn?.getAttribute('onclick') === 'copyTonPaymentAddress()',
+                copyAddressFeedbackReady: /vidipayCopyAddressState/.test(String(copyTonPaymentAddress)),
                 modalLockReady: !document.body.classList.contains('modal-open')
             };
             checks.ok = checks.backendUrl
@@ -9069,7 +9085,8 @@
                 && checks.withdrawRefundFollowupReady
                 && checks.paymentExpiryHealthDatasetReady
                 && checks.manualCheckHandlerReady
-                && checks.copyHandlerReady;
+                && checks.copyHandlerReady
+                && checks.copyAddressFeedbackReady;
             window.__vidipayFrontendContract = {
                 checked_at: new Date().toISOString(),
                 ...checks
@@ -9130,6 +9147,7 @@
                 paymentExpiryHealthDataset: document.getElementById('payment-expiry-text')?.dataset.paymentValidityHealthy !== undefined,
                 manualCheckClickHandler: checkBtn?.getAttribute('onclick') === 'checkTonPaymentNow()',
                 copyAddressClickHandler: copyBtn?.getAttribute('onclick') === 'copyTonPaymentAddress()',
+                copyAddressFeedback: /vidipayCopyAddressState/.test(String(copyTonPaymentAddress)),
                 staleBusyCleanup: !Array.from(document.querySelectorAll('[data-busy-lock-active="true"]')).some(btn => {
                     if (btn.id === 'ton-check-payment-btn') return !(paymentStatusInflight || paymentStatusRefreshBusy || paymentManualCheckInflight);
                     if (btn.id === 'fiat-pay-btn') return !(tonDepositOpenBusy || createPaymentOrderInflight || paymentOrderResolveInflight);
@@ -9187,6 +9205,7 @@
                 && checks.paymentExpiryHealthDataset
                 && checks.manualCheckClickHandler
                 && checks.copyAddressClickHandler
+                && checks.copyAddressFeedback
                 && checks.staleBusyCleanup
                 && checks.tapFeedback
                 && checks.viewportHeight
