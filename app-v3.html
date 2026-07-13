@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v16">
+    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v17">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=frontend-admin-readiness-20260711-v16"></script>
+    <script src="./config.js?v=frontend-admin-readiness-20260711-v17"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -2436,32 +2436,36 @@
         }
 
         body.modal-open #withdrawHistoryModal.is-open {
-            overflow: hidden !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            align-items: flex-start !important;
+            justify-content: center !important;
+            padding-top: 18px !important;
+            padding-bottom: calc(18px + env(safe-area-inset-bottom)) !important;
         }
 
         body.modal-open #withdrawHistoryModal.is-open .modal-content {
-            display: flex !important;
-            flex-direction: column !important;
-            overflow: hidden !important;
-            height: calc(var(--app-vh, 100vh) - 44px) !important;
-            max-height: calc(var(--app-vh, 100vh) - 44px) !important;
+            display: block !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: calc(var(--app-vh, 100vh) - 36px) !important;
         }
 
         body.modal-open #withdrawHistoryModal.is-open .info-sub-block {
-            display: flex !important;
-            flex-direction: column !important;
-            flex: 1 1 auto !important;
-            height: 0 !important;
+            display: block !important;
+            height: auto !important;
             min-height: 0 !important;
-            overflow: hidden !important;
+            overflow: visible !important;
         }
 
         body.modal-open #withdrawHistoryModal.is-open .history-list {
-            flex: 1 1 auto !important;
+            flex: none !important;
             height: auto !important;
             min-height: 0 !important;
             max-height: none !important;
-            overflow-y: scroll !important;
+            overflow: visible !important;
             overflow-x: hidden !important;
             overscroll-behavior: contain !important;
             touch-action: pan-y !important;
@@ -3270,8 +3274,7 @@
             const modal = getOpenModalOverlay();
             if (!modal || !target?.closest) return false;
             if (modal.id === 'withdrawHistoryModal') {
-                const historyTarget = document.getElementById('withdraw-history-list');
-                return Boolean(historyTarget && historyTarget.contains(target));
+                return Boolean(target.closest('#withdrawHistoryModal, #withdrawHistoryModal .modal-content, #withdraw-history-list'));
             }
             let node = target.closest('#withdraw-history-list, .modal-content, .modal-overlay');
             while (node && node !== document.body && node !== document.documentElement) {
@@ -3403,7 +3406,7 @@
         }
         const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v16';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v17';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
@@ -3711,10 +3714,23 @@
         }
 
         function isGrowthWatchLocked() {
-            return Boolean(currentGrowthLockStatus().watch_locked);
+            return isGrowthReferralWatchLocked(currentGrowthLockStatus());
         }
 
-        function hasActivationDepositAccess(status = latestPaymentStatus) {
+        function isGrowthReferralWatchLocked(status = currentGrowthLockStatus()) {
+            const required = Number(status?.required_for_watch || 0);
+            const deposited = Number(status?.deposited_referrals || 0);
+            const checkpoint499Locked = Boolean(status?.checkpoint_499?.active && !status?.checkpoint_499?.unlocked);
+            const checkpoint1499Locked = Boolean(status?.checkpoint_1499?.active && !status?.checkpoint_1499?.unlocked);
+            return Boolean(checkpoint499Locked || checkpoint1499Locked || (required > 0 && deposited < required));
+        }
+
+        function getActivationAccessCacheKey() {
+            const scope = String(referralUserId || safeStorageGet('vidiPayReferralUserId') || 'guest').trim() || 'guest';
+            return `vidiPayActivationAccess_${scope}`;
+        }
+
+        function statusHasActivationDepositAccess(status = {}) {
             const paymentStatus = status || {};
             const refund = paymentStatus.deposit_refund || {};
             const refundState = normalizeDepositRefundStatus(refund.status);
@@ -3726,6 +3742,34 @@
                 || refundState === 'processing'
                 || refundState === 'completed'
             );
+        }
+
+        function rememberActivationDepositAccess(status = latestPaymentStatus) {
+            if (!statusHasActivationDepositAccess(status)) return false;
+            safeStorageSet(getActivationAccessCacheKey(), JSON.stringify({
+                unlocked: true,
+                cached_at: Date.now(),
+                source: 'payment_status'
+            }));
+            document.documentElement.dataset.vidipayActivationAccessCache = 'unlocked';
+            return true;
+        }
+
+        function hasCachedActivationDepositAccess() {
+            try {
+                const cached = JSON.parse(safeStorageGet(getActivationAccessCacheKey(), 'null'));
+                const cachedAt = Number(cached?.cached_at || 0);
+                const fresh = Boolean(cached?.unlocked) && cachedAt > 0 && Date.now() - cachedAt < 30 * 24 * 60 * 60 * 1000;
+                document.documentElement.dataset.vidipayActivationAccessCache = fresh ? 'unlocked' : 'empty';
+                return fresh;
+            } catch (_) {
+                document.documentElement.dataset.vidipayActivationAccessCache = 'empty';
+                return false;
+            }
+        }
+
+        function hasActivationDepositAccess(status = latestPaymentStatus) {
+            return statusHasActivationDepositAccess(status) || hasCachedActivationDepositAccess();
         }
 
         function isActivationDepositLocked() {
@@ -3758,7 +3802,8 @@
             const bonusButtons = document.querySelectorAll('.bonus-nav, .bonus-corner-btn');
             const alertBox = document.getElementById('growth-lock-alert');
             const activationLocked = isActivationDepositLocked();
-            const watchLocked = Boolean(status.watch_locked || activationLocked);
+            const referralWatchLocked = isGrowthReferralWatchLocked(status);
+            const watchLocked = Boolean(referralWatchLocked || activationLocked);
 
             if (logoBtn) {
                 logoBtn.classList.toggle('growth-locked', watchLocked);
@@ -4338,6 +4383,7 @@
             const payload = normalizePaymentStatusForCache(statusData);
             if (!payload) return statusData;
             safeStorageSet(paymentStatusCacheKey, JSON.stringify(payload));
+            rememberActivationDepositAccess(payload);
             return statusData;
         }
 
@@ -4377,11 +4423,14 @@
                 ...cachedStatus
             };
             if (cachedStatus.growth_lock) setGrowthLockStatus(cachedStatus.growth_lock);
+            rememberActivationDepositAccess(cachedStatus);
             const cachedOrder = findPaymentOrderWithWallet(cachedStatus.orders)
                 || cachedStatus.order
                 || getCachedPaymentOrder(false);
             renderPaymentOrder(cachedOrder, cachedStatus);
             updateWithdrawUi(cachedStatus);
+            updateGrowthLockUi();
+            updateWalletLockUi();
             updatePaymentActionButtons();
             return true;
         }
@@ -5330,6 +5379,7 @@
                         amount: result.amount || refundAmount
                     }
                 };
+                rememberPaymentStatus(latestPaymentStatus);
                 updateWatchDisplays();
                 const createdRefundStatus = result.deposit_refund?.status || result.withdraw?.status || 'pending';
                 const createdRefundState = normalizeDepositRefundStatus(createdRefundStatus);
@@ -7745,6 +7795,7 @@
         async function handleMainClick(e) {
             if (isActionThrottled('main-watch-click', 900)) return;
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            seedPaymentStatusFromCache();
             if (isActivationDepositLocked()) {
                 updateGrowthLockUi();
                 showCopyToast(t('activation_deposit_required'));
@@ -8732,11 +8783,15 @@
                 if (id === 'bonusModal') updateBonusLockUi();
                 if (id === 'refModal') updateGrowthLockUi();
                 if (id === 'withdrawModal') {
+                    seedPaymentStatusFromCache();
+                    updateWithdrawUi(latestPaymentStatus);
                     loadBackendSettings()
                         .then(() => updateWithdrawUi(latestPaymentStatus))
                         .catch(() => null);
                 }
                 if (id === 'walletModal') {
+                    seedPaymentStatusFromCache();
+                    updateWalletLockUi();
                     updateWalletModal();
                     setDomText(document.getElementById('payment-status-text'), t('card_order_loading'));
                     loadBackendSettings()
@@ -8843,27 +8898,34 @@
             if (!modal || !box) return;
             const content = modal.querySelector('.modal-content');
             const panel = box.closest('.info-sub-block');
+            modal.style.alignItems = 'flex-start';
+            modal.style.justifyContent = 'center';
+            modal.style.overflowY = 'auto';
+            modal.style.overflowX = 'hidden';
+            modal.style.webkitOverflowScrolling = 'touch';
+            modal.style.touchAction = 'pan-y';
             if (content) {
-                content.style.display = 'flex';
-                content.style.flexDirection = 'column';
-                content.style.overflow = 'hidden';
-                content.style.height = 'calc(var(--app-vh, 100vh) - 44px)';
-                content.style.maxHeight = 'calc(var(--app-vh, 100vh) - 44px)';
+                content.style.display = 'block';
+                content.style.overflowY = 'auto';
+                content.style.overflowX = 'hidden';
+                content.style.height = 'auto';
+                content.style.minHeight = '0';
+                content.style.maxHeight = 'calc(var(--app-vh, 100vh) - 36px)';
+                content.style.webkitOverflowScrolling = 'touch';
+                content.style.touchAction = 'pan-y';
             }
             if (panel) {
-                panel.style.display = 'flex';
-                panel.style.flexDirection = 'column';
-                panel.style.flex = '1 1 auto';
-                panel.style.height = '0';
+                panel.style.display = 'block';
+                panel.style.height = 'auto';
                 panel.style.minHeight = '0';
-                panel.style.overflow = 'hidden';
+                panel.style.overflow = 'visible';
             }
             box.classList.add('history-scroll-target');
-            box.style.flex = '1 1 auto';
+            box.style.flex = 'none';
             box.style.height = 'auto';
             box.style.minHeight = '0';
             box.style.maxHeight = 'none';
-            box.style.overflowY = 'scroll';
+            box.style.overflowY = 'visible';
             box.style.overflowX = 'hidden';
             box.style.webkitOverflowScrolling = 'touch';
             box.style.touchAction = 'pan-y';
@@ -8871,6 +8933,14 @@
             box.setAttribute('role', 'list');
             modal.dataset.historyScrollTarget = 'withdraw-history-list';
             document.documentElement.dataset.vidipayHistoryScrollTarget = 'ready';
+            requestAnimationFrame(() => {
+                if (modal.classList.contains('is-open')) {
+                    try {
+                        modal.scrollTop = 0;
+                        if (content) content.scrollTop = 0;
+                    } catch (_) {}
+                }
+            });
         }
 
         async function renderFullHistory() {
@@ -9775,10 +9845,15 @@
         }
 
         changeLang(currentLang);
+        seedPaymentStatusFromCache();
+        seedPaymentOrderFromCache();
         updateTopAccountInfo();
         updateWatchDisplays();
         renderNotifications();
         updateBonusDisplays();
+        updateWithdrawUi(latestPaymentStatus);
+        updateGrowthLockUi();
+        updateWalletLockUi();
         updateFrontendHealth({ ok: navigator.onLine });
         scheduleFrontendContractSelfCheck();
         schedulePendingWatchRewardSync(8000);

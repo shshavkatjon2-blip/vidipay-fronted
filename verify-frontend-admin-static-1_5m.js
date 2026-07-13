@@ -4,7 +4,7 @@ const vm = require("vm");
 const crypto = require("crypto");
 
 const targetDir = path.resolve(process.argv[2] || __dirname);
-const expectedBuild = "frontend-admin-readiness-20260711-v16";
+const expectedBuild = "frontend-admin-readiness-20260711-v17";
 
 const expectedFiles = [
   "admin.html",
@@ -52,8 +52,11 @@ const appRequiredPatterns = [
   { name: "modal_scroll_lock_guard", pattern: /lockModalPageScroll[\s\S]*vidipay-modal-scroll-lock[\s\S]*unlockModalPageScroll/ },
   { name: "modal_background_scroll_guard", pattern: /guardModalBackgroundScroll[\s\S]*touchmove[\s\S]*vidipayModalScrollGuard/ },
   { name: "history_scroll_target", pattern: /prepareHistoryModalScroll[\s\S]*history-scroll-target[\s\S]*vidipayHistoryScrollTarget/ },
-  { name: "history_scroll_flex_height", pattern: /#withdrawHistoryModal\.is-open \.info-sub-block[\s\S]*flex:\s*1 1 auto[\s\S]*height:\s*0[\s\S]*#withdrawHistoryModal\.is-open \.history-list[\s\S]*overflow-y:\s*scroll/ },
-  { name: "history_scroll_inline_guard", pattern: /prepareHistoryModalScroll[\s\S]*content\.style\.height[\s\S]*panel\.style\.height = '0'[\s\S]*box\.style\.overflowY = 'scroll'/ },
+  { name: "history_modal_content_scroll", pattern: /#withdrawHistoryModal\.is-open[\s\S]*overflow-y:\s*auto[\s\S]*#withdrawHistoryModal\.is-open \.modal-content[\s\S]*overflow-y:\s*auto[\s\S]*#withdrawHistoryModal\.is-open \.history-list[\s\S]*overflow:\s*visible/ },
+  { name: "history_modal_inline_scroll_guard", pattern: /prepareHistoryModalScroll[\s\S]*modal\.style\.overflowY = 'auto'[\s\S]*content\.style\.overflowY = 'auto'[\s\S]*box\.style\.overflowY = 'visible'/ },
+  { name: "activation_access_cache", pattern: /getActivationAccessCacheKey[\s\S]*rememberActivationDepositAccess[\s\S]*hasCachedActivationDepositAccess[\s\S]*hasActivationDepositAccess/ },
+  { name: "activation_cache_seed_before_actions", pattern: /handleMainClick[\s\S]*seedPaymentStatusFromCache\(\)[\s\S]*isActivationDepositLocked[\s\S]*if \(id === 'withdrawModal'\)[\s\S]*seedPaymentStatusFromCache\(\)[\s\S]*if \(id === 'walletModal'\)[\s\S]*seedPaymentStatusFromCache\(\)/ },
+  { name: "activation_growth_lock_split", pattern: /isGrowthReferralWatchLocked[\s\S]*checkpoint_499[\s\S]*checkpoint_1499[\s\S]*const referralWatchLocked = isGrowthReferralWatchLocked\(status\)/ },
   { name: "optimistic_watch_reward", pattern: /applyOptimisticWatchReward[\s\S]*confirmOptimisticWatchReward[\s\S]*rollbackOptimisticWatchReward/ },
   { name: "watch_reward_reconcile", pattern: /resolveWatchReward[\s\S]*forceWatchRewardMinimum[\s\S]*confirmOptimisticWatchReward/ },
   { name: "pending_watch_reward_queue", pattern: /enqueuePendingWatchReward[\s\S]*syncPendingWatchRewards[\s\S]*schedulePendingWatchRewardSync/ },
