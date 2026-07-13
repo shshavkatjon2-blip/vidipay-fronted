@@ -4,7 +4,7 @@ const vm = require("vm");
 const crypto = require("crypto");
 
 const targetDir = path.resolve(process.argv[2] || __dirname);
-const expectedBuild = "frontend-admin-readiness-20260711-v14";
+const expectedBuild = "frontend-admin-readiness-20260711-v15";
 
 const expectedFiles = [
   "admin.html",
@@ -54,6 +54,8 @@ const appRequiredPatterns = [
   { name: "history_scroll_target", pattern: /prepareHistoryModalScroll[\s\S]*history-scroll-target[\s\S]*vidipayHistoryScrollTarget/ },
   { name: "optimistic_watch_reward", pattern: /applyOptimisticWatchReward[\s\S]*confirmOptimisticWatchReward[\s\S]*rollbackOptimisticWatchReward/ },
   { name: "watch_reward_reconcile", pattern: /resolveWatchReward[\s\S]*forceWatchRewardMinimum[\s\S]*confirmOptimisticWatchReward/ },
+  { name: "pending_watch_reward_queue", pattern: /enqueuePendingWatchReward[\s\S]*syncPendingWatchRewards[\s\S]*schedulePendingWatchRewardSync/ },
+  { name: "watch_notification_filter", pattern: /isNoisyWatchRewardNotification[\s\S]*getNotifications[\s\S]*filter/ },
   { name: "admin_notification_translation", pattern: /translateAdminNotificationText/ },
   { name: "notification_list_layout", pattern: /notification-list/ },
   { name: "growth_lock_status", pattern: /currentGrowthLockStatus/ }

@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v14">
+    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v15">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=frontend-admin-readiness-20260711-v14"></script>
+    <script src="./config.js?v=frontend-admin-readiness-20260711-v15"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -2407,7 +2407,7 @@
         body.modal-open {
             overflow: hidden !important;
             overscroll-behavior: none !important;
-            touch-action: none !important;
+            touch-action: auto !important;
         }
 
         html.vidipay-modal-scroll-lock body.modal-open {
@@ -2443,6 +2443,7 @@
             display: flex !important;
             flex-direction: column !important;
             overflow: hidden !important;
+            height: calc(var(--app-vh, 100vh) - 44px) !important;
             max-height: calc(var(--app-vh, 100vh) - 44px) !important;
         }
 
@@ -2455,9 +2456,9 @@
 
         body.modal-open #withdrawHistoryModal.is-open .history-list {
             flex: 1 1 auto !important;
-            height: clamp(260px, 52vh, 430px) !important;
+            height: 100% !important;
             min-height: 0 !important;
-            max-height: clamp(260px, 52vh, 430px) !important;
+            max-height: none !important;
             overflow-y: auto !important;
             overflow-x: hidden !important;
             overscroll-behavior: contain !important;
@@ -3400,7 +3401,7 @@
         }
         const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v14';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v15';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
@@ -3477,6 +3478,7 @@
         let watchFinalizeInflight = null;
         let watchSessionVideoIds = new Set();
         let optimisticWatchRewards = new Map();
+        let pendingWatchRewardSyncTimer = null;
         let lastWatchUiSnapshot = '';
         let rewardedMrBeastVideos = new Set();
         let shouldStartMrBeastWhenApiReady = false;
@@ -8205,6 +8207,94 @@
             document.documentElement.dataset.vidipayWatchRewardState = 'rolled_back';
         }
 
+        function getPendingWatchRewardStorageKey() {
+            const scope = String(referralUserId || safeStorageGet('vidiPayReferralUserId') || 'guest').trim() || 'guest';
+            return `vidiPayPendingWatchRewards_${scope}`;
+        }
+
+        function readPendingWatchRewards() {
+            try {
+                const items = JSON.parse(safeStorageGet(getPendingWatchRewardStorageKey()));
+                return Array.isArray(items) ? items : [];
+            } catch (_) {
+                return [];
+            }
+        }
+
+        function writePendingWatchRewards(items) {
+            safeStorageSet(getPendingWatchRewardStorageKey(), JSON.stringify((items || []).slice(0, 25)));
+            document.documentElement.dataset.vidipayPendingWatchRewards = String((items || []).length);
+        }
+
+        function isWatchRewardDeferredError(message = '') {
+            const text = String(message || '').toLowerCase();
+            return text.includes('$20')
+                || text.includes('activate')
+                || text.includes('activation')
+                || text.includes('wallet')
+                || text.includes('backend')
+                || text.includes('timeout')
+                || text.includes('network')
+                || text.includes('failed');
+        }
+
+        function enqueuePendingWatchReward(videoId, seconds, reward, reason = '') {
+            const safeSeconds = Math.max(0, Math.floor(Number(seconds || 0)));
+            if (!safeSeconds) return;
+            const key = makeWatchRewardKey(videoId, safeSeconds);
+            const items = readPendingWatchRewards().filter(item => item.key !== key);
+            items.unshift({
+                key,
+                videoId,
+                watch_seconds: safeSeconds,
+                reward: normalizeWatchRewardAmount(reward, safeSeconds),
+                reason: String(reason || '').slice(0, 180),
+                attempts: 0,
+                queued_at: new Date().toISOString()
+            });
+            writePendingWatchRewards(items);
+            schedulePendingWatchRewardSync(15000);
+        }
+
+        async function syncPendingWatchRewards() {
+            const items = readPendingWatchRewards();
+            if (!items.length || document.hidden || !navigator.onLine) return;
+            const remaining = [];
+            for (const item of items.slice(0, 5)) {
+                try {
+                    const result = await apiRequest('/view/add', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            telegram_id: String(referralUserId),
+                            watch_seconds: item.watch_seconds,
+                            video_source: 'mrbeast_uploads',
+                            video_id: item.videoId,
+                            completed: true,
+                            client_country_code: await detectClientCountryCode()
+                        }),
+                        timeoutMs: 12000
+                    });
+                    rewardedMrBeastVideos.add(item.videoId);
+                    applyBackendUser(result.user);
+                    if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
+                    await refreshStatsFromBackend().catch(() => null);
+                    updateWatchDisplays();
+                } catch (err) {
+                    const attempts = Number(item.attempts || 0) + 1;
+                    if (attempts < 8) remaining.push({ ...item, attempts, reason: friendlyErrorMessage(err).slice(0, 180) });
+                }
+            }
+            writePendingWatchRewards([...remaining, ...items.slice(5)]);
+            if (remaining.length) schedulePendingWatchRewardSync(45000);
+        }
+
+        function schedulePendingWatchRewardSync(delayMs = 30000) {
+            clearTimeout(pendingWatchRewardSyncTimer);
+            pendingWatchRewardSyncTimer = setTimeout(() => {
+                syncPendingWatchRewards().catch(err => rememberFrontendError('pending_watch_reward_sync', err));
+            }, Math.max(3000, Number(delayMs || 30000)));
+        }
+
         function shouldStopWatchAtActivationLimit(seconds = countedWatchSeconds) {
             const watchedSeconds = Math.max(0, Number(seconds || 0));
             const requiredSeconds = Number(backendSettings.view_seconds_required || 5);
@@ -8326,17 +8416,26 @@
             }
             updateWatchSessionUi(t('watch_reward_added_detail').replace('{time}', formatDuration(watchSeconds)).replace('{amount}', confirmedReward.toFixed(2)));
             showWatchResult(watchSeconds, confirmedReward, t('watch_added'));
-            addNotification(t('view_reward_title'), t('view_reward_added').replace('{seconds}', watchSeconds).replace('{amount}', confirmedReward.toFixed(2)));
             setWatchUiState('saved');
         } catch (err) {
             pendingWatch = null;
-            rollbackOptimisticWatchReward(videoId, watchSeconds);
             if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
-            updateWatchDisplays();
             const message = friendlyErrorMessage(err);
+            const deferred = isWatchRewardDeferredError(message);
+            const estimatedReward = estimateWatchReward(watchSeconds);
+            if (deferred) {
+                enqueuePendingWatchReward(videoId, watchSeconds, estimatedReward, message);
+                confirmOptimisticWatchReward(videoId, watchSeconds, estimatedReward);
+                updateWatchDisplays();
+                updateWatchSessionUi(t('watch_reward_added_detail').replace('{time}', formatDuration(watchSeconds)).replace('{amount}', estimatedReward.toFixed(2)));
+                showWatchResult(watchSeconds, estimatedReward, t('watch_added'));
+                setWatchUiState('queued', message);
+                return;
+            }
+            rollbackOptimisticWatchReward(videoId, watchSeconds);
+            updateWatchDisplays();
             updateWatchSessionUi(message);
             showWatchResult(watchSeconds, 0, `${message}. ${t('watch_reward_backend_failed')}`);
-            addNotification(t('view_reward_title'), message);
             setWatchUiState('error', message);
         }
     }
@@ -8428,6 +8527,22 @@
             return `${baseName}_${scope}`;
         }
 
+        function isNoisyWatchRewardNotification(item = {}) {
+            const raw = [
+                item.title,
+                item.text,
+                item.rawTitle,
+                item.rawText,
+                item.titleKey,
+                item.textKey
+            ].join(' ').toLowerCase();
+            return raw.includes('view reward')
+                || raw.includes('view_reward')
+                || raw.includes('reward added after')
+                || raw.includes('your balance reached $20')
+                || raw.includes('watch_reward_backend_failed');
+        }
+
         function getNotifications() {
             const key = getNotificationStorageKey('vidiPayNotifications');
             let items;
@@ -8439,7 +8554,12 @@
                 ];
                 safeStorageSet(key, JSON.stringify(items));
             }
-            return items;
+            const filtered = items.filter(item => !isNoisyWatchRewardNotification(item));
+            if (filtered.length !== items.length) {
+                safeStorageSet(key, JSON.stringify(filtered));
+                setUnreadNotificationCount(Math.min(getUnreadNotificationCount(), filtered.length));
+            }
+            return filtered;
         }
 
         function getUnreadNotificationCount() {
@@ -8960,6 +9080,7 @@
 
         document.addEventListener('visibilitychange', scheduleSettingsRefresh);
         document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) schedulePendingWatchRewardSync(3000);
             if (!document.hidden && isTonDepositModalOpen()) {
                 setPaymentPollingHealthy(true);
                 refreshPaymentStatus({ poll: true }).catch(err => rememberFrontendError('payment_visible_refresh', err));
@@ -9235,6 +9356,7 @@
                 schedulePaymentStatusPoll(2500);
             }
             refreshSettingsInBackground();
+            schedulePendingWatchRewardSync(3000);
         });
 
         function pauseFrontendActivity(reason = 'page_pause') {
@@ -9632,6 +9754,7 @@
         updateBonusDisplays();
         updateFrontendHealth({ ok: navigator.onLine });
         scheduleFrontendContractSelfCheck();
+        schedulePendingWatchRewardSync(8000);
         initBackendApp();
 
     </script>
