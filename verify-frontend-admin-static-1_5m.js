@@ -4,7 +4,7 @@ const vm = require("vm");
 const crypto = require("crypto");
 
 const targetDir = path.resolve(process.argv[2] || __dirname);
-const expectedBuild = "frontend-admin-readiness-20260711-v9";
+const expectedBuild = "frontend-admin-readiness-20260711-v10";
 
 const expectedFiles = [
   "admin.html",
@@ -57,7 +57,8 @@ const adminRequiredPatterns = [
   { name: "admin_payment_wallets_endpoint", pattern: /\/admin\/payment-wallets/ },
   { name: "admin_notification_endpoint", pattern: /\/admin\/notification\/send/ },
   { name: "admin_manual_backup_text", pattern: /Manual backup/ },
-  { name: "admin_detail_fallback", pattern: /adminDetail[\s\S]*status_reason[\s\S]*failed_reason/ }
+  { name: "admin_detail_fallback", pattern: /adminDetail[\s\S]*status_reason[\s\S]*failed_reason/ },
+  { name: "admin_table_state", pattern: /renderTableState[\s\S]*admin-table-state[\s\S]*Loading withdrawals[\s\S]*Payment orders did not load/ }
 ];
 
 function readText(file) {

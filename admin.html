@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="vidipay-admin-build" content="frontend-admin-readiness-20260711-v9">
+  <meta name="vidipay-admin-build" content="frontend-admin-readiness-20260711-v10">
   <title>VidiPay Admin Panel</title>
-  <script src="./config.js?v=frontend-admin-readiness-20260711-v9"></script>
+  <script src="./config.js?v=frontend-admin-readiness-20260711-v10"></script>
   <style>
     :root {
       --bg: #080d10;
@@ -124,6 +124,17 @@
       font-weight: 800;
       margin-right: 4px;
     }
+    .admin-table-state {
+      display: block;
+      min-width: 220px;
+      padding: 8px 0;
+      color: var(--muted);
+      font-weight: 900;
+      line-height: 1.45;
+    }
+    .admin-table-state.loading { color: var(--accent); }
+    .admin-table-state.error { color: #fecaca; }
+    .admin-table-state.empty { color: var(--muted); }
     .pending { color: var(--warn); }
     .approved, .verified, .confirmed { color: var(--ok); }
     .rejected { color: var(--danger); }
@@ -275,7 +286,7 @@
 <body>
   <header>
     <h1>VidiPay Admin Panel</h1>
-    <button onclick="refreshAll()">Refresh</button>
+    <button id="btn-refresh-all" onclick="refreshAll()">Refresh</button>
   </header>
   <main>
     <div class="login-row">
@@ -517,6 +528,9 @@
 
     let adminCommandBusy = false;
     let settingsFormRendered = false;
+    const USERS_TABLE_HEADERS = ['Database ID', 'Telegram ID', 'Username', 'Name', 'Balance', 'Total time', 'Daily income', 'Lock', 'Status', 'Action'];
+    const WITHDRAWS_TABLE_HEADERS = ['ID', 'Telegram', 'Amount', 'Wallet', 'Type', 'Status', 'TX', 'Details', 'Created', 'Actions'];
+    const PAYMENTS_TABLE_HEADERS = ["ID", "Telegram ID", "Required", "Paid", "Wallet", "Valid until", "Status", "TX", "Details", "Actions"];
 
     function setText(id, text) {
       const el = document.getElementById(id);
@@ -729,6 +743,14 @@
         `<tbody>${rows.join('') || `<tr><td colspan="${headers.length}">No data</td></tr>`}</tbody>`;
     }
 
+    function renderTableState(id, headers, message, tone = 'empty') {
+      const table = document.getElementById(id);
+      if (!table) return;
+      const safeTone = String(tone || 'empty').replace(/[^a-z0-9_-]/gi, '').toLowerCase() || 'empty';
+      table.innerHTML = `<thead><tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>` +
+        `<tbody><tr><td colspan="${headers.length}"><span class="admin-table-state ${safeTone}">${escapeHtml(message)}</span></td></tr></tbody>`;
+    }
+
     async function loadPublicSettings() {
       return fetchApi('/settings');
     }
@@ -904,11 +926,13 @@
     }
 
     async function loadUsers() {
-      const payload = await api('/admin/users?limit=10000');
-      const users = Array.isArray(payload) ? payload : (payload.users || []);
-      const countEl = document.getElementById('users-count');
-      if (countEl) countEl.innerText = `${users.length}  users loaded. Real Telegram users and backend-synced guests are shown in this list.`;
-      renderTable('users-table', ['Database ID', 'Telegram ID', 'Username', 'Name', 'Balance', 'Total time', 'Daily income', 'Lock', 'Status', 'Action'], users.map(u => `
+      renderTableState('users-table', USERS_TABLE_HEADERS, 'Loading users...', 'loading');
+      try {
+        const payload = await api('/admin/users?limit=10000');
+        const users = Array.isArray(payload) ? payload : (payload.users || []);
+        const countEl = document.getElementById('users-count');
+        if (countEl) countEl.innerText = `${users.length} users loaded. Real Telegram users and backend-synced guests are shown in this list.`;
+        renderTable('users-table', USERS_TABLE_HEADERS, users.map(u => `
         <tr id="${safeDomId('user-row', u.telegram_id)}">
           <td>${escapeHtml(u.id)}</td><td>${escapeHtml(u.telegram_id)}</td>
           <td>${escapeHtml(u.username || '-')}</td><td>${escapeHtml([u.first_name, u.last_name].filter(Boolean).join(' ') || '-')}</td>
@@ -916,7 +940,11 @@
           <td>${formatMoney(u.daily_income)}</td><td>${u.withdraw_unlocked ? 'yes' : 'no'}</td>
           ${renderUserControlCells(u)}
         </tr>
-      `));
+        `));
+      } catch (err) {
+        renderTableState('users-table', USERS_TABLE_HEADERS, `Users did not load: ${err.message}`, 'error');
+        throw err;
+      }
     }
 
     function renderUserControlCells(user) {
@@ -1076,8 +1104,10 @@
 
     async function loadWithdraws() {
       const status = document.getElementById('withdraw-status').value;
-      const items = await api(`/admin/withdraws?status=${encodeURIComponent(status)}`);
-      renderTable('withdraws-table', ['ID', 'Telegram', 'Amount', 'Wallet', 'Type', 'Status', 'TX', 'Details', 'Created', 'Actions'], items.map(w => {
+      renderTableState('withdraws-table', WITHDRAWS_TABLE_HEADERS, 'Loading withdrawals...', 'loading');
+      try {
+        const items = await api(`/admin/withdraws?status=${encodeURIComponent(status)}`);
+        renderTable('withdraws-table', WITHDRAWS_TABLE_HEADERS, items.map(w => {
         const withdrawStatus = normalizeAdminStatus(w.status);
         const walletType = w.wallet_type || w.method || 'TON';
         const scope = w.withdraw_scope || w.scope || (walletType === 'TON_DEPOSIT_REFUND' ? 'deposit_refund' : 'withdraw');
@@ -1104,8 +1134,12 @@
             <button class="danger" onclick='rejectWithdraw(${safeJsString(w.id)})'>Reject</button>` : '<span class="admin-muted">No action</span>'}
           </td>
         </tr>
-      `;
-      }));
+        `;
+        }));
+      } catch (err) {
+        renderTableState('withdraws-table', WITHDRAWS_TABLE_HEADERS, `Withdrawals did not load: ${err.message}`, 'error');
+        throw err;
+      }
     }
 
     async function approveWithdraw(id) {
@@ -1121,8 +1155,10 @@
 
     async function loadPaymentOrders() {
       const status = document.getElementById('payment-status').value;
-      const items = await api(`/admin/payment-orders?status=${encodeURIComponent(status)}`);
-      renderTable('payments-table', ["ID", "Telegram ID", "Required", "Paid", "Wallet", "Valid until", "Status", "TX", "Details", "Actions"], items.map(p => {
+      renderTableState('payments-table', PAYMENTS_TABLE_HEADERS, 'Loading payment orders...', 'loading');
+      try {
+        const items = await api(`/admin/payment-orders?status=${encodeURIComponent(status)}`);
+        renderTable('payments-table', PAYMENTS_TABLE_HEADERS, items.map(p => {
         const paymentStatus = normalizeAdminStatus(p.status);
         const wallet = p.wallet_address || p.ton_wallet_address || p.to_wallet || p.admin_wallet || '';
         const paidAmount = p.paid_amount || p.detected_amount || p.amount_paid || '';
@@ -1147,8 +1183,12 @@
             ${canManualApprove ? `<button class="warning" onclick='approvePaymentOrder(${safeJsString(p.id)})'>Manual backup</button>` : '<span style="color:var(--ok);">Completed</span>'}
           </td>
         </tr>
-      `;
-      }));
+        `;
+        }));
+      } catch (err) {
+        renderTableState('payments-table', PAYMENTS_TABLE_HEADERS, `Payment orders did not load: ${err.message}`, 'error');
+        throw err;
+      }
     }
 
     async function approvePaymentOrder(id) {
@@ -1204,13 +1244,18 @@
     }
 
     async function refreshAll() {
+      setBusy('btn-refresh-all', true, 'Refreshing...');
       const errors = [];
-      try { await loadSettings({ renderForm: !settingsFormRendered }); } catch (err) { errors.push(err.message); }
-      try { await loadUsers(); } catch (err) { errors.push(`Users: ${err.message}`); }
-      try { await loadWithdraws(); } catch (err) { errors.push(`Withdrawals: ${err.message}`); }
-      try { await loadPaymentOrders(); } catch (err) { errors.push(`To‘lovlar: ${err.message}`); }
-      try { await loadPaymentWallets(); } catch (err) { errors.push(`Scanner: ${err.message}`); }
-      setStatus(errors.length ? errors.join(' | ') : 'Data loaded.');
+      try {
+        try { await loadSettings({ renderForm: !settingsFormRendered }); } catch (err) { errors.push(err.message); }
+        try { await loadUsers(); } catch (err) { errors.push(`Users: ${err.message}`); }
+        try { await loadWithdraws(); } catch (err) { errors.push(`Withdrawals: ${err.message}`); }
+        try { await loadPaymentOrders(); } catch (err) { errors.push(`Payments: ${err.message}`); }
+        try { await loadPaymentWallets(); } catch (err) { errors.push(`Scanner: ${err.message}`); }
+        setStatus(errors.length ? errors.join(' | ') : 'Data loaded.');
+      } finally {
+        setBusy('btn-refresh-all', false);
+      }
     }
 
     document.getElementById('admin-token').value = localStorage.getItem('vidipay_admin_token') || '';
