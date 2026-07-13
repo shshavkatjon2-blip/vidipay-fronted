@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v10">
+    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v11">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=frontend-admin-readiness-20260711-v10"></script>
+    <script src="./config.js?v=frontend-admin-readiness-20260711-v11"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -2335,6 +2335,13 @@
             padding: 18px 10px;
         }
 
+        .history-empty.history-error {
+            color: #fecaca;
+            border: 1px solid rgba(239,68,68,.24);
+            background: rgba(239,68,68,.08);
+            border-radius: 12px;
+        }
+
         @media (max-width: 380px) {
             .fixed-bottom-nav { height: 76px; gap: 7px; padding-left: 8px; padding-right: 8px; }
             .fixed-nav-btn { border-radius: 14px; font-size: 9px; }
@@ -3250,7 +3257,7 @@
         }
         const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v10';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v11';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
@@ -5340,6 +5347,7 @@
                 unknown_network: "Unknown network",
                 unknown_country: "Unknown",
                 no_history: "No payment or withdrawal history yet.",
+                history_load_failed: "History did not load. Check your connection and try again.",
                 receipt_date_time: "Date and time",
                 receipt_network: "Network",
                 receipt_verified_at: "Verified at",
@@ -8433,6 +8441,7 @@
 
             historyInflight = (async () => {
                 let items = [];
+                let historyLoadError = '';
                 const now = Date.now();
                 try {
                     if (historyFetchedAt && now - historyFetchedAt < 15000 && window.vidiPayCachedFullHistory) {
@@ -8444,11 +8453,16 @@
                     }
                 } catch (err) {
                     rememberFrontendError('withdraw_history_load', err);
+                    historyLoadError = friendlyErrorMessage(err);
                     items = getWithdrawHistory();
                 }
 
                 if (!items.length) {
-                    const emptyHtml = `<div class="history-empty">${escapeHtml(t('no_history'))}</div>`;
+                    const emptyText = historyLoadError
+                        ? `${t('history_load_failed')} ${historyLoadError}`
+                        : t('no_history');
+                    const emptyClass = historyLoadError ? 'history-empty history-error' : 'history-empty';
+                    const emptyHtml = `<div class="${emptyClass}">${escapeHtml(emptyText)}</div>`;
                     if (fullHistoryRenderSnapshot !== emptyHtml) {
                         fullHistoryRenderSnapshot = emptyHtml;
                         setDomHtml(box, emptyHtml);
