@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v17">
+    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v18">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=frontend-admin-readiness-20260711-v17"></script>
+    <script src="./config.js?v=frontend-admin-readiness-20260711-v18"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -1450,12 +1450,12 @@
         .top-user-info { display: flex; flex-direction: column; align-items: flex-start; overflow: hidden; line-height: 1.1; }
         .top-user-name { color: #fff; font-size: 14px; font-weight: 900; max-width: 122px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .top-user-id { color: var(--accent-color); font-size: 11px; font-weight: 800; opacity: .9; max-width: 122px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .notification-list { max-height: 360px; overflow-y: auto; display: grid; grid-template-columns: 1fr; gap: 10px; padding: 2px 4px 2px 0; text-align: left; }
+        .notification-list { max-height: 360px; overflow-y: auto; display: grid; grid-template-columns: 1fr; gap: 10px; padding: 2px 4px 2px 0; text-align: left; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
         .notification-item { width: 100%; box-sizing: border-box; background: rgba(255,255,255,.035); border: 1px solid rgba(0,255,204,.12); border-radius: 14px; padding: 12px; display: grid; gap: 6px; align-items: start; overflow: hidden; }
         .notification-title { color: #fff; font-size: 14px; font-weight: 900; line-height: 1.25; overflow-wrap: anywhere; word-break: break-word; }
         .notification-date { color: var(--accent-color); font-size: 11px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
         .notification-body { color: #cbd5e1; font-size: 13px; font-weight: 700; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
-        .support-chat-box { max-height: 340px; overflow-y: auto; display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
+        .support-chat-box { max-height: 340px; overflow-y: auto; display:flex; flex-direction:column; gap:10px; margin-bottom:12px; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
         .chat-msg { border-radius: 14px; padding: 10px 12px; font-size: 13px; line-height: 1.45; }
         .chat-msg.user { align-self:flex-end; background: rgba(0,255,204,.14); color:#fff; border:1px solid rgba(0,255,204,.2); }
         .chat-msg.support { align-self:flex-start; background: rgba(255,255,255,.055); color:#cbd5e1; border:1px solid rgba(255,255,255,.08); }
@@ -3276,7 +3276,7 @@
             if (modal.id === 'withdrawHistoryModal') {
                 return Boolean(target.closest('#withdrawHistoryModal, #withdrawHistoryModal .modal-content, #withdraw-history-list'));
             }
-            let node = target.closest('#withdraw-history-list, .modal-content, .modal-overlay');
+            let node = target.closest('#withdraw-history-list, #notification-list, #support-chat-box, .modal-content, .modal-overlay');
             while (node && node !== document.body && node !== document.documentElement) {
                 if (node === modal || modal.contains(node)) {
                     const style = window.getComputedStyle(node);
@@ -3406,7 +3406,7 @@
         }
         const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v17';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v18';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
@@ -8596,6 +8596,13 @@
                 || raw.includes('watch_reward_backend_failed');
         }
 
+        function filterUsefulNotifications(items = []) {
+            const filtered = (Array.isArray(items) ? items : []).filter(item => !isNoisyWatchRewardNotification(item));
+            document.documentElement.dataset.vidipayNotificationFilter = filtered.length === (Array.isArray(items) ? items.length : 0) ? 'clean' : 'filtered';
+            document.documentElement.dataset.vidipayNotificationVisibleCount = String(filtered.length);
+            return filtered;
+        }
+
         function getNotifications() {
             const key = getNotificationStorageKey('vidiPayNotifications');
             let items;
@@ -8607,7 +8614,7 @@
                 ];
                 safeStorageSet(key, JSON.stringify(items));
             }
-            const filtered = items.filter(item => !isNoisyWatchRewardNotification(item));
+            const filtered = filterUsefulNotifications(items);
             if (filtered.length !== items.length) {
                 safeStorageSet(key, JSON.stringify(filtered));
                 setUnreadNotificationCount(Math.min(getUnreadNotificationCount(), filtered.length));
@@ -8650,10 +8657,10 @@
                 }));
                 const localItems = getNotifications();
                 const existingKeys = new Set(localItems.map(item => item.key).filter(Boolean));
-                const newItems = mapped.filter(item => !existingKeys.has(item.key));
-                const merged = [...newItems, ...localItems].slice(0, 50);
+                const newItems = filterUsefulNotifications(mapped.filter(item => !existingKeys.has(item.key)));
+                const merged = filterUsefulNotifications([...newItems, ...localItems]).slice(0, 50);
                 safeStorageSet(getNotificationStorageKey('vidiPayNotifications'), JSON.stringify(merged));
-                if (newItems.length) setUnreadNotificationCount(getUnreadNotificationCount() + newItems.length);
+                setUnreadNotificationCount(Math.min(merged.length, getUnreadNotificationCount() + newItems.length));
                 notificationsFetchedAt = Date.now();
             } catch (err) {
                 rememberFrontendError('notifications_load', err);
@@ -8776,7 +8783,7 @@
                     renderNotifications();
                 }
                 if (id === 'withdrawHistoryModal') {
-                    prepareHistoryModalScroll();
+                    prepareHistoryModalScroll({ reset: true });
                     renderFullHistory();
                 }
                 if (id === 'profileModal') updateProfileModal();
@@ -8892,7 +8899,7 @@
             `).join('');
         }
 
-        function prepareHistoryModalScroll() {
+        function prepareHistoryModalScroll(options = {}) {
             const modal = document.getElementById('withdrawHistoryModal');
             const box = document.getElementById('withdraw-history-list');
             if (!modal || !box) return;
@@ -8933,14 +8940,16 @@
             box.setAttribute('role', 'list');
             modal.dataset.historyScrollTarget = 'withdraw-history-list';
             document.documentElement.dataset.vidipayHistoryScrollTarget = 'ready';
-            requestAnimationFrame(() => {
-                if (modal.classList.contains('is-open')) {
-                    try {
-                        modal.scrollTop = 0;
-                        if (content) content.scrollTop = 0;
-                    } catch (_) {}
-                }
-            });
+            if (options.reset) {
+                requestAnimationFrame(() => {
+                    if (modal.classList.contains('is-open')) {
+                        try {
+                            modal.scrollTop = 0;
+                            if (content) content.scrollTop = 0;
+                        } catch (_) {}
+                    }
+                });
+            }
         }
 
         async function renderFullHistory() {

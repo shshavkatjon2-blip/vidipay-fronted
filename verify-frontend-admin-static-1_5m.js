@@ -4,7 +4,7 @@ const vm = require("vm");
 const crypto = require("crypto");
 
 const targetDir = path.resolve(process.argv[2] || __dirname);
-const expectedBuild = "frontend-admin-readiness-20260711-v17";
+const expectedBuild = "frontend-admin-readiness-20260711-v18";
 
 const expectedFiles = [
   "admin.html",
@@ -61,6 +61,9 @@ const appRequiredPatterns = [
   { name: "watch_reward_reconcile", pattern: /resolveWatchReward[\s\S]*forceWatchRewardMinimum[\s\S]*confirmOptimisticWatchReward/ },
   { name: "pending_watch_reward_queue", pattern: /enqueuePendingWatchReward[\s\S]*syncPendingWatchRewards[\s\S]*schedulePendingWatchRewardSync/ },
   { name: "watch_notification_filter", pattern: /isNoisyWatchRewardNotification[\s\S]*getNotifications[\s\S]*filter/ },
+  { name: "server_notification_filter", pattern: /filterUsefulNotifications[\s\S]*vidipayNotificationFilter[\s\S]*const newItems = filterUsefulNotifications[\s\S]*setUnreadNotificationCount\(Math\.min/ },
+  { name: "scrollable_modal_lists", pattern: /notification-list[\s\S]*support-chat-box[\s\S]*withdraw-history-list, #notification-list, #support-chat-box/ },
+  { name: "history_reset_only_on_open", pattern: /prepareHistoryModalScroll\(\{ reset: true \}\)[\s\S]*function prepareHistoryModalScroll\(options = \{\}\)[\s\S]*if \(options\.reset\)/ },
   { name: "admin_notification_translation", pattern: /translateAdminNotificationText/ },
   { name: "notification_list_layout", pattern: /notification-list/ },
   { name: "growth_lock_status", pattern: /currentGrowthLockStatus/ }
