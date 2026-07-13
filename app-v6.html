@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v12">
+    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v13">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=frontend-admin-readiness-20260711-v12"></script>
+    <script src="./config.js?v=frontend-admin-readiness-20260711-v13"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -2419,6 +2419,10 @@
         }
 
         body.modal-open .modal-overlay.is-open {
+            position: fixed !important;
+            inset: 0 !important;
+            height: var(--app-vh, 100vh) !important;
+            max-height: var(--app-vh, 100vh) !important;
             overflow-y: auto !important;
             overscroll-behavior: contain !important;
             touch-action: pan-y !important;
@@ -2426,6 +2430,35 @@
 
         body.modal-open .modal-content,
         body.modal-open .history-list {
+            overscroll-behavior: contain !important;
+            touch-action: pan-y !important;
+            -webkit-overflow-scrolling: touch !important;
+        }
+
+        body.modal-open #withdrawHistoryModal.is-open {
+            overflow: hidden !important;
+        }
+
+        body.modal-open #withdrawHistoryModal.is-open .modal-content {
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+            max-height: calc(var(--app-vh, 100vh) - 32px) !important;
+        }
+
+        body.modal-open #withdrawHistoryModal.is-open .info-sub-block {
+            display: flex !important;
+            flex-direction: column !important;
+            min-height: 0 !important;
+            overflow: hidden !important;
+        }
+
+        body.modal-open #withdrawHistoryModal.is-open .history-list {
+            flex: 1 1 auto !important;
+            min-height: 220px !important;
+            max-height: calc(var(--app-vh, 100vh) - 210px) !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
             overscroll-behavior: contain !important;
             touch-action: pan-y !important;
             -webkit-overflow-scrolling: touch !important;
@@ -3219,6 +3252,43 @@
             });
         }
 
+        function getOpenModalOverlay() {
+            return Array.from(document.querySelectorAll('.modal-overlay.is-open'))
+                .find(modal => modal.style.display !== 'none') || null;
+        }
+
+        function isScrollableModalTarget(target) {
+            const modal = getOpenModalOverlay();
+            if (!modal || !target?.closest) return false;
+            let node = target.closest('#withdraw-history-list, .modal-content, .modal-overlay');
+            while (node && node !== document.body && node !== document.documentElement) {
+                if (node === modal || modal.contains(node)) {
+                    const style = window.getComputedStyle(node);
+                    const canScrollY = /(auto|scroll)/.test(style.overflowY || '') && node.scrollHeight > node.clientHeight + 2;
+                    if (canScrollY) return true;
+                }
+                if (node === modal) break;
+                node = node.parentElement;
+            }
+            return false;
+        }
+
+        function guardModalBackgroundScroll(event) {
+            const modal = getOpenModalOverlay();
+            if (!modal) return;
+            if (event.type === 'touchmove' && event.touches?.length > 1) {
+                event.preventDefault();
+                return;
+            }
+            if (!isScrollableModalTarget(event.target)) {
+                event.preventDefault();
+            }
+        }
+
+        document.addEventListener('touchmove', guardModalBackgroundScroll, { passive: false, capture: true });
+        document.addEventListener('wheel', guardModalBackgroundScroll, { passive: false, capture: true });
+        document.documentElement.dataset.vidipayModalScrollGuard = 'ready';
+
         function syncModalAccessibilityState(reason = 'sync') {
             let openCount = 0;
             document.querySelectorAll('.modal-overlay').forEach(modal => {
@@ -3320,7 +3390,7 @@
         }
         const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v12';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v13';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
@@ -8024,6 +8094,7 @@
             const requiredSeconds = Number(backendSettings.view_seconds_required || 5);
             const requiredAmount = getWalletUnlockRequiredAmount();
             const currentAmount = getWalletEarningAmount();
+            if (hasActivationDepositAccess(latestPaymentStatus)) return false;
             if (currentAmount >= requiredAmount) return true;
             if (watchedSeconds < requiredSeconds) return false;
             return currentAmount + estimateWatchReward(watchedSeconds) >= requiredAmount;
