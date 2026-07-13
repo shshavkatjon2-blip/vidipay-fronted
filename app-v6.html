@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v11">
+    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v12">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=frontend-admin-readiness-20260711-v11"></script>
+    <script src="./config.js?v=frontend-admin-readiness-20260711-v12"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -2402,6 +2402,35 @@
             -webkit-overflow-scrolling: touch !important;
         }
 
+        html.vidipay-modal-scroll-lock,
+        html.vidipay-modal-scroll-lock body,
+        body.modal-open {
+            overflow: hidden !important;
+            overscroll-behavior: none !important;
+            touch-action: none !important;
+        }
+
+        html.vidipay-modal-scroll-lock body.modal-open {
+            position: fixed !important;
+            top: calc(var(--vidipay-modal-scroll-y, 0px) * -1) !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+        }
+
+        body.modal-open .modal-overlay.is-open {
+            overflow-y: auto !important;
+            overscroll-behavior: contain !important;
+            touch-action: pan-y !important;
+        }
+
+        body.modal-open .modal-content,
+        body.modal-open .history-list {
+            overscroll-behavior: contain !important;
+            touch-action: pan-y !important;
+            -webkit-overflow-scrolling: touch !important;
+        }
+
 </style>
 </head>
 <body>
@@ -3157,6 +3186,39 @@
 
         installGlobalActionGuard();
 
+        let modalPageScrollY = 0;
+        let modalPageScrollLocked = false;
+
+        function lockModalPageScroll(reason = 'open') {
+            if (modalPageScrollLocked) return;
+            modalPageScrollY = Math.max(0, window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0);
+            document.documentElement.style.setProperty('--vidipay-modal-scroll-y', `${modalPageScrollY}px`);
+            document.documentElement.classList.add('vidipay-modal-scroll-lock');
+            document.body.classList.add('modal-open');
+            document.documentElement.dataset.vidipayModalScrollLock = 'locked';
+            document.documentElement.dataset.vidipayModalScrollReason = String(reason || '').slice(0, 60);
+            modalPageScrollLocked = true;
+        }
+
+        function unlockModalPageScroll(reason = 'close') {
+            if (!modalPageScrollLocked) {
+                document.documentElement.classList.remove('vidipay-modal-scroll-lock');
+                document.body.classList.remove('modal-open');
+                document.documentElement.dataset.vidipayModalScrollLock = 'unlocked';
+                return;
+            }
+            const restoreY = modalPageScrollY;
+            modalPageScrollLocked = false;
+            document.documentElement.classList.remove('vidipay-modal-scroll-lock');
+            document.body.classList.remove('modal-open');
+            document.documentElement.style.removeProperty('--vidipay-modal-scroll-y');
+            document.documentElement.dataset.vidipayModalScrollLock = 'unlocked';
+            document.documentElement.dataset.vidipayModalScrollReason = String(reason || '').slice(0, 60);
+            requestAnimationFrame(() => {
+                try { window.scrollTo(0, restoreY); } catch (_) {}
+            });
+        }
+
         function syncModalAccessibilityState(reason = 'sync') {
             let openCount = 0;
             document.querySelectorAll('.modal-overlay').forEach(modal => {
@@ -3166,7 +3228,8 @@
                 modal.setAttribute('role', 'dialog');
                 modal.setAttribute('aria-modal', isOpen ? 'true' : 'false');
             });
-            document.body.classList.toggle('modal-open', openCount > 0);
+            if (openCount > 0) lockModalPageScroll(reason);
+            else unlockModalPageScroll(reason);
             document.documentElement.dataset.vidipayModalStateGuard = 'ready';
             document.documentElement.dataset.vidipayModalStateGuardReason = String(reason || '').slice(0, 60);
             document.documentElement.dataset.vidipayOpenModalCount = String(openCount);
@@ -3178,7 +3241,7 @@
                 modal.classList.remove('is-open');
                 modal.style.display = 'none';
             });
-            document.body.classList.remove('modal-open');
+            unlockModalPageScroll('reset');
             syncModalAccessibilityState('reset');
         }
 
@@ -3257,7 +3320,7 @@
         }
         const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v11';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v12';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
@@ -3566,9 +3629,23 @@
             return Boolean(currentGrowthLockStatus().watch_locked);
         }
 
+        function hasActivationDepositAccess(status = latestPaymentStatus) {
+            const paymentStatus = status || {};
+            const refund = paymentStatus.deposit_refund || {};
+            const refundState = normalizeDepositRefundStatus(refund.status);
+            return Boolean(
+                paymentStatus.activation_deposit_verified
+                || paymentStatus.deposit_refund_available
+                || paymentStatus.withdraw_unlocked
+                || refund.requested
+                || refundState === 'processing'
+                || refundState === 'completed'
+            );
+        }
+
         function isActivationDepositLocked() {
             return getWalletEarningAmount() >= getWalletUnlockRequiredAmount()
-                && !Boolean(latestPaymentStatus?.withdraw_unlocked);
+                && !hasActivationDepositAccess(latestPaymentStatus);
         }
 
         function updateCheckpointRow(id, checkpoint, baseRequired = 0) {
@@ -4736,6 +4813,8 @@
                     rememberPaymentStatus(status);
                     renderPaymentOrder(latestOrder, status);
                     updateWithdrawUi(status);
+                    updateGrowthLockUi();
+                    updateWalletLockUi();
                     paymentStatusLastRefreshAt = Date.now();
                     setPaymentPollingHealthy(true);
                     updateFrontendHealth({ ok: true });
@@ -9093,9 +9172,11 @@
                 paymentExpiryReady: typeof renderPaymentExpiryText === 'function' && typeof getPaymentOrderExpiryTime === 'function',
                 receiptFormatterReady: typeof renderReceiptItem === 'function' && typeof receiptAmountText === 'function' && typeof receiptDetailText === 'function',
                 depositRefundDetailReady: typeof depositRefundDetailText === 'function' && /status_reason/.test(String(depositRefundDetailText)),
+                activationDepositAccessReady: typeof hasActivationDepositAccess === 'function' && /deposit_refund_available/.test(String(hasActivationDepositAccess)),
                 actionGuardReady: document.documentElement.dataset.vidipayActionGuard === 'ready',
                 actionNormalizerReady: document.documentElement.dataset.vidipayFrontendActionNormalizerInstalled === 'ready',
                 modalStateGuardReady: document.documentElement.dataset.vidipayModalStateGuard === 'ready',
+                modalScrollLockReady: typeof lockModalPageScroll === 'function' && typeof unlockModalPageScroll === 'function' && document.documentElement.dataset.vidipayModalScrollLock !== undefined,
                 runtimeGuardReady: document.documentElement.dataset.vidipayFrontendRuntimeGuardInstalled === 'ready',
                 paymentModalWatchdogReady: document.documentElement.dataset.vidipayPaymentModalWatchdogInstalled === 'ready' && typeof sanitizePaymentModalDom === 'function',
                 paymentActionHandlersReady: document.documentElement.dataset.vidipayPaymentActionHandlers === 'ready',
@@ -9133,9 +9214,11 @@
                 && checks.paymentExpiryReady
                 && checks.receiptFormatterReady
                 && checks.depositRefundDetailReady
+                && checks.activationDepositAccessReady
                 && checks.actionGuardReady
                 && checks.actionNormalizerReady
                 && checks.modalStateGuardReady
+                && checks.modalScrollLockReady
                 && checks.runtimeGuardReady
                 && checks.paymentModalWatchdogReady
                 && checks.paymentActionHandlersReady
@@ -9189,10 +9272,12 @@
                 paymentExpiry: typeof renderPaymentExpiryText === 'function' && typeof formatPaymentCountdown === 'function',
                 receiptFormatter: typeof receiptAmountText === 'function' && typeof receiptStatusLabel === 'function' && typeof receiptDetailText === 'function',
                 depositRefundDetail: typeof depositRefundDetailText === 'function' && /status_reason/.test(String(depositRefundDetailText)),
+                activationDepositAccess: typeof hasActivationDepositAccess === 'function' && /deposit_refund_available/.test(String(hasActivationDepositAccess)),
                 actionGuard: document.documentElement.dataset.vidipayActionGuard === 'ready',
                 actionNormalizer: document.documentElement.dataset.vidipayFrontendActionNormalizerInstalled === 'ready',
                 actionReadyCount: Array.from(document.querySelectorAll(FRONTEND_ACTION_SELECTOR)).filter(el => el.classList.contains('frontend-action-ready')).length,
                 modalStateGuard: document.documentElement.dataset.vidipayModalStateGuard === 'ready',
+                modalScrollLock: typeof lockModalPageScroll === 'function' && typeof unlockModalPageScroll === 'function' && document.documentElement.dataset.vidipayModalScrollLock !== undefined,
                 openModalCountFinite: Number.isFinite(Number(document.documentElement.dataset.vidipayOpenModalCount || 0)),
                 watchFinalizeGuard: watchFinalizeInflight === null || typeof watchFinalizeInflight?.then === 'function',
                 runtimeGuard: document.documentElement.dataset.vidipayFrontendRuntimeGuard === 'ready',
@@ -9248,10 +9333,12 @@
                 && checks.paymentExpiry
                 && checks.receiptFormatter
                 && checks.depositRefundDetail
+                && checks.activationDepositAccess
                 && checks.actionGuard
                 && checks.actionNormalizer
                 && checks.actionReadyCount > 0
                 && checks.modalStateGuard
+                && checks.modalScrollLock
                 && checks.openModalCountFinite
                 && checks.watchFinalizeGuard
                 && checks.runtimeGuard

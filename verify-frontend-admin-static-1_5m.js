@@ -4,7 +4,7 @@ const vm = require("vm");
 const crypto = require("crypto");
 
 const targetDir = path.resolve(process.argv[2] || __dirname);
-const expectedBuild = "frontend-admin-readiness-20260711-v11";
+const expectedBuild = "frontend-admin-readiness-20260711-v12";
 
 const expectedFiles = [
   "admin.html",
@@ -47,6 +47,8 @@ const appRequiredPatterns = [
   { name: "receipt_mobile_wrap", pattern: /\.receipt-value[\s\S]*overflow-wrap:\s*anywhere[\s\S]*@media \(max-width:\s*380px\)[\s\S]*\.receipt-row[\s\S]*display:\s*block/ },
   { name: "history_error_fallback", pattern: /history_load_failed[\s\S]*historyLoadError[\s\S]*history-error/ },
   { name: "copy_address_feedback", pattern: /copyTonPaymentAddress[\s\S]*payment_copying[\s\S]*vidipayCopyAddressState/ },
+  { name: "activation_deposit_video_unlock", pattern: /hasActivationDepositAccess[\s\S]*deposit_refund_available[\s\S]*isActivationDepositLocked/ },
+  { name: "modal_scroll_lock_guard", pattern: /lockModalPageScroll[\s\S]*vidipay-modal-scroll-lock[\s\S]*unlockModalPageScroll/ },
   { name: "admin_notification_translation", pattern: /translateAdminNotificationText/ },
   { name: "notification_list_layout", pattern: /notification-list/ },
   { name: "growth_lock_status", pattern: /currentGrowthLockStatus/ }
