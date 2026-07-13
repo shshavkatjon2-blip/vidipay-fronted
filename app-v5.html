@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v15">
+    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v16">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=frontend-admin-readiness-20260711-v15"></script>
+    <script src="./config.js?v=frontend-admin-readiness-20260711-v16"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -2450,16 +2450,18 @@
         body.modal-open #withdrawHistoryModal.is-open .info-sub-block {
             display: flex !important;
             flex-direction: column !important;
+            flex: 1 1 auto !important;
+            height: 0 !important;
             min-height: 0 !important;
             overflow: hidden !important;
         }
 
         body.modal-open #withdrawHistoryModal.is-open .history-list {
             flex: 1 1 auto !important;
-            height: 100% !important;
+            height: auto !important;
             min-height: 0 !important;
             max-height: none !important;
-            overflow-y: auto !important;
+            overflow-y: scroll !important;
             overflow-x: hidden !important;
             overscroll-behavior: contain !important;
             touch-action: pan-y !important;
@@ -3401,7 +3403,7 @@
         }
         const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v15';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v16';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
@@ -8839,7 +8841,32 @@
             const modal = document.getElementById('withdrawHistoryModal');
             const box = document.getElementById('withdraw-history-list');
             if (!modal || !box) return;
+            const content = modal.querySelector('.modal-content');
+            const panel = box.closest('.info-sub-block');
+            if (content) {
+                content.style.display = 'flex';
+                content.style.flexDirection = 'column';
+                content.style.overflow = 'hidden';
+                content.style.height = 'calc(var(--app-vh, 100vh) - 44px)';
+                content.style.maxHeight = 'calc(var(--app-vh, 100vh) - 44px)';
+            }
+            if (panel) {
+                panel.style.display = 'flex';
+                panel.style.flexDirection = 'column';
+                panel.style.flex = '1 1 auto';
+                panel.style.height = '0';
+                panel.style.minHeight = '0';
+                panel.style.overflow = 'hidden';
+            }
             box.classList.add('history-scroll-target');
+            box.style.flex = '1 1 auto';
+            box.style.height = 'auto';
+            box.style.minHeight = '0';
+            box.style.maxHeight = 'none';
+            box.style.overflowY = 'scroll';
+            box.style.overflowX = 'hidden';
+            box.style.webkitOverflowScrolling = 'touch';
+            box.style.touchAction = 'pan-y';
             box.setAttribute('tabindex', '0');
             box.setAttribute('role', 'list');
             modal.dataset.historyScrollTarget = 'withdraw-history-list';
