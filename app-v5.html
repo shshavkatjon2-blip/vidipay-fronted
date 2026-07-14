@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v18">
+    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v19">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=frontend-admin-readiness-20260711-v18"></script>
+    <script src="./config.js?v=frontend-admin-readiness-20260711-v19"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -2457,15 +2457,15 @@
             display: block !important;
             height: auto !important;
             min-height: 0 !important;
-            overflow: visible !important;
+            overflow: hidden !important;
         }
 
         body.modal-open #withdrawHistoryModal.is-open .history-list {
-            flex: none !important;
+            flex: 1 1 auto !important;
             height: auto !important;
             min-height: 0 !important;
-            max-height: none !important;
-            overflow: visible !important;
+            max-height: min(64vh, calc(var(--app-vh, 100vh) - 188px)) !important;
+            overflow-y: auto !important;
             overflow-x: hidden !important;
             overscroll-behavior: contain !important;
             touch-action: pan-y !important;
@@ -3406,7 +3406,7 @@
         }
         const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v18';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v19';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
@@ -8925,27 +8925,30 @@
                 panel.style.display = 'block';
                 panel.style.height = 'auto';
                 panel.style.minHeight = '0';
-                panel.style.overflow = 'visible';
+                panel.style.overflow = 'hidden';
             }
             box.classList.add('history-scroll-target');
-            box.style.flex = 'none';
+            box.style.flex = '1 1 auto';
             box.style.height = 'auto';
             box.style.minHeight = '0';
-            box.style.maxHeight = 'none';
-            box.style.overflowY = 'visible';
+            box.style.maxHeight = 'min(64vh, calc(var(--app-vh, 100vh) - 188px))';
+            box.style.overflowY = 'auto';
             box.style.overflowX = 'hidden';
             box.style.webkitOverflowScrolling = 'touch';
             box.style.touchAction = 'pan-y';
             box.setAttribute('tabindex', '0');
             box.setAttribute('role', 'list');
             modal.dataset.historyScrollTarget = 'withdraw-history-list';
+            modal.dataset.historyScrollMode = 'list';
             document.documentElement.dataset.vidipayHistoryScrollTarget = 'ready';
+            document.documentElement.dataset.vidipayHistoryScrollMode = 'list';
             if (options.reset) {
                 requestAnimationFrame(() => {
                     if (modal.classList.contains('is-open')) {
                         try {
                             modal.scrollTop = 0;
                             if (content) content.scrollTop = 0;
+                            box.scrollTop = 0;
                         } catch (_) {}
                     }
                 });
@@ -9381,6 +9384,67 @@
             return document.getElementById('watchModal')?.classList.contains('is-open');
         }
 
+        function isFrontendModalOpen(id) {
+            const modal = document.getElementById(id);
+            return Boolean(modal?.classList.contains('is-open') && modal.style.display !== 'none');
+        }
+
+        function runResumeUiStep(label, fn) {
+            try {
+                return fn();
+            } catch (err) {
+                rememberFrontendError(label, err);
+                return false;
+            }
+        }
+
+        function resumeFrontendUiFromCache(reason = 'resume') {
+            const now = Date.now();
+            const lastAt = Number(document.documentElement.dataset.vidipayResumeCacheLastAt || 0);
+            if (reason !== 'init' && now - lastAt < 250) return true;
+            document.documentElement.dataset.vidipayResumeCacheLastAt = String(now);
+            document.documentElement.dataset.vidipayResumeCacheReason = String(reason || '').slice(0, 60);
+
+            runResumeUiStep('resume_cache_status', () => seedPaymentStatusFromCache());
+            runResumeUiStep('resume_cache_order', () => seedPaymentOrderFromCache());
+            runResumeUiStep('resume_top_account', () => updateTopAccountInfo());
+            runResumeUiStep('resume_watch_displays', () => updateWatchDisplays());
+            runResumeUiStep('resume_bonus_displays', () => updateBonusDisplays());
+            runResumeUiStep('resume_bonus_lock', () => updateBonusLockUi());
+            runResumeUiStep('resume_growth_lock', () => updateGrowthLockUi());
+            runResumeUiStep('resume_wallet_lock', () => updateWalletLockUi());
+            runResumeUiStep('resume_withdraw_ui', () => updateWithdrawUi(latestPaymentStatus));
+            runResumeUiStep('resume_notifications', () => renderNotifications());
+            runResumeUiStep('resume_history_scroll_setup', () => prepareHistoryModalScroll());
+
+            if (isTonDepositModalOpen()) {
+                runResumeUiStep('resume_payment_modal', () => {
+                    renderPaymentOrder(currentPaymentOrder, latestPaymentStatus);
+                    sanitizePaymentModalDom(`cache:${reason}`);
+                    updatePaymentActionButtons();
+                });
+            }
+            if (isFrontendModalOpen('withdrawHistoryModal')) {
+                runResumeUiStep('resume_history_scroll', () => prepareHistoryModalScroll());
+            }
+            if (isFrontendModalOpen('withdrawModal')) {
+                runResumeUiStep('resume_withdraw_modal', () => updateWithdrawUi(latestPaymentStatus));
+            }
+            if (isFrontendModalOpen('walletModal')) {
+                runResumeUiStep('resume_wallet_modal', () => {
+                    updateWalletLockUi();
+                    updateWalletModal();
+                });
+            }
+
+            runResumeUiStep('resume_actions', () => normalizeFrontendActionElements());
+            runResumeUiStep('resume_modal_accessibility', () => syncModalAccessibilityState(`resume_cache:${reason}`));
+            document.documentElement.dataset.vidipayResumeCache = 'ready';
+            document.documentElement.dataset.vidipayResumeCacheAt = new Date(now).toISOString();
+            updatePaymentRealTestReadiness(`resume_cache:${reason}`);
+            return true;
+        }
+
         function setPaymentPollingHealthy(ok) {
             if (ok) {
                 paymentPollingFailures = 0;
@@ -9480,6 +9544,7 @@
 
         function resumeFrontendActivity(reason = 'page_resume') {
             updateViewportMetrics();
+            resumeFrontendUiFromCache(reason);
             scheduleSettingsRefresh();
             if (isTonDepositModalOpen()) {
                 setPaymentPollingHealthy(true);
@@ -9520,6 +9585,7 @@
             document.documentElement.dataset.vidipayFrontendRuntimeGuardAt = new Date(frontendRuntimeGuardLastAt).toISOString();
             document.documentElement.dataset.vidipayFrontendRuntimeGuardReason = String(reason || '').slice(0, 60);
             updateViewportMetrics();
+            resumeFrontendUiFromCache(`runtime:${reason}`);
             resetStaleActionBusyLocks();
             syncModalAccessibilityState(`runtime:${reason}`);
 
@@ -9632,6 +9698,8 @@
                 withdrawWalletInputGuardReady: document.documentElement.dataset.vidipayWithdrawWalletInputGuard === 'ready' && typeof validateWithdrawWalletInput === 'function',
                 withdrawRefundScopeReady: /deposit_refund/.test(String(submitWithdrawRequest)),
                 withdrawRefundFollowupReady: typeof scheduleDepositRefundFollowup === 'function' && typeof clearDepositRefundFollowup === 'function',
+                resumeCacheReady: typeof resumeFrontendUiFromCache === 'function' && document.documentElement.dataset.vidipayResumeCache === 'ready',
+                historyListScrollReady: document.documentElement.dataset.vidipayHistoryScrollMode === 'list',
                 paymentExpiryHealthDatasetReady: document.getElementById('payment-expiry-text')?.dataset.paymentValidityHealthy !== undefined,
                 manualCheckHandlerReady: checkBtn?.getAttribute('onclick') === 'checkTonPaymentNow()',
                 copyHandlerReady: copyBtn?.getAttribute('onclick') === 'copyTonPaymentAddress()',
@@ -9674,6 +9742,8 @@
                 && checks.withdrawWalletInputGuardReady
                 && checks.withdrawRefundScopeReady
                 && checks.withdrawRefundFollowupReady
+                && checks.resumeCacheReady
+                && checks.historyListScrollReady
                 && checks.paymentExpiryHealthDatasetReady
                 && checks.manualCheckHandlerReady
                 && checks.copyHandlerReady
@@ -9738,6 +9808,8 @@
                 withdrawWalletInputGuard: document.documentElement.dataset.vidipayWithdrawWalletInputGuard === 'ready' && typeof validateWithdrawWalletInput === 'function',
                 withdrawRefundScope: /deposit_refund/.test(String(submitWithdrawRequest)),
                 withdrawRefundFollowup: typeof scheduleDepositRefundFollowup === 'function' && typeof clearDepositRefundFollowup === 'function',
+                resumeCache: typeof resumeFrontendUiFromCache === 'function' && document.documentElement.dataset.vidipayResumeCache === 'ready',
+                historyListScroll: document.documentElement.dataset.vidipayHistoryScrollMode === 'list',
                 paymentExpiryHealthDataset: document.getElementById('payment-expiry-text')?.dataset.paymentValidityHealthy !== undefined,
                 manualCheckClickHandler: checkBtn?.getAttribute('onclick') === 'checkTonPaymentNow()',
                 copyAddressClickHandler: copyBtn?.getAttribute('onclick') === 'copyTonPaymentAddress()',
@@ -9799,6 +9871,8 @@
                 && checks.withdrawWalletInputGuard
                 && checks.withdrawRefundScope
                 && checks.withdrawRefundFollowup
+                && checks.resumeCache
+                && checks.historyListScroll
                 && checks.paymentExpiryHealthDataset
                 && checks.manualCheckClickHandler
                 && checks.copyAddressClickHandler
@@ -9854,15 +9928,7 @@
         }
 
         changeLang(currentLang);
-        seedPaymentStatusFromCache();
-        seedPaymentOrderFromCache();
-        updateTopAccountInfo();
-        updateWatchDisplays();
-        renderNotifications();
-        updateBonusDisplays();
-        updateWithdrawUi(latestPaymentStatus);
-        updateGrowthLockUi();
-        updateWalletLockUi();
+        resumeFrontendUiFromCache('init');
         updateFrontendHealth({ ok: navigator.onLine });
         scheduleFrontendContractSelfCheck();
         schedulePendingWatchRewardSync(8000);
