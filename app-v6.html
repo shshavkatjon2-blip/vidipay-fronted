@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v19">
+    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v20">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=frontend-admin-readiness-20260711-v19"></script>
+    <script src="./config.js?v=frontend-admin-readiness-20260711-v20"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -2445,27 +2445,34 @@
         }
 
         body.modal-open #withdrawHistoryModal.is-open .modal-content {
-            display: block !important;
-            overflow-y: auto !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow-y: hidden !important;
             overflow-x: hidden !important;
-            height: auto !important;
+            height: calc(var(--app-vh, 100vh) - 36px) !important;
             min-height: 0 !important;
             max-height: calc(var(--app-vh, 100vh) - 36px) !important;
         }
 
         body.modal-open #withdrawHistoryModal.is-open .info-sub-block {
             display: block !important;
-            height: auto !important;
-            min-height: 0 !important;
-            overflow: hidden !important;
-        }
-
-        body.modal-open #withdrawHistoryModal.is-open .history-list {
             flex: 1 1 auto !important;
             height: auto !important;
             min-height: 0 !important;
-            max-height: min(64vh, calc(var(--app-vh, 100vh) - 188px)) !important;
+            max-height: none !important;
             overflow-y: auto !important;
+            overflow-x: hidden !important;
+            overscroll-behavior: contain !important;
+            touch-action: pan-y !important;
+            -webkit-overflow-scrolling: touch !important;
+        }
+
+        body.modal-open #withdrawHistoryModal.is-open .history-list {
+            flex: none !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow-y: visible !important;
             overflow-x: hidden !important;
             overscroll-behavior: contain !important;
             touch-action: pan-y !important;
@@ -3273,10 +3280,7 @@
         function isScrollableModalTarget(target) {
             const modal = getOpenModalOverlay();
             if (!modal || !target?.closest) return false;
-            if (modal.id === 'withdrawHistoryModal') {
-                return Boolean(target.closest('#withdrawHistoryModal, #withdrawHistoryModal .modal-content, #withdraw-history-list'));
-            }
-            let node = target.closest('#withdraw-history-list, #notification-list, #support-chat-box, .modal-content, .modal-overlay');
+            let node = target.closest('#withdrawHistoryModal .info-sub-block, #withdraw-history-list, #notification-list, #support-chat-box, .modal-content, .modal-overlay');
             while (node && node !== document.body && node !== document.documentElement) {
                 if (node === modal || modal.contains(node)) {
                     const style = window.getComputedStyle(node);
@@ -3406,7 +3410,7 @@
         }
         const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v19';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v20';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
@@ -3489,6 +3493,7 @@
         let shouldStartMrBeastWhenApiReady = false;
         let watchFallbackTimer = null;
         let usingFallbackPlayer = false;
+        let nativeWatchVideoIndex = 0;
         let settingsRefreshBusy = false;
         let settingsRefreshTimer = null;
         let paymentStatusRefreshBusy = false;
@@ -3553,6 +3558,29 @@
         };
         window.__vidipayFrontendNetwork = frontendNetworkStats;
         const MRBEAST_UPLOADS_PLAYLIST = 'UUX6OQ3DkcsbYNE6H8uQQuVA';
+        const USE_NATIVE_WATCH_PLAYER = true;
+        const WATCH_NATIVE_VIDEO_SOURCES = [
+            {
+                id: 'native_big_buck_bunny',
+                src: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+                poster: 'https://storage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg'
+            },
+            {
+                id: 'native_sintel',
+                src: 'https://storage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+                poster: 'https://storage.googleapis.com/gtv-videos-bucket/sample/images/Sintel.jpg'
+            },
+            {
+                id: 'native_for_bigger_blazes',
+                src: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+                poster: 'https://storage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerBlazes.jpg'
+            },
+            {
+                id: 'native_tears_of_steel',
+                src: 'https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+                poster: 'https://storage.googleapis.com/gtv-videos-bucket/sample/images/TearsOfSteel.jpg'
+            }
+        ];
         let latestPaymentStatus = {};
         let currentTierStatus = {
             tier: 3,
@@ -7818,6 +7846,17 @@
             return Math.floor(Math.random() * MRBEAST_RANDOM_START_MAX);
         }
 
+        function normalizeNativeWatchIndex(index = nativeWatchVideoIndex) {
+            const count = WATCH_NATIVE_VIDEO_SOURCES.length || 1;
+            const raw = Number.isFinite(Number(index)) ? Number(index) : 0;
+            return ((Math.floor(raw) % count) + count) % count;
+        }
+
+        function getNativeWatchSource(index = nativeWatchVideoIndex) {
+            nativeWatchVideoIndex = normalizeNativeWatchIndex(index);
+            return WATCH_NATIVE_VIDEO_SOURCES[nativeWatchVideoIndex] || WATCH_NATIVE_VIDEO_SOURCES[0];
+        }
+
         function resetWatchVideoState(message = t('watch_playing')) {
             currentWatchCompleted = false;
             currentMrBeastVideoId = null;
@@ -7826,7 +7865,7 @@
         }
 
         function playMrBeastAt(index) {
-            if (!mrbeastPlayer || !mrbeastPlayer.playVideoAt) {
+            if (USE_NATIVE_WATCH_PLAYER || !mrbeastPlayer || !mrbeastPlayer.playVideoAt) {
                 showMrBeastFallbackPlayer(t('watch_playing'), index);
                 return;
             }
@@ -7836,13 +7875,17 @@
 
         function playRandomMrBeastVideo() {
             if (isActionThrottled('watch-random', 700)) return;
+            if (USE_NATIVE_WATCH_PLAYER || usingFallbackPlayer || !mrbeastPlayer) {
+                showMrBeastFallbackPlayer(t('watch_playing'), Math.floor(Math.random() * WATCH_NATIVE_VIDEO_SOURCES.length));
+                return;
+            }
             playMrBeastAt(randomMrBeastIndex());
         }
 
         function playNextMrBeastVideo() {
             if (isActionThrottled('watch-next', 700)) return;
-            if (!mrbeastPlayer || !mrbeastPlayer.nextVideo) {
-                showMrBeastFallbackPlayer(t('watch_playing'));
+            if (USE_NATIVE_WATCH_PLAYER || usingFallbackPlayer || !mrbeastPlayer || !mrbeastPlayer.nextVideo) {
+                showMrBeastFallbackPlayer(t('watch_playing'), nativeWatchVideoIndex + 1);
                 return;
             }
             resetWatchVideoState(t('watch_playing'));
@@ -7851,8 +7894,8 @@
 
         function playPreviousMrBeastVideo() {
             if (isActionThrottled('watch-previous', 700)) return;
-            if (!mrbeastPlayer || !mrbeastPlayer.previousVideo) {
-                showMrBeastFallbackPlayer(t('watch_playing'));
+            if (USE_NATIVE_WATCH_PLAYER || usingFallbackPlayer || !mrbeastPlayer || !mrbeastPlayer.previousVideo) {
+                showMrBeastFallbackPlayer(t('watch_playing'), nativeWatchVideoIndex - 1);
                 return;
             }
             resetWatchVideoState(t('watch_playing'));
@@ -7877,13 +7920,52 @@
             const host = document.getElementById('mrbeast-player');
             if (!host || !pendingWatch) return;
 
+            const source = getNativeWatchSource(index);
             mrbeastPlayer = null;
             usingFallbackPlayer = true;
-            currentMrBeastVideoId = currentMrBeastVideoId || `mrbeast_fallback_${Date.now()}`;
+            currentMrBeastVideoId = `${source.id}_${watchSessionGeneration}_${Date.now()}`;
             watchSessionVideoIds.add(currentMrBeastVideoId);
-            host.innerHTML = `<iframe src="${buildMrBeastEmbedUrl(index)}" title="MrBeast video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="width:100%;height:100%;border:0;display:block;background:#05070a;"></iframe>`;
+            stopWatchTimerDisplay();
+            host.innerHTML = `
+                <video id="vidipay-native-watch-video"
+                    src="${escapeHtml(source.src)}"
+                    poster="${escapeHtml(source.poster || '')}"
+                    controls
+                    autoplay
+                    muted
+                    playsinline
+                    preload="auto"
+                    style="width:100%;height:100%;border:0;display:block;background:#05070a;object-fit:cover;">
+                </video>`;
+            const video = document.getElementById('vidipay-native-watch-video');
+            const startNativeTimer = () => {
+                currentWatchCompleted = false;
+                watchSessionVideoIds.add(currentMrBeastVideoId);
+                updateWatchSessionUi(t('watch_playing'));
+                startWatchTimerDisplay();
+                document.documentElement.dataset.vidipayWatchNativePlayer = 'playing';
+            };
+            const pauseNativeTimer = () => {
+                stopWatchTimerDisplay();
+                document.documentElement.dataset.vidipayWatchNativePlayer = 'paused';
+            };
+            video?.addEventListener('play', startNativeTimer, { passive: true });
+            video?.addEventListener('playing', startNativeTimer, { passive: true });
+            video?.addEventListener('pause', pauseNativeTimer, { passive: true });
+            video?.addEventListener('waiting', pauseNativeTimer, { passive: true });
+            video?.addEventListener('stalled', pauseNativeTimer, { passive: true });
+            video?.addEventListener('ended', () => {
+                currentWatchCompleted = true;
+                stopWatchTimerDisplay();
+                updateWatchSessionUi(t('watch_finished'));
+                document.documentElement.dataset.vidipayWatchNativePlayer = 'ended';
+            }, { passive: true });
+            video?.play?.().catch(() => {
+                document.documentElement.dataset.vidipayWatchNativePlayer = 'tap_to_play';
+                updateWatchSessionUi(t('watch_playing'));
+            });
             updateWatchSessionUi(message);
-            startWatchTimerDisplay();
+            document.documentElement.dataset.vidipayWatchFallback = 'native';
         }
 
         function clearWatchFallbackPlayer() {
@@ -7897,6 +7979,10 @@
         }
 
         function startMrBeastPlayer() {
+            if (USE_NATIVE_WATCH_PLAYER) {
+                showMrBeastFallbackPlayer(t('watch_playing'), nativeWatchVideoIndex);
+                return;
+            }
             if (!youtubeApiReady || !window.YT || !window.YT.Player) {
                 shouldStartMrBeastWhenApiReady = true;
                 updateWatchSessionUi(t('watch_loading'));
@@ -8912,10 +8998,11 @@
             modal.style.webkitOverflowScrolling = 'touch';
             modal.style.touchAction = 'pan-y';
             if (content) {
-                content.style.display = 'block';
-                content.style.overflowY = 'auto';
+                content.style.display = 'flex';
+                content.style.flexDirection = 'column';
+                content.style.overflowY = 'hidden';
                 content.style.overflowX = 'hidden';
-                content.style.height = 'auto';
+                content.style.height = 'calc(var(--app-vh, 100vh) - 36px)';
                 content.style.minHeight = '0';
                 content.style.maxHeight = 'calc(var(--app-vh, 100vh) - 36px)';
                 content.style.webkitOverflowScrolling = 'touch';
@@ -8923,31 +9010,39 @@
             }
             if (panel) {
                 panel.style.display = 'block';
+                panel.style.flex = '1 1 auto';
                 panel.style.height = 'auto';
                 panel.style.minHeight = '0';
-                panel.style.overflow = 'hidden';
+                panel.style.maxHeight = 'none';
+                panel.style.overflowY = 'auto';
+                panel.style.overflowX = 'hidden';
+                panel.style.webkitOverflowScrolling = 'touch';
+                panel.style.touchAction = 'pan-y';
+                panel.setAttribute('tabindex', '0');
+                panel.setAttribute('role', 'region');
             }
             box.classList.add('history-scroll-target');
-            box.style.flex = '1 1 auto';
+            box.style.flex = 'none';
             box.style.height = 'auto';
             box.style.minHeight = '0';
-            box.style.maxHeight = 'min(64vh, calc(var(--app-vh, 100vh) - 188px))';
-            box.style.overflowY = 'auto';
+            box.style.maxHeight = 'none';
+            box.style.overflowY = 'visible';
             box.style.overflowX = 'hidden';
             box.style.webkitOverflowScrolling = 'touch';
             box.style.touchAction = 'pan-y';
             box.setAttribute('tabindex', '0');
             box.setAttribute('role', 'list');
-            modal.dataset.historyScrollTarget = 'withdraw-history-list';
-            modal.dataset.historyScrollMode = 'list';
+            modal.dataset.historyScrollTarget = 'withdraw-history-panel';
+            modal.dataset.historyScrollMode = 'panel';
             document.documentElement.dataset.vidipayHistoryScrollTarget = 'ready';
-            document.documentElement.dataset.vidipayHistoryScrollMode = 'list';
+            document.documentElement.dataset.vidipayHistoryScrollMode = 'panel';
             if (options.reset) {
                 requestAnimationFrame(() => {
                     if (modal.classList.contains('is-open')) {
                         try {
                             modal.scrollTop = 0;
                             if (content) content.scrollTop = 0;
+                            if (panel) panel.scrollTop = 0;
                             box.scrollTop = 0;
                         } catch (_) {}
                     }
@@ -9699,7 +9794,8 @@
                 withdrawRefundScopeReady: /deposit_refund/.test(String(submitWithdrawRequest)),
                 withdrawRefundFollowupReady: typeof scheduleDepositRefundFollowup === 'function' && typeof clearDepositRefundFollowup === 'function',
                 resumeCacheReady: typeof resumeFrontendUiFromCache === 'function' && document.documentElement.dataset.vidipayResumeCache === 'ready',
-                historyListScrollReady: document.documentElement.dataset.vidipayHistoryScrollMode === 'list',
+                historyListScrollReady: document.documentElement.dataset.vidipayHistoryScrollMode === 'panel',
+                nativeWatchFallbackReady: USE_NATIVE_WATCH_PLAYER === true && Array.isArray(WATCH_NATIVE_VIDEO_SOURCES) && WATCH_NATIVE_VIDEO_SOURCES.length >= 3,
                 paymentExpiryHealthDatasetReady: document.getElementById('payment-expiry-text')?.dataset.paymentValidityHealthy !== undefined,
                 manualCheckHandlerReady: checkBtn?.getAttribute('onclick') === 'checkTonPaymentNow()',
                 copyHandlerReady: copyBtn?.getAttribute('onclick') === 'copyTonPaymentAddress()',
@@ -9744,6 +9840,7 @@
                 && checks.withdrawRefundFollowupReady
                 && checks.resumeCacheReady
                 && checks.historyListScrollReady
+                && checks.nativeWatchFallbackReady
                 && checks.paymentExpiryHealthDatasetReady
                 && checks.manualCheckHandlerReady
                 && checks.copyHandlerReady
@@ -9809,7 +9906,8 @@
                 withdrawRefundScope: /deposit_refund/.test(String(submitWithdrawRequest)),
                 withdrawRefundFollowup: typeof scheduleDepositRefundFollowup === 'function' && typeof clearDepositRefundFollowup === 'function',
                 resumeCache: typeof resumeFrontendUiFromCache === 'function' && document.documentElement.dataset.vidipayResumeCache === 'ready',
-                historyListScroll: document.documentElement.dataset.vidipayHistoryScrollMode === 'list',
+                historyListScroll: document.documentElement.dataset.vidipayHistoryScrollMode === 'panel',
+                nativeWatchFallback: USE_NATIVE_WATCH_PLAYER === true && Array.isArray(WATCH_NATIVE_VIDEO_SOURCES) && WATCH_NATIVE_VIDEO_SOURCES.length >= 3,
                 paymentExpiryHealthDataset: document.getElementById('payment-expiry-text')?.dataset.paymentValidityHealthy !== undefined,
                 manualCheckClickHandler: checkBtn?.getAttribute('onclick') === 'checkTonPaymentNow()',
                 copyAddressClickHandler: copyBtn?.getAttribute('onclick') === 'copyTonPaymentAddress()',
@@ -9873,6 +9971,7 @@
                 && checks.withdrawRefundFollowup
                 && checks.resumeCache
                 && checks.historyListScroll
+                && checks.nativeWatchFallback
                 && checks.paymentExpiryHealthDataset
                 && checks.manualCheckClickHandler
                 && checks.copyAddressClickHandler
