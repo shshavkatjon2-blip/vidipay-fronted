@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v20">
+    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v21">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=frontend-admin-readiness-20260711-v20"></script>
+    <script src="./config.js?v=frontend-admin-readiness-20260711-v21"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -2447,7 +2447,7 @@
         body.modal-open #withdrawHistoryModal.is-open .modal-content {
             display: flex !important;
             flex-direction: column !important;
-            overflow-y: hidden !important;
+            overflow-y: auto !important;
             overflow-x: hidden !important;
             height: calc(var(--app-vh, 100vh) - 36px) !important;
             min-height: 0 !important;
@@ -2456,7 +2456,7 @@
 
         body.modal-open #withdrawHistoryModal.is-open .info-sub-block {
             display: block !important;
-            flex: 1 1 auto !important;
+            flex: 0 0 auto !important;
             height: auto !important;
             min-height: 0 !important;
             max-height: none !important;
@@ -2482,6 +2482,88 @@
         body.modal-open #withdrawHistoryModal.is-open .history-list.history-scroll-target {
             contain: content !important;
             scroll-behavior: auto !important;
+        }
+
+        .inline-watch-player {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 220px;
+            overflow: hidden;
+            border-radius: 16px;
+            background:
+                radial-gradient(circle at 28% 24%, rgba(0, 255, 204, .38), transparent 28%),
+                radial-gradient(circle at 74% 64%, rgba(59, 130, 246, .34), transparent 30%),
+                linear-gradient(135deg, #05070a 0%, #101820 48%, #05070a 100%);
+            box-shadow: inset 0 0 0 1px rgba(0, 255, 204, .18);
+            isolation: isolate;
+        }
+
+        .inline-watch-player::before,
+        .inline-watch-player::after {
+            content: "";
+            position: absolute;
+            inset: -35%;
+            background:
+                conic-gradient(from 90deg, transparent, rgba(0, 255, 204, .2), transparent, rgba(255, 255, 255, .1), transparent);
+            animation: watchMotion 9s linear infinite;
+            opacity: .8;
+            z-index: 0;
+        }
+
+        .inline-watch-player::after {
+            animation-duration: 14s;
+            animation-direction: reverse;
+            filter: blur(18px);
+            opacity: .45;
+        }
+
+        .inline-watch-player-core {
+            position: absolute;
+            inset: 18px;
+            border-radius: 18px;
+            border: 1px solid rgba(0, 255, 204, .2);
+            background: rgba(0, 0, 0, .28);
+            display: grid;
+            place-items: center;
+            z-index: 1;
+        }
+
+        .inline-watch-play {
+            width: 88px;
+            height: 88px;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 255, 204, .38);
+            background: rgba(0, 255, 204, .14);
+            color: #fff;
+            display: grid;
+            place-items: center;
+            font-size: 34px;
+            box-shadow: 0 18px 60px rgba(0, 255, 204, .2);
+            animation: watchPulse 1.8s ease-in-out infinite;
+        }
+
+        .inline-watch-caption {
+            position: absolute;
+            left: 14px;
+            right: 14px;
+            bottom: 12px;
+            z-index: 2;
+            color: #dffdf7;
+            font-size: 12px;
+            font-weight: 900;
+            text-align: center;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, .8);
+        }
+
+        @keyframes watchMotion {
+            from { transform: rotate(0deg) scale(1); }
+            to { transform: rotate(360deg) scale(1.08); }
+        }
+
+        @keyframes watchPulse {
+            0%, 100% { transform: scale(1); opacity: .92; }
+            50% { transform: scale(1.08); opacity: 1; }
         }
 
 </style>
@@ -3376,6 +3458,8 @@
 
         const referralUserId = user?.id ? String(user.id) : (safeStorageGet('vidiPayGuestId') || ('guest_' + Math.random().toString(36).slice(2, 10)));
         if (!user?.id && !safeStorageGet('vidiPayGuestId')) safeStorageSet('vidiPayGuestId', referralUserId);
+        safeStorageSet('vidiPayReferralUserId', referralUserId);
+        if (user?.id) safeStorageSet('vidiPayTelegramUserId', String(user.id));
         const referralLink = `https://t.me/${BOT_USERNAME}?start=ref_${referralUserId}`;
         const referralStartParam =
             pageParams.get('ref') ||
@@ -3410,7 +3494,7 @@
         }
         const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v20';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v21';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
@@ -3493,7 +3577,7 @@
         let shouldStartMrBeastWhenApiReady = false;
         let watchFallbackTimer = null;
         let usingFallbackPlayer = false;
-        let nativeWatchVideoIndex = 0;
+        let inlineWatchSceneIndex = 0;
         let settingsRefreshBusy = false;
         let settingsRefreshTimer = null;
         let paymentStatusRefreshBusy = false;
@@ -3558,28 +3642,12 @@
         };
         window.__vidipayFrontendNetwork = frontendNetworkStats;
         const MRBEAST_UPLOADS_PLAYLIST = 'UUX6OQ3DkcsbYNE6H8uQQuVA';
-        const USE_NATIVE_WATCH_PLAYER = true;
-        const WATCH_NATIVE_VIDEO_SOURCES = [
-            {
-                id: 'native_big_buck_bunny',
-                src: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-                poster: 'https://storage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg'
-            },
-            {
-                id: 'native_sintel',
-                src: 'https://storage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
-                poster: 'https://storage.googleapis.com/gtv-videos-bucket/sample/images/Sintel.jpg'
-            },
-            {
-                id: 'native_for_bigger_blazes',
-                src: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-                poster: 'https://storage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerBlazes.jpg'
-            },
-            {
-                id: 'native_tears_of_steel',
-                src: 'https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
-                poster: 'https://storage.googleapis.com/gtv-videos-bucket/sample/images/TearsOfSteel.jpg'
-            }
+        const USE_INLINE_WATCH_PLAYER = true;
+        const WATCH_INLINE_SCENES = [
+            { id: 'inline_mint_motion', title: 'VidiPay Watch 01' },
+            { id: 'inline_blue_motion', title: 'VidiPay Watch 02' },
+            { id: 'inline_gold_motion', title: 'VidiPay Watch 03' },
+            { id: 'inline_cyber_motion', title: 'VidiPay Watch 04' }
         ];
         let latestPaymentStatus = {};
         let currentTierStatus = {
@@ -3753,9 +3821,34 @@
             return Boolean(checkpoint499Locked || checkpoint1499Locked || (required > 0 && deposited < required));
         }
 
-        function getActivationAccessCacheKey() {
-            const scope = String(referralUserId || safeStorageGet('vidiPayReferralUserId') || 'guest').trim() || 'guest';
-            return `vidiPayActivationAccess_${scope}`;
+        function getActivationAccessCacheScopes() {
+            return [
+                referralUserId,
+                user?.id,
+                safeStorageGet('vidiPayReferralUserId'),
+                safeStorageGet('vidiPayTelegramUserId'),
+                safeStorageGet('vidiPayGuestId'),
+                'last'
+            ]
+                .map(value => String(value || '').trim())
+                .filter(Boolean)
+                .filter((value, index, all) => all.indexOf(value) === index);
+        }
+
+        function getActivationAccessCacheKey(scope = referralUserId) {
+            const safeScope = String(scope || safeStorageGet('vidiPayReferralUserId') || 'guest').trim() || 'guest';
+            return `vidiPayActivationAccess_${safeScope}`;
+        }
+
+        function readActivationAccessCacheValue(key) {
+            try {
+                const cached = JSON.parse(safeStorageGet(key, 'null'));
+                const cachedAt = Number(cached?.cached_at || 0);
+                const fresh = Boolean(cached?.unlocked) && cachedAt > 0 && Date.now() - cachedAt < 30 * 24 * 60 * 60 * 1000;
+                return fresh ? cached : null;
+            } catch (_) {
+                return null;
+            }
         }
 
         function statusHasActivationDepositAccess(status = {}) {
@@ -3774,30 +3867,45 @@
 
         function rememberActivationDepositAccess(status = latestPaymentStatus) {
             if (!statusHasActivationDepositAccess(status)) return false;
-            safeStorageSet(getActivationAccessCacheKey(), JSON.stringify({
+            const payload = JSON.stringify({
                 unlocked: true,
                 cached_at: Date.now(),
                 source: 'payment_status'
-            }));
+            });
+            getActivationAccessCacheScopes().forEach(scope => safeStorageSet(getActivationAccessCacheKey(scope), payload));
             document.documentElement.dataset.vidipayActivationAccessCache = 'unlocked';
             return true;
         }
 
         function hasCachedActivationDepositAccess() {
-            try {
-                const cached = JSON.parse(safeStorageGet(getActivationAccessCacheKey(), 'null'));
-                const cachedAt = Number(cached?.cached_at || 0);
-                const fresh = Boolean(cached?.unlocked) && cachedAt > 0 && Date.now() - cachedAt < 30 * 24 * 60 * 60 * 1000;
-                document.documentElement.dataset.vidipayActivationAccessCache = fresh ? 'unlocked' : 'empty';
-                return fresh;
-            } catch (_) {
-                document.documentElement.dataset.vidipayActivationAccessCache = 'empty';
-                return false;
+            for (const scope of getActivationAccessCacheScopes()) {
+                const key = getActivationAccessCacheKey(scope);
+                const cached = readActivationAccessCacheValue(key);
+                if (cached) {
+                    safeStorageSet(getActivationAccessCacheKey(referralUserId), JSON.stringify(cached));
+                    document.documentElement.dataset.vidipayActivationAccessCache = 'unlocked';
+                    return true;
+                }
             }
+            document.documentElement.dataset.vidipayActivationAccessCache = 'empty';
+            return false;
         }
 
         function hasActivationDepositAccess(status = latestPaymentStatus) {
             return statusHasActivationDepositAccess(status) || hasCachedActivationDepositAccess();
+        }
+
+        function seedActivationAccessFromCache() {
+            if (!hasCachedActivationDepositAccess()) return false;
+            latestPaymentStatus = {
+                ...latestPaymentStatus,
+                activation_deposit_verified: true,
+                deposit_refund_available: latestPaymentStatus.deposit_refund_available ?? true,
+                withdraw_unlocked: latestPaymentStatus.withdraw_unlocked ?? true,
+                activation_access_cached: true
+            };
+            document.documentElement.dataset.vidipayActivationAccessSeeded = 'ready';
+            return true;
         }
 
         function isActivationDepositLocked() {
@@ -4445,13 +4553,14 @@
 
         function seedPaymentStatusFromCache() {
             const cachedStatus = getCachedPaymentStatus();
-            if (!cachedStatus) return false;
+            if (!cachedStatus) return seedActivationAccessFromCache();
             latestPaymentStatus = {
                 ...latestPaymentStatus,
                 ...cachedStatus
             };
             if (cachedStatus.growth_lock) setGrowthLockStatus(cachedStatus.growth_lock);
             rememberActivationDepositAccess(cachedStatus);
+            seedActivationAccessFromCache();
             const cachedOrder = findPaymentOrderWithWallet(cachedStatus.orders)
                 || cachedStatus.order
                 || getCachedPaymentOrder(false);
@@ -7824,6 +7933,7 @@
             if (isActionThrottled('main-watch-click', 900)) return;
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
             seedPaymentStatusFromCache();
+            seedActivationAccessFromCache();
             if (isActivationDepositLocked()) {
                 updateGrowthLockUi();
                 showCopyToast(t('activation_deposit_required'));
@@ -7846,15 +7956,15 @@
             return Math.floor(Math.random() * MRBEAST_RANDOM_START_MAX);
         }
 
-        function normalizeNativeWatchIndex(index = nativeWatchVideoIndex) {
-            const count = WATCH_NATIVE_VIDEO_SOURCES.length || 1;
+        function normalizeInlineWatchIndex(index = inlineWatchSceneIndex) {
+            const count = WATCH_INLINE_SCENES.length || 1;
             const raw = Number.isFinite(Number(index)) ? Number(index) : 0;
             return ((Math.floor(raw) % count) + count) % count;
         }
 
-        function getNativeWatchSource(index = nativeWatchVideoIndex) {
-            nativeWatchVideoIndex = normalizeNativeWatchIndex(index);
-            return WATCH_NATIVE_VIDEO_SOURCES[nativeWatchVideoIndex] || WATCH_NATIVE_VIDEO_SOURCES[0];
+        function getInlineWatchScene(index = inlineWatchSceneIndex) {
+            inlineWatchSceneIndex = normalizeInlineWatchIndex(index);
+            return WATCH_INLINE_SCENES[inlineWatchSceneIndex] || WATCH_INLINE_SCENES[0];
         }
 
         function resetWatchVideoState(message = t('watch_playing')) {
@@ -7865,7 +7975,7 @@
         }
 
         function playMrBeastAt(index) {
-            if (USE_NATIVE_WATCH_PLAYER || !mrbeastPlayer || !mrbeastPlayer.playVideoAt) {
+            if (USE_INLINE_WATCH_PLAYER || !mrbeastPlayer || !mrbeastPlayer.playVideoAt) {
                 showMrBeastFallbackPlayer(t('watch_playing'), index);
                 return;
             }
@@ -7875,8 +7985,8 @@
 
         function playRandomMrBeastVideo() {
             if (isActionThrottled('watch-random', 700)) return;
-            if (USE_NATIVE_WATCH_PLAYER || usingFallbackPlayer || !mrbeastPlayer) {
-                showMrBeastFallbackPlayer(t('watch_playing'), Math.floor(Math.random() * WATCH_NATIVE_VIDEO_SOURCES.length));
+            if (USE_INLINE_WATCH_PLAYER || usingFallbackPlayer || !mrbeastPlayer) {
+                showMrBeastFallbackPlayer(t('watch_playing'), Math.floor(Math.random() * WATCH_INLINE_SCENES.length));
                 return;
             }
             playMrBeastAt(randomMrBeastIndex());
@@ -7884,8 +7994,8 @@
 
         function playNextMrBeastVideo() {
             if (isActionThrottled('watch-next', 700)) return;
-            if (USE_NATIVE_WATCH_PLAYER || usingFallbackPlayer || !mrbeastPlayer || !mrbeastPlayer.nextVideo) {
-                showMrBeastFallbackPlayer(t('watch_playing'), nativeWatchVideoIndex + 1);
+            if (USE_INLINE_WATCH_PLAYER || usingFallbackPlayer || !mrbeastPlayer || !mrbeastPlayer.nextVideo) {
+                showMrBeastFallbackPlayer(t('watch_playing'), inlineWatchSceneIndex + 1);
                 return;
             }
             resetWatchVideoState(t('watch_playing'));
@@ -7894,8 +8004,8 @@
 
         function playPreviousMrBeastVideo() {
             if (isActionThrottled('watch-previous', 700)) return;
-            if (USE_NATIVE_WATCH_PLAYER || usingFallbackPlayer || !mrbeastPlayer || !mrbeastPlayer.previousVideo) {
-                showMrBeastFallbackPlayer(t('watch_playing'), nativeWatchVideoIndex - 1);
+            if (USE_INLINE_WATCH_PLAYER || usingFallbackPlayer || !mrbeastPlayer || !mrbeastPlayer.previousVideo) {
+                showMrBeastFallbackPlayer(t('watch_playing'), inlineWatchSceneIndex - 1);
                 return;
             }
             resetWatchVideoState(t('watch_playing'));
@@ -7920,52 +8030,24 @@
             const host = document.getElementById('mrbeast-player');
             if (!host || !pendingWatch) return;
 
-            const source = getNativeWatchSource(index);
+            const scene = getInlineWatchScene(index);
             mrbeastPlayer = null;
             usingFallbackPlayer = true;
-            currentMrBeastVideoId = `${source.id}_${watchSessionGeneration}_${Date.now()}`;
+            currentMrBeastVideoId = `${scene.id}_${watchSessionGeneration}_${Date.now()}`;
             watchSessionVideoIds.add(currentMrBeastVideoId);
             stopWatchTimerDisplay();
             host.innerHTML = `
-                <video id="vidipay-native-watch-video"
-                    src="${escapeHtml(source.src)}"
-                    poster="${escapeHtml(source.poster || '')}"
-                    controls
-                    autoplay
-                    muted
-                    playsinline
-                    preload="auto"
-                    style="width:100%;height:100%;border:0;display:block;background:#05070a;object-fit:cover;">
-                </video>`;
-            const video = document.getElementById('vidipay-native-watch-video');
-            const startNativeTimer = () => {
-                currentWatchCompleted = false;
-                watchSessionVideoIds.add(currentMrBeastVideoId);
-                updateWatchSessionUi(t('watch_playing'));
-                startWatchTimerDisplay();
-                document.documentElement.dataset.vidipayWatchNativePlayer = 'playing';
-            };
-            const pauseNativeTimer = () => {
-                stopWatchTimerDisplay();
-                document.documentElement.dataset.vidipayWatchNativePlayer = 'paused';
-            };
-            video?.addEventListener('play', startNativeTimer, { passive: true });
-            video?.addEventListener('playing', startNativeTimer, { passive: true });
-            video?.addEventListener('pause', pauseNativeTimer, { passive: true });
-            video?.addEventListener('waiting', pauseNativeTimer, { passive: true });
-            video?.addEventListener('stalled', pauseNativeTimer, { passive: true });
-            video?.addEventListener('ended', () => {
-                currentWatchCompleted = true;
-                stopWatchTimerDisplay();
-                updateWatchSessionUi(t('watch_finished'));
-                document.documentElement.dataset.vidipayWatchNativePlayer = 'ended';
-            }, { passive: true });
-            video?.play?.().catch(() => {
-                document.documentElement.dataset.vidipayWatchNativePlayer = 'tap_to_play';
-                updateWatchSessionUi(t('watch_playing'));
-            });
+                <div id="vidipay-inline-watch-player" class="inline-watch-player" role="img" aria-label="${escapeHtml(scene.title)}">
+                    <div class="inline-watch-player-core">
+                        <div class="inline-watch-play"><i class="fas fa-play"></i></div>
+                    </div>
+                    <div class="inline-watch-caption">${escapeHtml(scene.title)}</div>
+                </div>`;
+            currentWatchCompleted = false;
+            startWatchTimerDisplay();
             updateWatchSessionUi(message);
-            document.documentElement.dataset.vidipayWatchFallback = 'native';
+            document.documentElement.dataset.vidipayWatchFallback = 'inline';
+            document.documentElement.dataset.vidipayWatchInlinePlayer = 'playing';
         }
 
         function clearWatchFallbackPlayer() {
@@ -7979,8 +8061,8 @@
         }
 
         function startMrBeastPlayer() {
-            if (USE_NATIVE_WATCH_PLAYER) {
-                showMrBeastFallbackPlayer(t('watch_playing'), nativeWatchVideoIndex);
+            if (USE_INLINE_WATCH_PLAYER) {
+                showMrBeastFallbackPlayer(t('watch_playing'), inlineWatchSceneIndex);
                 return;
             }
             if (!youtubeApiReady || !window.YT || !window.YT.Player) {
@@ -9000,7 +9082,7 @@
             if (content) {
                 content.style.display = 'flex';
                 content.style.flexDirection = 'column';
-                content.style.overflowY = 'hidden';
+                content.style.overflowY = 'auto';
                 content.style.overflowX = 'hidden';
                 content.style.height = 'calc(var(--app-vh, 100vh) - 36px)';
                 content.style.minHeight = '0';
@@ -9010,7 +9092,7 @@
             }
             if (panel) {
                 panel.style.display = 'block';
-                panel.style.flex = '1 1 auto';
+                panel.style.flex = '0 0 auto';
                 panel.style.height = 'auto';
                 panel.style.minHeight = '0';
                 panel.style.maxHeight = 'none';
@@ -9501,6 +9583,7 @@
             document.documentElement.dataset.vidipayResumeCacheReason = String(reason || '').slice(0, 60);
 
             runResumeUiStep('resume_cache_status', () => seedPaymentStatusFromCache());
+            runResumeUiStep('resume_activation_access', () => seedActivationAccessFromCache());
             runResumeUiStep('resume_cache_order', () => seedPaymentOrderFromCache());
             runResumeUiStep('resume_top_account', () => updateTopAccountInfo());
             runResumeUiStep('resume_watch_displays', () => updateWatchDisplays());
@@ -9795,7 +9878,7 @@
                 withdrawRefundFollowupReady: typeof scheduleDepositRefundFollowup === 'function' && typeof clearDepositRefundFollowup === 'function',
                 resumeCacheReady: typeof resumeFrontendUiFromCache === 'function' && document.documentElement.dataset.vidipayResumeCache === 'ready',
                 historyListScrollReady: document.documentElement.dataset.vidipayHistoryScrollMode === 'panel',
-                nativeWatchFallbackReady: USE_NATIVE_WATCH_PLAYER === true && Array.isArray(WATCH_NATIVE_VIDEO_SOURCES) && WATCH_NATIVE_VIDEO_SOURCES.length >= 3,
+                inlineWatchFallbackReady: USE_INLINE_WATCH_PLAYER === true && Array.isArray(WATCH_INLINE_SCENES) && WATCH_INLINE_SCENES.length >= 3,
                 paymentExpiryHealthDatasetReady: document.getElementById('payment-expiry-text')?.dataset.paymentValidityHealthy !== undefined,
                 manualCheckHandlerReady: checkBtn?.getAttribute('onclick') === 'checkTonPaymentNow()',
                 copyHandlerReady: copyBtn?.getAttribute('onclick') === 'copyTonPaymentAddress()',
@@ -9840,7 +9923,7 @@
                 && checks.withdrawRefundFollowupReady
                 && checks.resumeCacheReady
                 && checks.historyListScrollReady
-                && checks.nativeWatchFallbackReady
+                && checks.inlineWatchFallbackReady
                 && checks.paymentExpiryHealthDatasetReady
                 && checks.manualCheckHandlerReady
                 && checks.copyHandlerReady
@@ -9907,7 +9990,7 @@
                 withdrawRefundFollowup: typeof scheduleDepositRefundFollowup === 'function' && typeof clearDepositRefundFollowup === 'function',
                 resumeCache: typeof resumeFrontendUiFromCache === 'function' && document.documentElement.dataset.vidipayResumeCache === 'ready',
                 historyListScroll: document.documentElement.dataset.vidipayHistoryScrollMode === 'panel',
-                nativeWatchFallback: USE_NATIVE_WATCH_PLAYER === true && Array.isArray(WATCH_NATIVE_VIDEO_SOURCES) && WATCH_NATIVE_VIDEO_SOURCES.length >= 3,
+                inlineWatchFallback: USE_INLINE_WATCH_PLAYER === true && Array.isArray(WATCH_INLINE_SCENES) && WATCH_INLINE_SCENES.length >= 3,
                 paymentExpiryHealthDataset: document.getElementById('payment-expiry-text')?.dataset.paymentValidityHealthy !== undefined,
                 manualCheckClickHandler: checkBtn?.getAttribute('onclick') === 'checkTonPaymentNow()',
                 copyAddressClickHandler: copyBtn?.getAttribute('onclick') === 'copyTonPaymentAddress()',
@@ -9971,7 +10054,7 @@
                 && checks.withdrawRefundFollowup
                 && checks.resumeCache
                 && checks.historyListScroll
-                && checks.nativeWatchFallback
+                && checks.inlineWatchFallback
                 && checks.paymentExpiryHealthDataset
                 && checks.manualCheckClickHandler
                 && checks.copyAddressClickHandler

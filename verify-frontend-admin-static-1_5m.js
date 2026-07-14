@@ -4,7 +4,7 @@ const vm = require("vm");
 const crypto = require("crypto");
 
 const targetDir = path.resolve(process.argv[2] || __dirname);
-const expectedBuild = "frontend-admin-readiness-20260711-v20";
+const expectedBuild = "frontend-admin-readiness-20260711-v21";
 
 const expectedFiles = [
   "admin.html",
@@ -52,12 +52,12 @@ const appRequiredPatterns = [
   { name: "modal_scroll_lock_guard", pattern: /lockModalPageScroll[\s\S]*vidipay-modal-scroll-lock[\s\S]*unlockModalPageScroll/ },
   { name: "modal_background_scroll_guard", pattern: /guardModalBackgroundScroll[\s\S]*touchmove[\s\S]*vidipayModalScrollGuard/ },
   { name: "history_scroll_target", pattern: /prepareHistoryModalScroll[\s\S]*history-scroll-target[\s\S]*vidipayHistoryScrollTarget/ },
-  { name: "history_modal_content_scroll", pattern: /#withdrawHistoryModal\.is-open[\s\S]*overflow-y:\s*auto[\s\S]*#withdrawHistoryModal\.is-open \.modal-content[\s\S]*overflow-y:\s*hidden[\s\S]*#withdrawHistoryModal\.is-open \.info-sub-block[\s\S]*overflow-y:\s*auto[\s\S]*#withdrawHistoryModal\.is-open \.history-list[\s\S]*overflow-y:\s*visible/ },
-  { name: "history_modal_inline_scroll_guard", pattern: /prepareHistoryModalScroll[\s\S]*content\.style\.overflowY = 'hidden'[\s\S]*panel\.style\.overflowY = 'auto'[\s\S]*box\.style\.overflowY = 'visible'[\s\S]*vidipayHistoryScrollMode = 'panel'/ },
-  { name: "native_watch_fallback", pattern: /USE_NATIVE_WATCH_PLAYER = true[\s\S]*WATCH_NATIVE_VIDEO_SOURCES[\s\S]*vidipay-native-watch-video[\s\S]*vidipayWatchFallback = 'native'/ },
+  { name: "history_modal_content_scroll", pattern: /#withdrawHistoryModal\.is-open[\s\S]*overflow-y:\s*auto[\s\S]*#withdrawHistoryModal\.is-open \.modal-content[\s\S]*overflow-y:\s*auto[\s\S]*#withdrawHistoryModal\.is-open \.info-sub-block[\s\S]*overflow-y:\s*auto[\s\S]*#withdrawHistoryModal\.is-open \.history-list[\s\S]*overflow-y:\s*visible/ },
+  { name: "history_modal_inline_scroll_guard", pattern: /prepareHistoryModalScroll[\s\S]*content\.style\.overflowY = 'auto'[\s\S]*panel\.style\.overflowY = 'auto'[\s\S]*box\.style\.overflowY = 'visible'[\s\S]*vidipayHistoryScrollMode = 'panel'/ },
+  { name: "inline_watch_fallback", pattern: /USE_INLINE_WATCH_PLAYER = true[\s\S]*WATCH_INLINE_SCENES[\s\S]*vidipay-inline-watch-player[\s\S]*vidipayWatchFallback = 'inline'/ },
   { name: "resume_cache_ui", pattern: /resumeFrontendUiFromCache[\s\S]*seedPaymentStatusFromCache\(\)[\s\S]*updateWithdrawUi\(latestPaymentStatus\)[\s\S]*vidipayResumeCache = 'ready'/ },
   { name: "resume_cache_hooks", pattern: /resumeFrontendActivity[\s\S]*resumeFrontendUiFromCache\(reason\)[\s\S]*runFrontendRuntimeGuard[\s\S]*resumeFrontendUiFromCache\(`runtime:\$\{reason\}`\)[\s\S]*resumeFrontendUiFromCache\('init'\)/ },
-  { name: "activation_access_cache", pattern: /getActivationAccessCacheKey[\s\S]*rememberActivationDepositAccess[\s\S]*hasCachedActivationDepositAccess[\s\S]*hasActivationDepositAccess/ },
+  { name: "activation_access_cache", pattern: /getActivationAccessCacheScopes[\s\S]*getActivationAccessCacheKey[\s\S]*rememberActivationDepositAccess[\s\S]*hasCachedActivationDepositAccess[\s\S]*seedActivationAccessFromCache[\s\S]*hasActivationDepositAccess/ },
   { name: "activation_cache_seed_before_actions", pattern: /handleMainClick[\s\S]*seedPaymentStatusFromCache\(\)[\s\S]*isActivationDepositLocked[\s\S]*if \(id === 'withdrawModal'\)[\s\S]*seedPaymentStatusFromCache\(\)[\s\S]*if \(id === 'walletModal'\)[\s\S]*seedPaymentStatusFromCache\(\)/ },
   { name: "activation_growth_lock_split", pattern: /isGrowthReferralWatchLocked[\s\S]*checkpoint_499[\s\S]*checkpoint_1499[\s\S]*const referralWatchLocked = isGrowthReferralWatchLocked\(status\)/ },
   { name: "optimistic_watch_reward", pattern: /applyOptimisticWatchReward[\s\S]*confirmOptimisticWatchReward[\s\S]*rollbackOptimisticWatchReward/ },
