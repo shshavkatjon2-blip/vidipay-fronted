@@ -5301,6 +5301,12 @@
             );
             const refundStatus = String(depositRefund.status || '').toLowerCase();
             const refundState = normalizeDepositRefundStatus(refundStatus);
+            const activationRequiredAgain = Boolean(
+                (paymentStatus.activation_payment_required || paymentStatus.wallet_activation_required)
+                && !paymentStatus.activation_deposit_verified
+                && !paymentStatus.deposit_refund_available
+            );
+            const effectiveDepositRefundAvailable = depositRefundAvailable && !activationRequiredAgain;
             const refundLocked = refundRequested && refundState !== 'rejected';
             const savedRefundWallet = String(depositRefund.wallet_address || safeStorageGet('vidiPayDepositRefundWalletAddress') || '').trim();
             const refundDetail = depositRefundDetailText(depositRefund);
@@ -5318,7 +5324,8 @@
             setDomText(dateValue, windowState.dateText);
 
             const stableSnapshot = JSON.stringify({
-                depositRefundAvailable,
+                depositRefundAvailable: effectiveDepositRefundAvailable,
+                activationRequiredAgain,
                 mainWithdrawUnlocked: Boolean(paymentStatus.withdraw_unlocked),
                 status: windowState.status,
                 min: minWithdraw,
@@ -5338,7 +5345,7 @@
 
             updateWalletLockUi(windowState);
 
-            if (depositRefundAvailable) {
+            if (effectiveDepositRefundAvailable) {
                 setDomText(title, t('deposit_refund_title'));
                 setDomStyle(title, 'color', '#22c55e');
                 setDomDisplay(formBox, 'block');
@@ -6348,8 +6355,8 @@
             deposit_refund_pending_status: "Refund request saved. Payout is being processed.",
             deposit_refund_paid_status: "Deposit returned to your saved wallet.",
             deposit_refund_rejected: "Refund rejected",
-            deposit_refund_rejected_message: "Refund was rejected. Check your wallet address and try again.",
-            deposit_refund_rejected_status: "Refund rejected. Check your wallet address and try again.",
+            deposit_refund_rejected_message: "Refund was rejected. Admin review is required before retry.",
+            deposit_refund_rejected_status: "Refund rejected. Admin review is required before retry.",
             payment_checking: "CHECKING...",
             payment_copying: "COPYING...",
             main_balance_locked_extra: "Main balance withdrawal is locked until the scheduled withdrawal time.",
