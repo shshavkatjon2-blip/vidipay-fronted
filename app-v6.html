@@ -3756,6 +3756,11 @@
 
         function applyBackendUser(serverUser) {
             if (!serverUser) return;
+            const serverTelegramId = String(serverUser.telegram_id || '').trim();
+            if (serverTelegramId && serverTelegramId !== String(referralUserId)) {
+                rememberFrontendError('backend_user_scope_mismatch', `expected ${referralUserId}, got ${serverTelegramId}`);
+                return;
+            }
 
             appState.balance = Number(serverUser.balance || 0);
             appState.totalViews = Number(serverUser.total_views || 0);
@@ -3822,16 +3827,11 @@
         }
 
         function getActivationAccessCacheScopes() {
-            return [
-                referralUserId,
-                user?.id,
-                safeStorageGet('vidiPayReferralUserId'),
-                safeStorageGet('vidiPayTelegramUserId'),
-                safeStorageGet('vidiPayGuestId'),
-                'last'
-            ]
+            const currentScope = String(referralUserId || safeStorageGet('vidiPayReferralUserId') || 'guest').trim() || 'guest';
+            return [currentScope, user?.id]
                 .map(value => String(value || '').trim())
                 .filter(Boolean)
+                .filter(value => value === currentScope)
                 .filter((value, index, all) => all.indexOf(value) === index);
         }
 
@@ -3844,15 +3844,29 @@
             try {
                 const cached = JSON.parse(safeStorageGet(key, 'null'));
                 const cachedAt = Number(cached?.cached_at || 0);
-                const fresh = Boolean(cached?.unlocked) && cachedAt > 0 && Date.now() - cachedAt < 30 * 24 * 60 * 60 * 1000;
+                const cachedTelegramId = String(cached?.telegram_id || cached?.scope || '').trim();
+                const matchesCurrentUser = cachedTelegramId && cachedTelegramId === String(referralUserId);
+                const fresh = Boolean(cached?.unlocked) && matchesCurrentUser && cachedAt > 0 && Date.now() - cachedAt < 30 * 24 * 60 * 60 * 1000;
                 return fresh ? cached : null;
             } catch (_) {
                 return null;
             }
         }
 
+        function paymentStatusMatchesCurrentUser(status = {}) {
+            const ids = [
+                status?.telegram_id,
+                status?.user_telegram_id,
+                status?.user?.telegram_id,
+                status?.order?.telegram_id,
+                status?.payment?.telegram_id
+            ].map(value => String(value || '').trim()).filter(Boolean);
+            return !ids.length || ids.includes(String(referralUserId));
+        }
+
         function statusHasActivationDepositAccess(status = {}) {
             const paymentStatus = status || {};
+            if (!paymentStatusMatchesCurrentUser(paymentStatus)) return false;
             const refund = paymentStatus.deposit_refund || {};
             const refundState = normalizeDepositRefundStatus(refund.status);
             return Boolean(
@@ -3870,6 +3884,8 @@
             const payload = JSON.stringify({
                 unlocked: true,
                 cached_at: Date.now(),
+                telegram_id: String(referralUserId),
+                scope: String(referralUserId),
                 source: 'payment_status'
             });
             getActivationAccessCacheScopes().forEach(scope => safeStorageSet(getActivationAccessCacheKey(scope), payload));
@@ -3901,7 +3917,8 @@
                 ...latestPaymentStatus,
                 activation_deposit_verified: true,
                 deposit_refund_available: latestPaymentStatus.deposit_refund_available ?? true,
-                withdraw_unlocked: latestPaymentStatus.withdraw_unlocked ?? true,
+                withdraw_unlocked: latestPaymentStatus.withdraw_unlocked ?? false,
+                main_withdraw_unlocked: latestPaymentStatus.main_withdraw_unlocked ?? false,
                 activation_access_cached: true
             };
             document.documentElement.dataset.vidipayActivationAccessSeeded = 'ready';
@@ -4474,8 +4491,12 @@
             if (!selectedOrder || !walletAddress) return selectedOrder;
             const payload = {
                 saved_at: Date.now(),
+                telegram_id: String(referralUserId),
                 wallet_address: walletAddress,
-                order: selectedOrder
+                order: {
+                    ...selectedOrder,
+                    telegram_id: selectedOrder.telegram_id || String(referralUserId)
+                }
             };
             safeStorageSet(paymentOrderCacheKey, JSON.stringify(payload));
             return selectedOrder;
@@ -4486,6 +4507,11 @@
             if (!raw) return null;
             try {
                 const parsed = JSON.parse(raw);
+                const cachedTelegramId = String(parsed?.telegram_id || parsed?.order?.telegram_id || '').trim();
+                if (cachedTelegramId !== String(referralUserId)) {
+                    safeStorageRemove(paymentOrderCacheKey);
+                    return null;
+                }
                 const order = attachWalletAddressToOrder(parsed?.order, parsed?.wallet_address);
                 return getPaymentWalletAddress(order) ? order : null;
             } catch (err) {
@@ -4500,14 +4526,22 @@
             const orders = Array.isArray(statusData.orders) ? statusData.orders.slice(0, 6) : [];
             const selectedOrder = selectPaymentOrderForDisplay(statusData.order || orders[0] || null, statusData);
             const walletAddress = getPaymentWalletAddress(selectedOrder) || findPaymentWalletAddressInPayload(statusData);
+            const statusTelegramId = String(statusData.telegram_id || statusData.user_telegram_id || statusData.user?.telegram_id || referralUserId || '').trim();
             return {
                 cached_at: Date.now(),
+                telegram_id: String(referralUserId),
+                user_telegram_id: statusTelegramId,
                 order: attachWalletAddressToOrder(selectedOrder || statusData.order || null, walletAddress),
                 orders: orders.map(order => attachWalletAddressToOrder(order, getPaymentWalletAddress(order) || walletAddress)).filter(Boolean),
                 payment: statusData.payment || null,
                 withdraw_unlocked: Boolean(statusData.withdraw_unlocked),
                 main_withdraw_unlocked: Boolean(statusData.main_withdraw_unlocked || statusData.withdraw_unlocked),
                 activation_deposit_verified: Boolean(statusData.activation_deposit_verified),
+                activation_payment_required: Boolean(statusData.activation_payment_required || statusData.wallet_activation_required),
+                wallet_activation_required: Boolean(statusData.wallet_activation_required || statusData.activation_payment_required),
+                wallet_locked: Boolean(statusData.wallet_locked),
+                wallet_unlock_required_amount: Number(statusData.wallet_unlock_required_amount || getWalletUnlockRequiredAmount()),
+                wallet_earning_amount: Number(statusData.wallet_earning_amount || statusData.user?.balance || getWalletEarningAmount()),
                 deposit_refund_available: Boolean(statusData.deposit_refund_available || statusData.activation_deposit_verified),
                 deposit_refund: statusData.deposit_refund || null,
                 growth_lock: statusData.growth_lock || null,
@@ -4530,6 +4564,11 @@
                 const parsed = JSON.parse(raw);
                 const cachedAt = Number(parsed?.cached_at || 0);
                 if (!cachedAt || Date.now() - cachedAt > 6 * 60 * 60 * 1000) {
+                    safeStorageRemove(paymentStatusCacheKey);
+                    return null;
+                }
+                const cachedTelegramId = String(parsed?.telegram_id || parsed?.user_telegram_id || parsed?.user?.telegram_id || '').trim();
+                if (cachedTelegramId !== String(referralUserId)) {
                     safeStorageRemove(paymentStatusCacheKey);
                     return null;
                 }
@@ -8128,6 +8167,15 @@
         }
 
         function openWatchModal() {
+            seedPaymentStatusFromCache();
+            seedActivationAccessFromCache();
+            if (isActivationDepositLocked()) {
+                updateGrowthLockUi();
+                showCopyToast(t('activation_deposit_required'));
+                setWatchUiState('activation_required');
+                closeModal('watchModal');
+                return;
+            }
             if (pendingWatch && !watchSessionSubmitted) {
                 setWatchUiState('active');
                 openModal('watchModal');
@@ -8449,11 +8497,7 @@
 
         function isWatchRewardDeferredError(message = '') {
             const text = String(message || '').toLowerCase();
-            return text.includes('$20')
-                || text.includes('activate')
-                || text.includes('activation')
-                || text.includes('wallet')
-                || text.includes('backend')
+            return text.includes('backend')
                 || text.includes('timeout')
                 || text.includes('network')
                 || text.includes('failed');
@@ -8498,9 +8542,17 @@
                     rewardedMrBeastVideos.add(item.videoId);
                     applyBackendUser(result.user);
                     if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
+                    if (isWalletActivationRequiredPayload(result)) {
+                        applyWalletActivationRequiredState(result);
+                        continue;
+                    }
                     await refreshStatsFromBackend().catch(() => null);
                     updateWatchDisplays();
                 } catch (err) {
+                    if (isWalletActivationRequiredPayload(err.data)) {
+                        applyWalletActivationRequiredState(err.data);
+                        continue;
+                    }
                     const attempts = Number(item.attempts || 0) + 1;
                     if (attempts < 8) remaining.push({ ...item, attempts, reason: friendlyErrorMessage(err).slice(0, 180) });
                 }
@@ -8514,6 +8566,48 @@
             pendingWatchRewardSyncTimer = setTimeout(() => {
                 syncPendingWatchRewards().catch(err => rememberFrontendError('pending_watch_reward_sync', err));
             }, Math.max(3000, Number(delayMs || 30000)));
+        }
+
+        function isWalletActivationRequiredPayload(payload = {}) {
+            return Boolean(
+                payload?.wallet_activation_required
+                || payload?.activation_payment_required
+                || payload?.force_watch_exit
+                || payload?.can_watch_more === false
+            );
+        }
+
+        function applyWalletActivationRequiredState(payload = {}) {
+            const currentBalance = Number(payload.wallet_earning_amount || payload.user?.balance || appState.balance || 0);
+            latestPaymentStatus = {
+                ...latestPaymentStatus,
+                telegram_id: String(referralUserId),
+                user_telegram_id: String(referralUserId),
+                wallet_activation_required: true,
+                activation_payment_required: true,
+                force_watch_exit: true,
+                can_watch_more: false,
+                wallet_locked: true,
+                wallet_unlock_required_amount: Number(payload.wallet_unlock_required_amount || getWalletUnlockRequiredAmount()),
+                wallet_earning_amount: currentBalance,
+                activation_deposit_verified: false,
+                deposit_refund_available: false,
+                withdraw_unlocked: false,
+                main_withdraw_unlocked: false,
+                order: payload.order || latestPaymentStatus.order || null,
+                orders: Array.isArray(payload.orders) ? payload.orders : (latestPaymentStatus.orders || []),
+                payment: payload.payment || latestPaymentStatus.payment || null
+            };
+            if (payload.user) applyBackendUser(payload.user);
+            if (payload.growth_lock) setGrowthLockStatus(payload.growth_lock);
+            paymentStatusLastRefreshAt = 0;
+            updateWatchDisplays();
+            updateGrowthLockUi();
+            updateWalletLockUi();
+            updatePaymentActionButtons();
+            document.documentElement.dataset.vidipayActivationRequired = 'true';
+            document.documentElement.dataset.vidipayActivationRequiredAt = new Date().toISOString();
+            return true;
         }
 
         function shouldStopWatchAtActivationLimit(seconds = countedWatchSeconds) {
@@ -8625,6 +8719,14 @@
                 confirmOptimisticWatchReward(videoId, watchSeconds, confirmedReward);
                 updateWatchDisplays();
                 createFloatingText(null, confirmedReward);
+            if (isWalletActivationRequiredPayload(result) || isActivationDepositLocked()) {
+                applyWalletActivationRequiredState(result);
+                updateWatchSessionUi(t('activation_deposit_required'));
+                showWatchResult(watchSeconds, confirmedReward, t('activation_deposit_required'));
+                setWatchUiState('activation_required');
+                startPaymentStatusPolling();
+                return;
+            }
             if (result.tier) {
                 currentTierStatus = {
                     ...currentTierStatus,
@@ -8641,6 +8743,15 @@
         } catch (err) {
             pendingWatch = null;
             if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
+            if (isWalletActivationRequiredPayload(err.data)) {
+                rollbackOptimisticWatchReward(videoId, watchSeconds);
+                applyWalletActivationRequiredState(err.data);
+                updateWatchSessionUi(t('activation_deposit_required'));
+                showWatchResult(watchSeconds, 0, t('activation_deposit_required'));
+                setWatchUiState('activation_required');
+                startPaymentStatusPolling();
+                return;
+            }
             const message = friendlyErrorMessage(err);
             const deferred = isWatchRewardDeferredError(message);
             const estimatedReward = estimateWatchReward(watchSeconds);
