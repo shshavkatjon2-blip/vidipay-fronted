@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v21">
+    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v5">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=frontend-admin-readiness-20260711-v21"></script>
+    <script src="./config.js?v=frontend-admin-readiness-20260711-v5"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -68,6 +68,22 @@
             overflow: hidden !important;
             overscroll-behavior: none !important;
             touch-action: none !important;
+        }
+
+        button,
+        input,
+        select,
+        textarea,
+        .fixed-nav-btn,
+        .hamster-clicker-btn {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        input,
+        select,
+        textarea {
+            font-size: 16px !important;
         }
 
         body.modal-open .modal-overlay.is-open {
@@ -146,6 +162,8 @@
             padding: 14px;
             margin-bottom: 16px;
             text-align: center;
+            min-width: 0;
+            max-width: 100%;
         }
         .ton-address-box {
             color: #ffffff;
@@ -179,13 +197,10 @@
             gap: 8px;
             line-height: 1.25;
             white-space: normal;
+            overflow-wrap: anywhere;
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
             user-select: none;
-        }
-        .ton-payment-actions button span {
-            min-width: 0;
-            overflow-wrap: anywhere;
         }
         .ton-payment-actions button:disabled {
             opacity: .58;
@@ -250,6 +265,7 @@
             line-height: 1.35;
             text-align: center;
             word-break: normal;
+            overflow-wrap: anywhere;
         }
         .payment-runtime-strip.is-visible {
             display: flex;
@@ -335,8 +351,44 @@
         #payment-address-box {
             display: block;
         }
-        #payment-address-text {
+        #payment-address-box,
+        #payment-address-text,
+        #payment-expiry-text,
+        #payment-status-text,
+        #ton-deposit-status-text {
+            max-width: 100%;
+            min-width: 0;
             overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+        #tonDepositModal .modal-content,
+        #walletModal .modal-content,
+        #withdrawModal .modal-content {
+            width: min(100%, 420px);
+            max-height: min(calc(var(--app-vh, 100vh) - 78px), 640px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        #tonDepositModal .info-sub-block,
+        #walletModal .info-sub-block,
+        #withdrawModal .info-sub-block {
+            min-width: 0;
+            min-height: 0;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        #tonDepositModal .wallet-pay-card,
+        #tonDepositModal .ton-payment-panel,
+        #withdrawModal .withdraw-wallet-card {
+            min-width: 0;
+            max-width: 100%;
+        }
+        #tonDepositModal .modal-title,
+        #walletModal .modal-title,
+        #withdrawModal .modal-title {
+            padding-right: 34px;
+            line-height: 1.15;
         }
         #payment-qr,
         .payment-qr,
@@ -489,12 +541,17 @@
                 z-index: 5;
             }
             #tonDepositModal .modal-content,
+            #walletModal .modal-content,
             #withdrawModal .modal-content,
             #withdrawHistoryModal .modal-content {
-                padding-left: 22px;
-                padding-right: 22px;
+                width: min(100%, 348px);
+                max-height: min(calc(var(--app-vh, 100vh) - 64px), 560px);
+                padding-left: 18px;
+                padding-right: 18px;
             }
             #payment-address-text,
+            #payment-status-text,
+            #ton-deposit-status-text,
             .receipt-value,
             .withdraw-wallet-input {
                 overflow-wrap: anywhere;
@@ -1450,12 +1507,12 @@
         .top-user-info { display: flex; flex-direction: column; align-items: flex-start; overflow: hidden; line-height: 1.1; }
         .top-user-name { color: #fff; font-size: 14px; font-weight: 900; max-width: 122px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .top-user-id { color: var(--accent-color); font-size: 11px; font-weight: 800; opacity: .9; max-width: 122px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .notification-list { max-height: 360px; overflow-y: auto; display: grid; grid-template-columns: 1fr; gap: 10px; padding: 2px 4px 2px 0; text-align: left; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+        .notification-list { max-height: 360px; overflow-y: auto; display: grid; grid-template-columns: 1fr; gap: 10px; padding: 2px 4px 2px 0; text-align: left; }
         .notification-item { width: 100%; box-sizing: border-box; background: rgba(255,255,255,.035); border: 1px solid rgba(0,255,204,.12); border-radius: 14px; padding: 12px; display: grid; gap: 6px; align-items: start; overflow: hidden; }
         .notification-title { color: #fff; font-size: 14px; font-weight: 900; line-height: 1.25; overflow-wrap: anywhere; word-break: break-word; }
         .notification-date { color: var(--accent-color); font-size: 11px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
         .notification-body { color: #cbd5e1; font-size: 13px; font-weight: 700; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
-        .support-chat-box { max-height: 340px; overflow-y: auto; display:flex; flex-direction:column; gap:10px; margin-bottom:12px; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+        .support-chat-box { max-height: 340px; overflow-y: auto; display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
         .chat-msg { border-radius: 14px; padding: 10px 12px; font-size: 13px; line-height: 1.45; }
         .chat-msg.user { align-self:flex-end; background: rgba(0,255,204,.14); color:#fff; border:1px solid rgba(0,255,204,.2); }
         .chat-msg.support { align-self:flex-start; background: rgba(255,255,255,.055); color:#cbd5e1; border:1px solid rgba(255,255,255,.08); }
@@ -2225,6 +2282,32 @@
             text-shadow: 0 0 12px rgba(239,68,68,.35) !important;
         }
 
+        #withdrawHistoryModal .modal-content {
+            width: min(100%, 380px);
+            max-width: 380px;
+            max-height: min(calc(var(--app-vh, 100vh) - 96px), 560px);
+            padding: 28px 22px 22px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #withdrawHistoryModal .modal-title {
+            font-size: 20px;
+            line-height: 1.2;
+            margin-bottom: 14px;
+            padding-right: 34px;
+        }
+
+        #withdrawHistoryModal .info-sub-block {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: auto;
+            padding: 10px;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+
         .history-list {
             display: flex;
             flex-direction: column;
@@ -2232,6 +2315,13 @@
             max-height: 390px;
             overflow-y: auto;
             padding-right: 4px;
+        }
+
+        #withdrawHistoryModal .history-list {
+            max-height: min(52vh, 390px);
+            min-height: 0;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
         }
 
         .history-item {
@@ -2242,7 +2332,11 @@
             color: #d1d5db;
             font-size: 13px;
             line-height: 1.45;
-            overflow: hidden;
+        }
+
+        #withdrawHistoryModal .history-item {
+            padding: 10px;
+            font-size: 12px;
         }
 
         .history-item b {
@@ -2313,19 +2407,18 @@
             margin-top: 8px;
         }
 
-        .receipt-label {
-            color: #8fa0b5;
-            font-weight: 800;
-            flex: 0 0 auto;
+        .receipt-label { color: #8fa0b5; font-weight: 800; }
+        .receipt-value { color: #fff; font-weight: 900; text-align: right; word-break: break-word; }
+
+        #withdrawHistoryModal .receipt-row {
+            display: grid;
+            grid-template-columns: minmax(82px, .72fr) minmax(0, 1fr);
+            gap: 8px;
         }
-        .receipt-value {
-            color: #fff;
-            font-weight: 900;
-            text-align: right;
+
+        #withdrawHistoryModal .receipt-value {
             min-width: 0;
-            max-width: 68%;
             overflow-wrap: anywhere;
-            word-break: break-word;
         }
 
         .history-empty {
@@ -2335,24 +2428,23 @@
             padding: 18px 10px;
         }
 
-        .history-empty.history-error {
-            color: #fecaca;
-            border: 1px solid rgba(239,68,68,.24);
-            background: rgba(239,68,68,.08);
-            border-radius: 12px;
-        }
-
         @media (max-width: 380px) {
             .fixed-bottom-nav { height: 76px; gap: 7px; padding-left: 8px; padding-right: 8px; }
             .fixed-nav-btn { border-radius: 14px; font-size: 9px; }
             .fixed-nav-btn i { font-size: 21px; }
-            .receipt-row {
-                display: block;
+            #withdrawHistoryModal .modal-content {
+                width: min(100%, 340px);
+                max-height: min(calc(var(--app-vh, 100vh) - 84px), 500px);
+                padding: 24px 16px 18px;
+                border-radius: 20px;
             }
-            .receipt-value {
-                display: block;
-                max-width: 100%;
-                margin-top: 4px;
+            #withdrawHistoryModal .history-list {
+                max-height: min(48vh, 340px);
+            }
+            #withdrawHistoryModal .receipt-row {
+                grid-template-columns: 1fr;
+            }
+            #withdrawHistoryModal .receipt-value {
                 text-align: left;
             }
         }
@@ -2368,6 +2460,17 @@
             touch-action: auto !important;
             overscroll-behavior: auto !important;
             -webkit-overflow-scrolling: touch !important;
+            -webkit-text-size-adjust: 100% !important;
+            text-size-adjust: 100% !important;
+        }
+
+        button,
+        [role="button"],
+        input,
+        select,
+        textarea {
+            touch-action: manipulation !important;
+            -webkit-tap-highlight-color: rgba(0,255,204,.22);
         }
 
         body {
@@ -2400,170 +2503,6 @@
             touch-action: auto !important;
             overscroll-behavior: auto !important;
             -webkit-overflow-scrolling: touch !important;
-        }
-
-        html.vidipay-modal-scroll-lock,
-        html.vidipay-modal-scroll-lock body,
-        body.modal-open {
-            overflow: hidden !important;
-            overscroll-behavior: none !important;
-            touch-action: auto !important;
-        }
-
-        html.vidipay-modal-scroll-lock body.modal-open {
-            position: fixed !important;
-            top: calc(var(--vidipay-modal-scroll-y, 0px) * -1) !important;
-            left: 0 !important;
-            right: 0 !important;
-            width: 100% !important;
-        }
-
-        body.modal-open .modal-overlay.is-open {
-            position: fixed !important;
-            inset: 0 !important;
-            height: var(--app-vh, 100vh) !important;
-            max-height: var(--app-vh, 100vh) !important;
-            overflow-y: auto !important;
-            overscroll-behavior: contain !important;
-            touch-action: pan-y !important;
-        }
-
-        body.modal-open .modal-content,
-        body.modal-open .history-list {
-            overscroll-behavior: contain !important;
-            touch-action: pan-y !important;
-            -webkit-overflow-scrolling: touch !important;
-        }
-
-        body.modal-open #withdrawHistoryModal.is-open {
-            overflow-y: auto !important;
-            overflow-x: hidden !important;
-            align-items: flex-start !important;
-            justify-content: center !important;
-            padding-top: 18px !important;
-            padding-bottom: calc(18px + env(safe-area-inset-bottom)) !important;
-        }
-
-        body.modal-open #withdrawHistoryModal.is-open .modal-content {
-            display: flex !important;
-            flex-direction: column !important;
-            overflow-y: auto !important;
-            overflow-x: hidden !important;
-            height: calc(var(--app-vh, 100vh) - 36px) !important;
-            min-height: 0 !important;
-            max-height: calc(var(--app-vh, 100vh) - 36px) !important;
-        }
-
-        body.modal-open #withdrawHistoryModal.is-open .info-sub-block {
-            display: block !important;
-            flex: 0 0 auto !important;
-            height: auto !important;
-            min-height: 0 !important;
-            max-height: none !important;
-            overflow-y: auto !important;
-            overflow-x: hidden !important;
-            overscroll-behavior: contain !important;
-            touch-action: pan-y !important;
-            -webkit-overflow-scrolling: touch !important;
-        }
-
-        body.modal-open #withdrawHistoryModal.is-open .history-list {
-            flex: none !important;
-            height: auto !important;
-            min-height: 0 !important;
-            max-height: none !important;
-            overflow-y: visible !important;
-            overflow-x: hidden !important;
-            overscroll-behavior: contain !important;
-            touch-action: pan-y !important;
-            -webkit-overflow-scrolling: touch !important;
-        }
-
-        body.modal-open #withdrawHistoryModal.is-open .history-list.history-scroll-target {
-            contain: content !important;
-            scroll-behavior: auto !important;
-        }
-
-        .inline-watch-player {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            min-height: 220px;
-            overflow: hidden;
-            border-radius: 16px;
-            background:
-                radial-gradient(circle at 28% 24%, rgba(0, 255, 204, .38), transparent 28%),
-                radial-gradient(circle at 74% 64%, rgba(59, 130, 246, .34), transparent 30%),
-                linear-gradient(135deg, #05070a 0%, #101820 48%, #05070a 100%);
-            box-shadow: inset 0 0 0 1px rgba(0, 255, 204, .18);
-            isolation: isolate;
-        }
-
-        .inline-watch-player::before,
-        .inline-watch-player::after {
-            content: "";
-            position: absolute;
-            inset: -35%;
-            background:
-                conic-gradient(from 90deg, transparent, rgba(0, 255, 204, .2), transparent, rgba(255, 255, 255, .1), transparent);
-            animation: watchMotion 9s linear infinite;
-            opacity: .8;
-            z-index: 0;
-        }
-
-        .inline-watch-player::after {
-            animation-duration: 14s;
-            animation-direction: reverse;
-            filter: blur(18px);
-            opacity: .45;
-        }
-
-        .inline-watch-player-core {
-            position: absolute;
-            inset: 18px;
-            border-radius: 18px;
-            border: 1px solid rgba(0, 255, 204, .2);
-            background: rgba(0, 0, 0, .28);
-            display: grid;
-            place-items: center;
-            z-index: 1;
-        }
-
-        .inline-watch-play {
-            width: 88px;
-            height: 88px;
-            border-radius: 50%;
-            border: 1px solid rgba(0, 255, 204, .38);
-            background: rgba(0, 255, 204, .14);
-            color: #fff;
-            display: grid;
-            place-items: center;
-            font-size: 34px;
-            box-shadow: 0 18px 60px rgba(0, 255, 204, .2);
-            animation: watchPulse 1.8s ease-in-out infinite;
-        }
-
-        .inline-watch-caption {
-            position: absolute;
-            left: 14px;
-            right: 14px;
-            bottom: 12px;
-            z-index: 2;
-            color: #dffdf7;
-            font-size: 12px;
-            font-weight: 900;
-            text-align: center;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, .8);
-        }
-
-        @keyframes watchMotion {
-            from { transform: rotate(0deg) scale(1); }
-            to { transform: rotate(360deg) scale(1.08); }
-        }
-
-        @keyframes watchPulse {
-            0%, 100% { transform: scale(1); opacity: .92; }
-            50% { transform: scale(1.08); opacity: 1; }
         }
 
 </style>
@@ -2759,8 +2698,8 @@
                 <div class="withdraw-extra-row" id="withdraw-extra-row">Additional withdrawal information will appear here.</div>
                 <div id="withdraw-form-box" class="withdraw-wallet-card" style="display:none;">
                     <div class="withdraw-wallet-card-title" data-i18n="withdraw_form_title"><i class="fas fa-link"></i> Connect payout wallet</div>
-                    <input id="withdraw-amount-input" class="withdraw-wallet-input" type="number" min="6.99" max="6.99" step="0.01" inputmode="decimal" readonly placeholder="Fixed refund amount: 6.99 TONCOIN" data-i18n-placeholder="withdraw_amount_placeholder">
-                    <input id="withdraw-address-input" class="withdraw-wallet-input" type="text" inputmode="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="Your TON wallet address" data-i18n-placeholder="withdraw_card_placeholder" oninput="handleWithdrawAddressInput()" onblur="validateWithdrawWalletInput()">
+                    <input id="withdraw-amount-input" class="withdraw-wallet-input" type="number" min="6.99" max="6.99" step="0.01" inputmode="decimal" readonly placeholder="Fixed refund amount: 6.99 Gram" data-i18n-placeholder="withdraw_amount_placeholder">
+                    <input id="withdraw-address-input" class="withdraw-wallet-input" type="text" inputmode="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="Your Gram wallet address" data-i18n-placeholder="withdraw_card_placeholder" oninput="handleWithdrawAddressInput()" onblur="validateWithdrawWalletInput()">
                     <input id="withdraw-method-input" type="hidden" value="TON">
                     <button class="copy-link-btn" id="withdraw-submit-btn" onclick="submitWithdrawRequest()">
                         <i class="fas fa-paper-plane" style="margin-right:8px;"></i><span data-i18n="request_withdrawal">REQUEST WITHDRAWAL</span>
@@ -2821,7 +2760,7 @@
                 </div>
                 <div class="profile-data-field">
                     <span class="profile-data-label" id="wallet-method-label">Activation network:</span>
-                    <span class="profile-data-value" id="wallet-method-value" style="color: var(--accent-color);">TONCOIN</span>
+                    <span class="profile-data-value" id="wallet-method-value" style="color: var(--accent-color);">Gram</span>
                 </div>
                 <div class="withdraw-locked-row" id="wallet-lock-row"><i class="fas fa-lock" style="margin-right:8px;"></i>Wallet locked</div>
                 <div class="withdraw-extra-row" id="wallet-lock-extra">Earn $20.00 in total to unlock wallet activation.</div>
@@ -2831,11 +2770,11 @@
                     <div class="wallet-pay-card">
                         <div class="wallet-pay-heading">
                             <span id="lbl-fastest-method"><i class="fas fa-shield-alt"></i> Security confirmation</span>
-                            <span class="wallet-network-pill">TON</span>
+                            <span class="wallet-network-pill">Gram</span>
                         </div>
-                        <div class="wallet-help-text" id="lbl-fiat-desc">Confirm that you are not a bot and connect your personal TON wallet to the VidiPay system. To activate it, top up 6.99 TONCOIN; the allowed TON network tolerance is checked automatically and after confirmation you can request withdrawal to your TON wallet. Blockchain network commission may apply.</div>
+                        <div class="wallet-help-text" id="lbl-fiat-desc">Confirm that you are not a bot and connect your personal Gram wallet to the VidiPay system. To activate it, top up 6.99 Gram; the allowed Gram network tolerance is checked automatically and after confirmation you can request withdrawal to your Gram wallet. Blockchain network commission may apply.</div>
                         <div class="ton-payment-actions">
-                            <button type="button" id="fiat-pay-btn" onclick="openTonDepositModal()"><i class="fas fa-coins"></i> <span id="lbl-pay-fiat">TOP UP 6.99 TONCOIN</span></button>
+                            <button type="button" id="fiat-pay-btn" onclick="openTonDepositModal()"><i class="fas fa-coins"></i> <span id="lbl-pay-fiat">TOP UP 6.99 Gram</span></button>
                         </div>
                     </div>
                     <div id="payment-status-text" role="status" aria-live="polite" style="margin-top:8px; color:#a0a5b5; font-size:12px; font-weight:800;"></div>
@@ -2847,17 +2786,17 @@
     <div id="tonDepositModal" class="modal-overlay">
         <div class="modal-content">
             <button class="modal-close" onclick="closeModal('tonDepositModal')"><i class="fas fa-times"></i></button>
-            <div class="modal-title" id="ton-deposit-title">6.99 TONCOIN payment</div>
+            <div class="modal-title" id="ton-deposit-title">6.99 Gram payment</div>
             <div class="info-sub-block">
                 <div class="wallet-pay-card">
                     <div class="wallet-pay-heading">
-                        <span id="ton-deposit-address-title"><i class="fas fa-wallet"></i> TON deposit address</span>
-                        <span class="wallet-network-pill">TON</span>
+                        <span id="ton-deposit-address-title"><i class="fas fa-wallet"></i> Gram deposit address</span>
+                        <span class="wallet-network-pill">Gram</span>
                     </div>
-                    <div class="wallet-help-text" id="ton-deposit-warning">Send 6.99 TONCOIN to this address. The allowed TON network tolerance is checked automatically.</div>
+                    <div class="wallet-help-text" id="ton-deposit-warning">Send 6.99 Gram to this address. The allowed Gram network tolerance is checked automatically.</div>
                     <div id="payment-address-box" style="display:none; margin-top:10px; padding:12px; border:1px solid rgba(0,255,204,.24); border-radius:14px; background:rgba(0,255,204,.06);">
                         <div id="payment-amount-text" style="color:#00ffcc; font-size:13px; font-weight:900; margin-bottom:8px;"></div>
-                        <div class="wallet-address-label" id="payment-address-label">Unique TON deposit address</div>
+                        <div class="wallet-address-label" id="payment-address-label">Unique Gram deposit address</div>
                         <div id="payment-address-text" aria-live="polite" style="color:#ffffff; font-size:12px; font-weight:900; line-height:1.45; word-break:break-all;"></div>
                         <div id="payment-expiry-text" role="status" aria-live="polite" data-payment-validity-healthy="unknown" style="color:#a0a5b5; font-size:11px; font-weight:800; margin-top:8px;"></div>
                     </div>
@@ -3227,9 +3166,11 @@
         }, { passive: false });
 
         const FRONTEND_ACTION_SELECTOR = [
+            'button',
             '.ton-payment-actions button',
             '.copy-link-btn',
             '.fiat-pay-btn',
+            '.lang-opt-btn',
             '.fixed-nav-btn',
             '.top-btn',
             '.modal-close',
@@ -3321,76 +3262,6 @@
 
         installGlobalActionGuard();
 
-        let modalPageScrollY = 0;
-        let modalPageScrollLocked = false;
-
-        function lockModalPageScroll(reason = 'open') {
-            if (modalPageScrollLocked) return;
-            modalPageScrollY = Math.max(0, window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0);
-            document.documentElement.style.setProperty('--vidipay-modal-scroll-y', `${modalPageScrollY}px`);
-            document.documentElement.classList.add('vidipay-modal-scroll-lock');
-            document.body.classList.add('modal-open');
-            document.documentElement.dataset.vidipayModalScrollLock = 'locked';
-            document.documentElement.dataset.vidipayModalScrollReason = String(reason || '').slice(0, 60);
-            modalPageScrollLocked = true;
-        }
-
-        function unlockModalPageScroll(reason = 'close') {
-            if (!modalPageScrollLocked) {
-                document.documentElement.classList.remove('vidipay-modal-scroll-lock');
-                document.body.classList.remove('modal-open');
-                document.documentElement.dataset.vidipayModalScrollLock = 'unlocked';
-                return;
-            }
-            const restoreY = modalPageScrollY;
-            modalPageScrollLocked = false;
-            document.documentElement.classList.remove('vidipay-modal-scroll-lock');
-            document.body.classList.remove('modal-open');
-            document.documentElement.style.removeProperty('--vidipay-modal-scroll-y');
-            document.documentElement.dataset.vidipayModalScrollLock = 'unlocked';
-            document.documentElement.dataset.vidipayModalScrollReason = String(reason || '').slice(0, 60);
-            requestAnimationFrame(() => {
-                try { window.scrollTo(0, restoreY); } catch (_) {}
-            });
-        }
-
-        function getOpenModalOverlay() {
-            return Array.from(document.querySelectorAll('.modal-overlay.is-open'))
-                .find(modal => modal.style.display !== 'none') || null;
-        }
-
-        function isScrollableModalTarget(target) {
-            const modal = getOpenModalOverlay();
-            if (!modal || !target?.closest) return false;
-            let node = target.closest('#withdrawHistoryModal .info-sub-block, #withdraw-history-list, #notification-list, #support-chat-box, .modal-content, .modal-overlay');
-            while (node && node !== document.body && node !== document.documentElement) {
-                if (node === modal || modal.contains(node)) {
-                    const style = window.getComputedStyle(node);
-                    const canScrollY = /(auto|scroll)/.test(style.overflowY || '') && node.scrollHeight > node.clientHeight + 2;
-                    if (canScrollY) return true;
-                }
-                if (node === modal) break;
-                node = node.parentElement;
-            }
-            return false;
-        }
-
-        function guardModalBackgroundScroll(event) {
-            const modal = getOpenModalOverlay();
-            if (!modal) return;
-            if (event.type === 'touchmove' && event.touches?.length > 1) {
-                event.preventDefault();
-                return;
-            }
-            if (!isScrollableModalTarget(event.target)) {
-                event.preventDefault();
-            }
-        }
-
-        document.addEventListener('touchmove', guardModalBackgroundScroll, { passive: false, capture: true });
-        document.addEventListener('wheel', guardModalBackgroundScroll, { passive: false, capture: true });
-        document.documentElement.dataset.vidipayModalScrollGuard = 'ready';
-
         function syncModalAccessibilityState(reason = 'sync') {
             let openCount = 0;
             document.querySelectorAll('.modal-overlay').forEach(modal => {
@@ -3400,8 +3271,7 @@
                 modal.setAttribute('role', 'dialog');
                 modal.setAttribute('aria-modal', isOpen ? 'true' : 'false');
             });
-            if (openCount > 0) lockModalPageScroll(reason);
-            else unlockModalPageScroll(reason);
+            document.body.classList.toggle('modal-open', openCount > 0);
             document.documentElement.dataset.vidipayModalStateGuard = 'ready';
             document.documentElement.dataset.vidipayModalStateGuardReason = String(reason || '').slice(0, 60);
             document.documentElement.dataset.vidipayOpenModalCount = String(openCount);
@@ -3413,7 +3283,7 @@
                 modal.classList.remove('is-open');
                 modal.style.display = 'none';
             });
-            unlockModalPageScroll('reset');
+            document.body.classList.remove('modal-open');
             syncModalAccessibilityState('reset');
         }
 
@@ -3458,8 +3328,6 @@
 
         const referralUserId = user?.id ? String(user.id) : (safeStorageGet('vidiPayGuestId') || ('guest_' + Math.random().toString(36).slice(2, 10)));
         if (!user?.id && !safeStorageGet('vidiPayGuestId')) safeStorageSet('vidiPayGuestId', referralUserId);
-        safeStorageSet('vidiPayReferralUserId', referralUserId);
-        if (user?.id) safeStorageSet('vidiPayTelegramUserId', String(user.id));
         const referralLink = `https://t.me/${BOT_USERNAME}?start=ref_${referralUserId}`;
         const referralStartParam =
             pageParams.get('ref') ||
@@ -3494,7 +3362,7 @@
         }
         const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v21';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v5';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
@@ -3535,6 +3403,8 @@
         const BONUS_PER_FRIEND = 9.99;
         const WALLET_UNLOCK_REQUIRED_USD = 20;
         const TON_ACTIVATION_AMOUNT = 6.99;
+        const DISPLAY_COIN_NAME = 'Gram';
+        const DISPLAY_COIN_NETWORK = 'Gram';
         const storageKey = `vidiPayState_${referralUserId}`;
         const defaultState = {
             balance: 0,
@@ -3569,15 +3439,13 @@
         let watchSessionSubmitted = false;
         let watchSessionGeneration = 0;
         let watchFinalizeInflight = null;
+        let watchOptimisticSettlement = null;
         let watchSessionVideoIds = new Set();
-        let optimisticWatchRewards = new Map();
-        let pendingWatchRewardSyncTimer = null;
         let lastWatchUiSnapshot = '';
         let rewardedMrBeastVideos = new Set();
         let shouldStartMrBeastWhenApiReady = false;
         let watchFallbackTimer = null;
         let usingFallbackPlayer = false;
-        let inlineWatchSceneIndex = 0;
         let settingsRefreshBusy = false;
         let settingsRefreshTimer = null;
         let paymentStatusRefreshBusy = false;
@@ -3587,6 +3455,7 @@
         let paymentStatusLastRefreshAt = 0;
         let paymentPollingLastScheduledDelayMs = 0;
         let paymentPollingLastJitterMs = 0;
+        let paymentFastPollUntilAt = 0;
         let paymentRuntimeLastSnapshot = '';
         let tonDepositOpenBusy = false;
         let backendSettingsInflight = null;
@@ -3625,6 +3494,8 @@
         let paymentAddressVisibleSinceAt = 0;
         let paymentModalWatchdogTimer = null;
         let paymentModalWatchdogLastSnapshot = '';
+        let activationThresholdPromptedAt = 0;
+        let watchPlayerStartWatchdogTimer = null;
         const paymentOrderCacheKey = `vidiPayPaymentOrder_${referralUserId}`;
         const paymentStatusCacheKey = `vidiPayPaymentStatus_${referralUserId}`;
         const paymentRealTestReadinessKey = `vidiPayRealTestReady_${referralUserId}`;
@@ -3642,13 +3513,6 @@
         };
         window.__vidipayFrontendNetwork = frontendNetworkStats;
         const MRBEAST_UPLOADS_PLAYLIST = 'UUX6OQ3DkcsbYNE6H8uQQuVA';
-        const USE_INLINE_WATCH_PLAYER = true;
-        const WATCH_INLINE_SCENES = [
-            { id: 'inline_mint_motion', title: 'VidiPay Watch 01' },
-            { id: 'inline_blue_motion', title: 'VidiPay Watch 02' },
-            { id: 'inline_gold_motion', title: 'VidiPay Watch 03' },
-            { id: 'inline_cyber_motion', title: 'VidiPay Watch 04' }
-        ];
         let latestPaymentStatus = {};
         let currentTierStatus = {
             tier: 3,
@@ -3695,6 +3559,7 @@
                 const externalSignal = fetchOptions.signal;
                 const controller = new AbortController();
                 const timer = setTimeout(() => controller.abort(), timeoutMs);
+                const requestCacheMode = fetchOptions.cache || 'no-store';
                 let externalAbortHandler = null;
                 if (externalSignal) {
                     if (externalSignal.aborted) {
@@ -3708,9 +3573,12 @@
                     const response = await fetch(`${baseUrl}${path}`, {
                         headers: {
                             'Content-Type': 'application/json',
+                            'Cache-Control': 'no-cache',
+                            'Pragma': 'no-cache',
                             ...(fetchOptions.headers || {})
                         },
                         ...fetchOptions,
+                        cache: requestCacheMode,
                         signal: controller.signal
                     });
 
@@ -3756,12 +3624,8 @@
 
         function applyBackendUser(serverUser) {
             if (!serverUser) return;
-            const serverTelegramId = String(serverUser.telegram_id || '').trim();
-            if (serverTelegramId && serverTelegramId !== String(referralUserId)) {
-                rememberFrontendError('backend_user_scope_mismatch', `expected ${referralUserId}, got ${serverTelegramId}`);
-                return;
-            }
 
+            const previousBalance = Number(appState.balance || 0);
             appState.balance = Number(serverUser.balance || 0);
             appState.totalViews = Number(serverUser.total_views || 0);
             appState.totalSeconds = Number(serverUser.total_watch_seconds || 0);
@@ -3771,6 +3635,22 @@
             appState.dailyMinutes = Math.floor(appState.dailySeconds / 60);
             appState.dailyEarned = Number(serverUser.daily_income || 0);
             saveAppState();
+            syncFrontendAfterBackendUser(previousBalance, 'apply_backend_user');
+        }
+
+        function syncFrontendAfterBackendUser(previousBalance = 0, reason = 'backend_user') {
+            try {
+                const required = getWalletUnlockRequiredAmount();
+                const current = getWalletEarningAmount();
+                updateWatchDisplays();
+                withdrawUiSnapshot = '';
+                updateWithdrawUi(latestPaymentStatus);
+                if (current >= required && !hasServerConfirmedActivationPayment(latestPaymentStatus)) {
+                    handleActivationThresholdReached(previousBalance < required ? reason : `${reason}_locked_state`);
+                }
+            } catch (err) {
+                rememberFrontendError('backend_user_ui_sync', err);
+            }
         }
 
         function fallbackGrowthLockStatus() {
@@ -3815,144 +3695,50 @@
         }
 
         function isGrowthWatchLocked() {
-            return isGrowthReferralWatchLocked(currentGrowthLockStatus());
-        }
-
-        function isGrowthReferralWatchLocked(status = currentGrowthLockStatus()) {
-            const required = Number(status?.required_for_watch || 0);
-            const deposited = Number(status?.deposited_referrals || 0);
-            const checkpoint499Locked = Boolean(status?.checkpoint_499?.active && !status?.checkpoint_499?.unlocked);
-            const checkpoint1499Locked = Boolean(status?.checkpoint_1499?.active && !status?.checkpoint_1499?.unlocked);
-            return Boolean(checkpoint499Locked || checkpoint1499Locked || (required > 0 && deposited < required));
-        }
-
-        function getActivationAccessCacheScopes() {
-            const currentScope = String(referralUserId || safeStorageGet('vidiPayReferralUserId') || 'guest').trim() || 'guest';
-            return [currentScope, user?.id]
-                .map(value => String(value || '').trim())
-                .filter(Boolean)
-                .filter(value => value === currentScope)
-                .filter((value, index, all) => all.indexOf(value) === index);
-        }
-
-        function getActivationAccessCacheKey(scope = referralUserId) {
-            const safeScope = String(scope || safeStorageGet('vidiPayReferralUserId') || 'guest').trim() || 'guest';
-            return `vidiPayActivationAccess_${safeScope}`;
-        }
-
-        function readActivationAccessCacheValue(key) {
-            try {
-                const cached = JSON.parse(safeStorageGet(key, 'null'));
-                const cachedAt = Number(cached?.cached_at || 0);
-                const cachedTelegramId = String(cached?.telegram_id || cached?.scope || '').trim();
-                const matchesCurrentUser = cachedTelegramId && cachedTelegramId === String(referralUserId);
-                const fresh = Boolean(cached?.unlocked) && matchesCurrentUser && cachedAt > 0 && Date.now() - cachedAt < 30 * 24 * 60 * 60 * 1000;
-                return fresh ? cached : null;
-            } catch (_) {
-                return null;
-            }
-        }
-
-        function clearActivationDepositAccessCache() {
-            getActivationAccessCacheScopes().forEach(scope => safeStorageRemove(getActivationAccessCacheKey(scope)));
-            document.documentElement.dataset.vidipayActivationAccessCache = 'cleared';
-        }
-
-        function paymentStatusMatchesCurrentUser(status = {}) {
-            const ids = [
-                status?.telegram_id,
-                status?.user_telegram_id,
-                status?.user?.telegram_id,
-                status?.order?.telegram_id,
-                status?.payment?.telegram_id
-            ].map(value => String(value || '').trim()).filter(Boolean);
-            return !ids.length || ids.includes(String(referralUserId));
-        }
-
-        function statusRequiresFreshActivation(status = {}) {
-            const paymentStatus = status || {};
-            return Boolean(
-                paymentStatusMatchesCurrentUser(paymentStatus)
-                && (paymentStatus.activation_payment_required || paymentStatus.wallet_activation_required || paymentStatus.force_watch_exit)
-                && !paymentStatus.activation_deposit_verified
-                && !paymentStatus.deposit_refund_available
-            );
-        }
-
-        function statusHasActivationDepositAccess(status = {}) {
-            const paymentStatus = status || {};
-            if (!paymentStatusMatchesCurrentUser(paymentStatus)) return false;
-            if (statusRequiresFreshActivation(paymentStatus)) return false;
-            const refund = paymentStatus.deposit_refund || {};
-            const refundState = normalizeDepositRefundStatus(refund.status);
-            const activeRefundRequest = Boolean(refund.requested && !['rejected', 'failed', 'cancelled', 'canceled'].includes(refundState));
-            return Boolean(
-                paymentStatus.activation_deposit_verified
-                || paymentStatus.deposit_refund_available
-                || activeRefundRequest
-                || refundState === 'processing'
-                || refundState === 'completed'
-            );
-        }
-
-        function rememberActivationDepositAccess(status = latestPaymentStatus) {
-            if (statusRequiresFreshActivation(status)) {
-                clearActivationDepositAccessCache();
-                return false;
-            }
-            if (!statusHasActivationDepositAccess(status)) return false;
-            const payload = JSON.stringify({
-                unlocked: true,
-                cached_at: Date.now(),
-                telegram_id: String(referralUserId),
-                scope: String(referralUserId),
-                source: 'payment_status'
-            });
-            getActivationAccessCacheScopes().forEach(scope => safeStorageSet(getActivationAccessCacheKey(scope), payload));
-            document.documentElement.dataset.vidipayActivationAccessCache = 'unlocked';
-            return true;
-        }
-
-        function hasCachedActivationDepositAccess() {
-            for (const scope of getActivationAccessCacheScopes()) {
-                const key = getActivationAccessCacheKey(scope);
-                const cached = readActivationAccessCacheValue(key);
-                if (cached) {
-                    safeStorageSet(getActivationAccessCacheKey(referralUserId), JSON.stringify(cached));
-                    document.documentElement.dataset.vidipayActivationAccessCache = 'unlocked';
-                    return true;
-                }
-            }
-            document.documentElement.dataset.vidipayActivationAccessCache = 'empty';
-            return false;
-        }
-
-        function hasActivationDepositAccess(status = latestPaymentStatus) {
-            if (statusRequiresFreshActivation(status)) return false;
-            return statusHasActivationDepositAccess(status) || hasCachedActivationDepositAccess();
-        }
-
-        function seedActivationAccessFromCache() {
-            if (statusRequiresFreshActivation(latestPaymentStatus)) {
-                clearActivationDepositAccessCache();
-                return false;
-            }
-            if (!hasCachedActivationDepositAccess()) return false;
-            latestPaymentStatus = {
-                ...latestPaymentStatus,
-                activation_deposit_verified: true,
-                deposit_refund_available: latestPaymentStatus.deposit_refund_available ?? true,
-                withdraw_unlocked: latestPaymentStatus.withdraw_unlocked ?? false,
-                main_withdraw_unlocked: latestPaymentStatus.main_withdraw_unlocked ?? false,
-                activation_access_cached: true
-            };
-            document.documentElement.dataset.vidipayActivationAccessSeeded = 'ready';
-            return true;
+            return Boolean(currentGrowthLockStatus().watch_locked);
         }
 
         function isActivationDepositLocked() {
             return getWalletEarningAmount() >= getWalletUnlockRequiredAmount()
-                && !hasActivationDepositAccess(latestPaymentStatus);
+                && !hasServerConfirmedActivationPayment(latestPaymentStatus);
+        }
+
+        function closeWatchModalForActivationLock(reason = 'activation_threshold') {
+            if (!isActivationDepositLocked()) return false;
+            if (mrbeastPlayer && mrbeastPlayer.pauseVideo) {
+                try { mrbeastPlayer.pauseVideo(); } catch (_) {}
+            }
+            clearWatchFallbackPlayer();
+            clearInterval(watchTimerInterval);
+            stopWatchTimerDisplay();
+            const watchModal = document.getElementById('watchModal');
+            if (watchModal?.classList.contains('is-open') || watchModal?.style.display === 'flex') {
+                closeModal('watchModal');
+            }
+            setWatchUiState('activation_locked', reason);
+            document.documentElement.dataset.vidipayActivationWatchLocked = 'true';
+            document.documentElement.dataset.vidipayActivationWatchLockedAt = new Date().toISOString();
+            updateGrowthLockUi();
+            return true;
+        }
+
+        function handleActivationThresholdReached(reason = 'balance_threshold') {
+            if (hasServerConfirmedActivationPayment(latestPaymentStatus)) return;
+            const now = Date.now();
+            document.documentElement.dataset.vidipayActivationThreshold = 'reached';
+            document.documentElement.dataset.vidipayActivationThresholdReason = String(reason || '').slice(0, 80);
+            document.documentElement.dataset.vidipayActivationThresholdAt = new Date(now).toISOString();
+            closeWatchModalForActivationLock(reason);
+            updateWalletLockUi();
+            updateGrowthLockUi();
+            if (activationThresholdPromptedAt && now - activationThresholdPromptedAt < 45000) return;
+            activationThresholdPromptedAt = now;
+            showCopyToast(t('activation_deposit_required'));
+            setTimeout(() => {
+                if (!isWalletEarningUnlocked() || hasServerConfirmedActivationPayment(latestPaymentStatus)) return;
+                if (isTonDepositModalOpen()) return;
+                openModal('walletModal');
+            }, 700);
         }
 
         function updateCheckpointRow(id, checkpoint, baseRequired = 0) {
@@ -3980,8 +3766,7 @@
             const bonusButtons = document.querySelectorAll('.bonus-nav, .bonus-corner-btn');
             const alertBox = document.getElementById('growth-lock-alert');
             const activationLocked = isActivationDepositLocked();
-            const referralWatchLocked = isGrowthReferralWatchLocked(status);
-            const watchLocked = Boolean(referralWatchLocked || activationLocked);
+            const watchLocked = Boolean(status.watch_locked || activationLocked);
 
             if (logoBtn) {
                 logoBtn.classList.toggle('growth-locked', watchLocked);
@@ -4340,6 +4125,7 @@
 
             statsInflight = apiRequest(`/stats/${encodeURIComponent(referralUserId)}`, { timeoutMs: 8000 })
                 .then((stats) => {
+                    const previousBalance = Number(appState.balance || 0);
                     appState.balance = Number(stats.balance || 0);
                     appState.totalViews = Number(stats.total_views || 0);
                     appState.totalSeconds = Number(stats.total_watch_seconds || 0);
@@ -4353,6 +4139,9 @@
                     statsFetchedAt = Date.now();
                     saveAppState();
                     updateWatchDisplays();
+                    if (getWalletEarningAmount() >= getWalletUnlockRequiredAmount() && !hasServerConfirmedActivationPayment(latestPaymentStatus)) {
+                        handleActivationThresholdReached(previousBalance < getWalletUnlockRequiredAmount() ? 'stats_threshold' : 'stats_locked_state');
+                    }
                     return stats;
                 })
                 .finally(() => {
@@ -4384,13 +4173,13 @@
                 zh: '请输入以 EQ 或 UQ 开头的有效 TON 钱包地址。',
                 de: 'Gib eine gueltige TON Wallet-Adresse ein, die mit EQ oder UQ beginnt.'
             };
-            return messages[currentLang] || messages.en;
+            return displayText(messages[currentLang] || messages.en);
         }
 
         function setWithdrawFormStatus(message = '', tone = '') {
             const statusEl = document.getElementById('withdraw-form-status');
             if (!statusEl) return;
-            setDomText(statusEl, message);
+            setDomText(statusEl, displayText(message));
             statusEl.dataset.tone = tone || '';
         }
 
@@ -4451,9 +4240,104 @@
             return getWalletEarningAmount() >= getWalletUnlockRequiredAmount();
         }
 
+        function paymentStatusHasConfirmedActivation(status = {}) {
+            return Boolean(
+                status.withdraw_unlocked
+                || status.activation_deposit_verified
+                || status.deposit_refund_available
+                || status.deposit_refund?.requested
+            );
+        }
+
+        function hasServerConfirmedActivationPayment(status = latestPaymentStatus) {
+            if (!status) return false;
+            if (status.__from_cache && !status.__cached_server_confirmed) return false;
+            return Boolean(
+                status.withdraw_unlocked
+                || status.activation_deposit_verified
+                || status.deposit_refund_available
+                || status.deposit_refund?.requested
+            );
+        }
+
         function getTonActivationAmount() {
             const configured = Number(backendSettings.activation_deposit_amount);
             return Number.isFinite(configured) && configured > 0 ? configured : TON_ACTIVATION_AMOUNT;
+        }
+
+        function displayText(value) {
+            return String(value ?? '')
+                .replace(/TONCOIN/gi, DISPLAY_COIN_NAME)
+                .replace(/\bTON\b/g, DISPLAY_COIN_NETWORK);
+        }
+
+        function formatDisplayCoinAmount(value) {
+            const amount = Number(value || 0);
+            return `${Number.isFinite(amount) ? amount.toFixed(2) : Number(TON_ACTIVATION_AMOUNT).toFixed(2)} ${DISPLAY_COIN_NAME}`;
+        }
+
+        function normalizeCoinDisplayText(root = document.body) {
+            if (!root) return;
+            const skipTags = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT']);
+            const applyAttr = (el, attr) => {
+                const value = el.getAttribute(attr);
+                if (value && /TONCOIN|\bTON\b/i.test(value)) el.setAttribute(attr, displayText(value));
+            };
+
+            if (root.nodeType === Node.TEXT_NODE) {
+                if (!skipTags.has(root.parentElement?.tagName || '') && /TONCOIN|\bTON\b/i.test(root.nodeValue || '')) {
+                    root.nodeValue = displayText(root.nodeValue);
+                }
+                return;
+            }
+
+            if (root.nodeType !== Node.ELEMENT_NODE && root !== document) return;
+
+            const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+                acceptNode(node) {
+                    const tag = node.parentElement?.tagName || '';
+                    if (skipTags.has(tag)) return NodeFilter.FILTER_REJECT;
+                    return /TONCOIN|\bTON\b/i.test(node.nodeValue || '') ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+                }
+            });
+
+            const textNodes = [];
+            while (walker.nextNode()) textNodes.push(walker.currentNode);
+            textNodes.forEach(node => { node.nodeValue = displayText(node.nodeValue); });
+
+            const attrRoot = root.querySelectorAll ? root : document;
+            attrRoot.querySelectorAll?.('[placeholder],[aria-label],[title]').forEach(el => {
+                applyAttr(el, 'placeholder');
+                applyAttr(el, 'aria-label');
+                applyAttr(el, 'title');
+            });
+        }
+
+        function installCoinDisplayNormalizer() {
+            if (document.documentElement.dataset.vidipayCoinDisplayNormalizer === 'ready') return;
+            normalizeCoinDisplayText(document.body);
+            const observer = new MutationObserver(mutations => {
+                for (const mutation of mutations) {
+                    if (mutation.type === 'characterData') {
+                        normalizeCoinDisplayText(mutation.target);
+                        continue;
+                    }
+                    if (mutation.type === 'attributes') {
+                        normalizeCoinDisplayText(mutation.target);
+                        continue;
+                    }
+                    mutation.addedNodes?.forEach(node => normalizeCoinDisplayText(node));
+                }
+            });
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+                characterData: true,
+                attributes: true,
+                attributeFilter: ['placeholder', 'aria-label', 'title']
+            });
+            window.__vidipayCoinDisplayObserver = observer;
+            document.documentElement.dataset.vidipayCoinDisplayNormalizer = 'ready';
         }
 
         function tonAmountToNano(amount) {
@@ -4516,12 +4400,8 @@
             if (!selectedOrder || !walletAddress) return selectedOrder;
             const payload = {
                 saved_at: Date.now(),
-                telegram_id: String(referralUserId),
                 wallet_address: walletAddress,
-                order: {
-                    ...selectedOrder,
-                    telegram_id: selectedOrder.telegram_id || String(referralUserId)
-                }
+                order: selectedOrder
             };
             safeStorageSet(paymentOrderCacheKey, JSON.stringify(payload));
             return selectedOrder;
@@ -4532,11 +4412,6 @@
             if (!raw) return null;
             try {
                 const parsed = JSON.parse(raw);
-                const cachedTelegramId = String(parsed?.telegram_id || parsed?.order?.telegram_id || '').trim();
-                if (cachedTelegramId !== String(referralUserId)) {
-                    safeStorageRemove(paymentOrderCacheKey);
-                    return null;
-                }
                 const order = attachWalletAddressToOrder(parsed?.order, parsed?.wallet_address);
                 return getPaymentWalletAddress(order) ? order : null;
             } catch (err) {
@@ -4551,25 +4426,16 @@
             const orders = Array.isArray(statusData.orders) ? statusData.orders.slice(0, 6) : [];
             const selectedOrder = selectPaymentOrderForDisplay(statusData.order || orders[0] || null, statusData);
             const walletAddress = getPaymentWalletAddress(selectedOrder) || findPaymentWalletAddressInPayload(statusData);
-            const statusTelegramId = String(statusData.telegram_id || statusData.user_telegram_id || statusData.user?.telegram_id || referralUserId || '').trim();
-            const activationRequiredAgain = statusRequiresFreshActivation(statusData);
             return {
                 cached_at: Date.now(),
-                telegram_id: String(referralUserId),
-                user_telegram_id: statusTelegramId,
                 order: attachWalletAddressToOrder(selectedOrder || statusData.order || null, walletAddress),
                 orders: orders.map(order => attachWalletAddressToOrder(order, getPaymentWalletAddress(order) || walletAddress)).filter(Boolean),
                 payment: statusData.payment || null,
                 withdraw_unlocked: Boolean(statusData.withdraw_unlocked),
                 main_withdraw_unlocked: Boolean(statusData.main_withdraw_unlocked || statusData.withdraw_unlocked),
                 activation_deposit_verified: Boolean(statusData.activation_deposit_verified),
-                activation_payment_required: Boolean(statusData.activation_payment_required || statusData.wallet_activation_required),
-                wallet_activation_required: Boolean(statusData.wallet_activation_required || statusData.activation_payment_required),
-                wallet_locked: Boolean(statusData.wallet_locked),
-                wallet_unlock_required_amount: Number(statusData.wallet_unlock_required_amount || getWalletUnlockRequiredAmount()),
-                wallet_earning_amount: Number(statusData.wallet_earning_amount || statusData.user?.balance || getWalletEarningAmount()),
-                deposit_refund_available: activationRequiredAgain ? false : Boolean(statusData.deposit_refund_available || statusData.activation_deposit_verified),
-                deposit_refund: activationRequiredAgain ? null : (statusData.deposit_refund || null),
+                deposit_refund_available: Boolean(statusData.deposit_refund_available || statusData.activation_deposit_verified),
+                deposit_refund: statusData.deposit_refund || null,
                 growth_lock: statusData.growth_lock || null,
                 wallet_address: walletAddress || ''
             };
@@ -4579,7 +4445,6 @@
             const payload = normalizePaymentStatusForCache(statusData);
             if (!payload) return statusData;
             safeStorageSet(paymentStatusCacheKey, JSON.stringify(payload));
-            rememberActivationDepositAccess(payload);
             return statusData;
         }
 
@@ -4590,11 +4455,6 @@
                 const parsed = JSON.parse(raw);
                 const cachedAt = Number(parsed?.cached_at || 0);
                 if (!cachedAt || Date.now() - cachedAt > 6 * 60 * 60 * 1000) {
-                    safeStorageRemove(paymentStatusCacheKey);
-                    return null;
-                }
-                const cachedTelegramId = String(parsed?.telegram_id || parsed?.user_telegram_id || parsed?.user?.telegram_id || '').trim();
-                if (cachedTelegramId !== String(referralUserId)) {
                     safeStorageRemove(paymentStatusCacheKey);
                     return null;
                 }
@@ -4616,23 +4476,34 @@
             }
         }
 
+        function paymentStatusForUnverifiedCache(cachedStatus = {}) {
+            const cachedConfirmed = paymentStatusHasConfirmedActivation(cachedStatus);
+            return {
+                ...cachedStatus,
+                __from_cache: true,
+                __cached_server_confirmed: cachedConfirmed,
+                withdraw_unlocked: cachedConfirmed && Boolean(cachedStatus.withdraw_unlocked),
+                main_withdraw_unlocked: cachedConfirmed && Boolean(cachedStatus.main_withdraw_unlocked || cachedStatus.withdraw_unlocked),
+                activation_deposit_verified: cachedConfirmed && Boolean(cachedStatus.activation_deposit_verified),
+                deposit_refund_available: cachedConfirmed && Boolean(cachedStatus.deposit_refund_available || cachedStatus.activation_deposit_verified),
+                deposit_refund: cachedConfirmed ? (cachedStatus.deposit_refund || null) : null
+            };
+        }
+
         function seedPaymentStatusFromCache() {
             const cachedStatus = getCachedPaymentStatus();
-            if (!cachedStatus) return seedActivationAccessFromCache();
+            if (!cachedStatus) return false;
+            const displayStatus = paymentStatusForUnverifiedCache(cachedStatus);
             latestPaymentStatus = {
                 ...latestPaymentStatus,
-                ...cachedStatus
+                ...displayStatus
             };
             if (cachedStatus.growth_lock) setGrowthLockStatus(cachedStatus.growth_lock);
-            rememberActivationDepositAccess(cachedStatus);
-            seedActivationAccessFromCache();
             const cachedOrder = findPaymentOrderWithWallet(cachedStatus.orders)
                 || cachedStatus.order
                 || getCachedPaymentOrder(false);
-            renderPaymentOrder(cachedOrder, cachedStatus);
-            updateWithdrawUi(cachedStatus);
-            updateGrowthLockUi();
-            updateWalletLockUi();
+            renderPaymentOrder(cachedOrder, displayStatus);
+            updateWithdrawUi(displayStatus);
             updatePaymentActionButtons();
             return true;
         }
@@ -5032,11 +4903,11 @@
             setPaymentAddressVisibility(walletAddress);
             const amount = Number(currentPaymentOrder?.required_amount || currentPaymentOrder?.amount || backendSettings.activation_deposit_amount || TON_ACTIVATION_AMOUNT || 6.99);
 
-            if (!statusRequiresFreshActivation(statusData) && (statusData?.activation_deposit_verified || statusData?.deposit_refund_available)) {
+            if (hasServerConfirmedActivationPayment(statusData)) {
                 setPaymentUiState(walletAddress ? 'verified' : 'loading');
                 box.style.display = 'block';
                 if (addressBox) addressBox.style.display = 'block';
-                if (amountEl) amountEl.innerText = amount ? `${amount.toFixed(2)} TONCOIN` : `${getTonActivationAmount().toFixed(2)} TONCOIN`;
+                if (amountEl) amountEl.innerText = formatDisplayCoinAmount(amount || getTonActivationAmount());
                 if (addressEl) addressEl.innerText = walletAddress || t('card_order_loading');
                 if (expiryEl) {
                     expiryEl.innerText = '';
@@ -5057,7 +4928,7 @@
                 setPaymentUiState(isWalletEarningUnlocked() ? 'loading' : 'locked');
                 box.style.display = isWalletEarningUnlocked() ? 'block' : 'none';
                 if (addressBox) addressBox.style.display = isWalletEarningUnlocked() ? 'block' : 'none';
-                if (amountEl) amountEl.innerText = `${getTonActivationAmount().toFixed(2)} TONCOIN`;
+                if (amountEl) amountEl.innerText = formatDisplayCoinAmount(getTonActivationAmount());
                 if (addressEl) addressEl.innerText = t('card_order_loading');
                 if (expiryEl) {
                     expiryEl.innerText = '';
@@ -5076,7 +4947,7 @@
             setPaymentUiState(walletAddress ? 'ready' : 'loading');
             box.style.display = 'block';
             if (addressBox) addressBox.style.display = 'block';
-            if (amountEl) amountEl.innerText = amount ? `${amount.toFixed(2)} TONCOIN` : `${getTonActivationAmount().toFixed(2)} TONCOIN`;
+            if (amountEl) amountEl.innerText = formatDisplayCoinAmount(amount || getTonActivationAmount());
             if (addressEl) addressEl.innerText = walletAddress || t('card_order_loading');
             renderPaymentExpiryText(currentPaymentOrder);
             renderTonPaymentQr('');
@@ -5099,10 +4970,10 @@
 
         async function refreshPaymentStatus(options = {}) {
             const now = Date.now();
-            if (options.manual && isActionThrottled('payment-manual-check', 900)) {
+            if (options.manual && isActionThrottled('payment-manual-check', 300)) {
                 return paymentStatusInflight || latestPaymentStatus;
             }
-            if (!options.force && !options.manual && paymentStatusLastRefreshAt && now - paymentStatusLastRefreshAt < 1500) {
+            if (!options.force && !options.manual && paymentStatusLastRefreshAt && now - paymentStatusLastRefreshAt < 800) {
                 return latestPaymentStatus;
             }
             if (paymentStatusRefreshBusy) return paymentStatusInflight || latestPaymentStatus;
@@ -5135,9 +5006,11 @@
                         if (checkResult?.growth_lock) setGrowthLockStatus(checkResult.growth_lock);
                     }
 
-                    const status = await apiRequest(`/payment/status/${encodeURIComponent(referralUserId)}`, {
+                    const statusReason = options.reason || (options.manual ? 'manual' : (options.poll ? 'poll' : 'refresh'));
+                    const status = await apiRequest(`/payment/status/${encodeURIComponent(referralUserId)}?fresh=${Date.now()}&reason=${encodeURIComponent(statusReason)}`, {
                         timeoutMs: 8000,
-                        signal: paymentStatusSignal
+                        signal: paymentStatusSignal,
+                        cache: 'no-store'
                     });
                     if (requestSeq !== paymentStatusRequestSeq || paymentStatusSignal.aborted) {
                         return latestPaymentStatus;
@@ -5149,8 +5022,7 @@
                     rememberPaymentStatus(status);
                     renderPaymentOrder(latestOrder, status);
                     updateWithdrawUi(status);
-                    updateGrowthLockUi();
-                    updateWalletLockUi();
+                    updateWatchDisplays();
                     paymentStatusLastRefreshAt = Date.now();
                     setPaymentPollingHealthy(true);
                     updateFrontendHealth({ ok: true });
@@ -5235,18 +5107,6 @@
             return kind === 'message' ? t('deposit_refund_locked_message') : t('deposit_refund_pending_status');
         }
 
-        function depositRefundDetailText(depositRefund = {}) {
-            return firstReceiptValue(depositRefund, [
-                'admin_note',
-                'status_reason',
-                'reason',
-                'reject_reason',
-                'failed_reason',
-                'error',
-                'message'
-            ]);
-        }
-
         function clearDepositRefundFollowup(reason = 'clear') {
             if (depositRefundFollowupTimer) clearTimeout(depositRefundFollowupTimer);
             depositRefundFollowupTimer = null;
@@ -5317,23 +5177,18 @@
             const growth = currentGrowthLockStatus();
             if (title) title.classList.remove('withdraw-red-title');
 
-            const activationRequiredAgain = statusRequiresFreshActivation(paymentStatus);
-            const depositRefund = activationRequiredAgain ? {} : (paymentStatus.deposit_refund || {});
+            const depositRefund = paymentStatus.deposit_refund || {};
             const refundRequested = Boolean(depositRefund.requested);
             const depositRefundAvailable = Boolean(
-                !activationRequiredAgain
-                && (
-                    paymentStatus.activation_deposit_verified
-                    || paymentStatus.deposit_refund_available
-                    || refundRequested
-                )
+                paymentStatus.activation_deposit_verified
+                || paymentStatus.deposit_refund_available
+                || paymentStatus.withdraw_unlocked
+                || refundRequested
             );
             const refundStatus = String(depositRefund.status || '').toLowerCase();
             const refundState = normalizeDepositRefundStatus(refundStatus);
-            const effectiveDepositRefundAvailable = depositRefundAvailable;
             const refundLocked = refundRequested && refundState !== 'rejected';
             const savedRefundWallet = String(depositRefund.wallet_address || safeStorageGet('vidiPayDepositRefundWalletAddress') || '').trim();
-            const refundDetail = depositRefundDetailText(depositRefund);
             const refundAmount = Number(backendSettings.activation_refund_amount || getTonActivationAmount() || TON_ACTIVATION_AMOUNT);
             const minWithdraw = refundAmount;
 
@@ -5348,8 +5203,7 @@
             setDomText(dateValue, windowState.dateText);
 
             const stableSnapshot = JSON.stringify({
-                depositRefundAvailable: effectiveDepositRefundAvailable,
-                activationRequiredAgain,
+                depositRefundAvailable,
                 mainWithdrawUnlocked: Boolean(paymentStatus.withdraw_unlocked),
                 status: windowState.status,
                 min: minWithdraw,
@@ -5357,7 +5211,6 @@
                 refundRequested,
                 refundStatus,
                 refundState,
-                refundDetail,
                 refundWallet: savedRefundWallet,
                 growthMainWithdrawUnlocked: Boolean(growth.main_withdraw?.unlocked),
                 mainWithdrawRemaining: Number(growth.main_withdraw?.remaining || 0),
@@ -5369,7 +5222,7 @@
 
             updateWalletLockUi(windowState);
 
-            if (effectiveDepositRefundAvailable) {
+            if (depositRefundAvailable) {
                 setDomText(title, t('deposit_refund_title'));
                 setDomStyle(title, 'color', '#22c55e');
                 setDomDisplay(formBox, 'block');
@@ -5395,13 +5248,10 @@
                 if (refundRequested) {
                     const isPaid = refundState === 'completed';
                     const isRejected = refundState === 'rejected';
-                    const baseStatusText = depositRefundStatusText(refundState, 'status');
-                    const refundStatusText = refundDetail ? `${baseStatusText} ${refundDetail}` : baseStatusText;
-                    document.documentElement.dataset.vidipayDepositRefundDetail = refundDetail ? 'visible' : 'none';
                     setDomText(text, depositRefundStatusText(refundState, 'message'));
                     setDomText(request, isPaid ? t('deposit_refund_returned') : isRejected ? t('deposit_refund_rejected') : t('deposit_refund_saved'));
                     setDomText(extra, t('main_balance_locked_extra'));
-                    setWithdrawFormStatus(refundStatusText, isPaid ? 'ok' : isRejected ? 'error' : 'warn');
+                    setWithdrawFormStatus(depositRefundStatusText(refundState, 'status'), isPaid ? 'ok' : isRejected ? 'error' : 'warn');
                     return;
                 }
 
@@ -5412,7 +5262,7 @@
                 } else {
                     setDomText(extra, t('main_balance_locked_extra'));
                 }
-                setWithdrawFormStatus(`${t('activation_refund_available')}: ${refundAmount.toFixed(2)} TONCOIN`, 'ok');
+                setWithdrawFormStatus(`${t('activation_refund_available')}: ${formatDisplayCoinAmount(refundAmount)}`, 'ok');
                 return;
             }
 
@@ -5586,7 +5436,6 @@
                         amount: result.amount || refundAmount
                     }
                 };
-                rememberPaymentStatus(latestPaymentStatus);
                 updateWatchDisplays();
                 const createdRefundStatus = result.deposit_refund?.status || result.withdraw?.status || 'pending';
                 const createdRefundState = normalizeDepositRefundStatus(createdRefundStatus);
@@ -5594,7 +5443,7 @@
                 addWithdrawHistory(result.amount || refundAmount, createdRefundStatus, {
                     type: 'deposit_refund',
                     method: 'TON_DEPOSIT_REFUND',
-                    currency: 'TONCOIN',
+                    currency: DISPLAY_COIN_NAME,
                     wallet: savedRefundWallet || walletAddress,
                     tx_hash: result.deposit_refund?.tx_hash || result.withdraw?.tx_hash || ''
                 });
@@ -5768,7 +5617,6 @@
                 unknown_network: "Unknown network",
                 unknown_country: "Unknown",
                 no_history: "No payment or withdrawal history yet.",
-                history_load_failed: "History did not load. Check your connection and try again.",
                 receipt_date_time: "Date and time",
                 receipt_network: "Network",
                 receipt_verified_at: "Verified at",
@@ -6382,7 +6230,6 @@
             deposit_refund_rejected_message: "Refund was rejected. Admin review is required before retry.",
             deposit_refund_rejected_status: "Refund rejected. Admin review is required before retry.",
             payment_checking: "CHECKING...",
-            payment_copying: "COPYING...",
             main_balance_locked_extra: "Main balance withdrawal is locked until the scheduled withdrawal time.",
             main_balance_ready_extra: "Main balance withdrawal condition is complete. It opens only during withdrawal time.",
             main_withdraw_referral_required: "Main balance withdrawal needs 1 more deposited friend through your referral link.",
@@ -7338,6 +7185,7 @@
             if (!languages[lang] || lang === 'uz') lang = 'en';
             currentLang = lang;
             safeStorageSet('vidiPayLang', lang);
+            document.documentElement.lang = lang;
 
             document.querySelectorAll('.lang-opt-btn').forEach(btn => btn.classList.remove('active'));
             const activeBtn = document.getElementById(`btn-lang-${lang}`);
@@ -7346,9 +7194,9 @@
             const dict = languages[lang] || languages.en;
             const setText = (id, value) => {
                 const el = document.getElementById(id);
-                if (el && value !== undefined) el.innerText = value;
+                if (el && value !== undefined) el.innerText = displayText(value);
             };
-            const textFor = (key) => dict[key] || languages.en[key] || key;
+            const textFor = (key) => displayText(dict[key] || languages.en[key] || key);
 
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
@@ -7422,39 +7270,39 @@
             setText('checkpoint-1499-title', dict.growth_1499_title || languages.en.growth_1499_title);
             setText('checkpoint-1499-sub', dict.growth_1499_sub || languages.en.growth_1499_sub);
 
-            document.querySelectorAll('.bonus-nav span, .bonus-corner-btn span').forEach(el => el.innerText = dict.bonus || 'BONUS');
-            document.querySelectorAll('.withdraw-nav span, .withdraw-floating span').forEach(el => el.innerText = dict.withdraw || 'Withdraw');
-            document.querySelectorAll('.wallet-nav span').forEach(el => el.innerText = dict.wallet || 'WALLET');
-            document.querySelectorAll('.history-nav span').forEach(el => el.innerText = dict.history || 'HISTORY');
+            document.querySelectorAll('.bonus-nav span, .bonus-corner-btn span').forEach(el => el.innerText = displayText(dict.bonus || 'BONUS'));
+            document.querySelectorAll('.withdraw-nav span, .withdraw-floating span').forEach(el => el.innerText = displayText(dict.withdraw || 'Withdraw'));
+            document.querySelectorAll('.wallet-nav span').forEach(el => el.innerText = displayText(dict.wallet || 'WALLET'));
+            document.querySelectorAll('.history-nav span').forEach(el => el.innerText = displayText(dict.history || 'HISTORY'));
             const walletTitle = document.querySelector('#walletModal .modal-title');
-            if (walletTitle) walletTitle.innerText = dict.wallet_title || languages.en.wallet_title || languages.en.account_unlock_title;
+            if (walletTitle) walletTitle.innerText = displayText(dict.wallet_title || languages.en.wallet_title || languages.en.account_unlock_title);
             const historyTitle = document.querySelector('#withdrawHistoryModal .modal-title');
-            if (historyTitle) historyTitle.innerText = dict.withdraw_history || 'Withdrawal History';
+            if (historyTitle) historyTitle.innerText = displayText(dict.withdraw_history || 'Withdrawal History');
             const watchTitle = document.querySelector('#watchModal .modal-title');
-            if (watchTitle) watchTitle.innerText = dict.watch_title || 'MrBeast Watch';
+            if (watchTitle) watchTitle.innerText = displayText(dict.watch_title || 'MrBeast Watch');
             const resultTitle = document.querySelector('#watchResultModal .modal-title');
-            if (resultTitle) resultTitle.innerText = dict.watch_result_title || 'Video result';
+            if (resultTitle) resultTitle.innerText = displayText(dict.watch_result_title || 'Video result');
             const bonusTitle = document.querySelector('#bonusModal .modal-title');
-            if (bonusTitle) bonusTitle.innerText = dict.bonus_title || 'Referral Bonus';
+            if (bonusTitle) bonusTitle.innerText = displayText(dict.bonus_title || 'Referral Bonus');
             const bonusRateBox = document.querySelector('.bonus-rate-box');
-            if (bonusRateBox) bonusRateBox.innerHTML = `${dict.bonus_per_friend || 'Bonus per joined friend:'} <span id="bonus-rate">${BONUS_PER_FRIEND.toFixed(2)} $</span>`;
+            if (bonusRateBox) bonusRateBox.innerHTML = `${displayText(dict.bonus_per_friend || 'Bonus per joined friend:')} <span id="bonus-rate">${BONUS_PER_FRIEND.toFixed(2)} $</span>`;
             const bonusLabels = document.querySelectorAll('.bonus-stat-card .lbl');
-            if (bonusLabels[0]) bonusLabels[0].innerText = dict.total_bonus || 'Total Bonus';
-            if (bonusLabels[1]) bonusLabels[1].innerText = dict.friends_joined || 'Friends Joined';
+            if (bonusLabels[0]) bonusLabels[0].innerText = displayText(dict.total_bonus || 'Total Bonus');
+            if (bonusLabels[1]) bonusLabels[1].innerText = displayText(dict.friends_joined || 'Friends Joined');
             const bonusReferralTitle = document.getElementById('bonus-ref-title');
-            if (bonusReferralTitle) bonusReferralTitle.innerText = dict.referral_link_title || 'Your Referral Link';
+            if (bonusReferralTitle) bonusReferralTitle.innerText = displayText(dict.referral_link_title || 'Your Referral Link');
             const tierTitles = document.querySelectorAll('.tier-title');
-            if (tierTitles[0]) tierTitles[0].innerText = dict.tier1_title || languages.en.tier1_title;
-            if (tierTitles[1]) tierTitles[1].innerText = dict.tier2_title || languages.en.tier2_title;
-            if (tierTitles[2]) tierTitles[2].innerText = dict.tier3_title || languages.en.tier3_title;
+            if (tierTitles[0]) tierTitles[0].innerText = displayText(dict.tier1_title || languages.en.tier1_title);
+            if (tierTitles[1]) tierTitles[1].innerText = displayText(dict.tier2_title || languages.en.tier2_title);
+            if (tierTitles[2]) tierTitles[2].innerText = displayText(dict.tier3_title || languages.en.tier3_title);
             const tierLists = document.querySelectorAll('.tier-list');
-            if (tierLists[0]) tierLists[0].innerText = dict.tier1_countries || languages.en.tier1_countries;
-            if (tierLists[1]) tierLists[1].innerText = dict.tier2_countries || languages.en.tier2_countries;
-            if (tierLists[2]) tierLists[2].innerText = dict.tier3_countries || languages.en.tier3_countries;
+            if (tierLists[0]) tierLists[0].innerText = displayText(dict.tier1_countries || languages.en.tier1_countries);
+            if (tierLists[1]) tierLists[1].innerText = displayText(dict.tier2_countries || languages.en.tier2_countries);
+            if (tierLists[2]) tierLists[2].innerText = displayText(dict.tier3_countries || languages.en.tier3_countries);
 
             const supportBtn = document.getElementById('lbl-support-btn');
             if (supportBtn && dict.support_btn) {
-                supportBtn.innerHTML = `<i class="fas fa-headset" style="margin-right: 6px; color: var(--accent-color);"></i> ${dict.support_btn}`;
+                supportBtn.innerHTML = `<i class="fas fa-headset" style="margin-right: 6px; color: var(--accent-color);"></i> ${displayText(dict.support_btn)}`;
             }
 
             updateWatchDisplays();
@@ -7473,10 +7321,11 @@
             if (document.getElementById('withdrawHistoryModal')?.style.display === 'flex') {
                 renderFullHistory();
             }
+            normalizeCoinDisplayText(document.body);
         }
 
         function t(key) {
-            return (languages[currentLang] && languages[currentLang][key]) || languages.en[key] || key;
+            return displayText((languages[currentLang] && languages[currentLang][key]) || languages.en[key] || key);
         }
 
         const adminNotificationExactTranslations = {
@@ -7793,7 +7642,7 @@
             else btn.setAttribute('aria-disabled', wasDisabled ? 'true' : 'false');
         }
 
-        function isActionThrottled(key, cooldownMs = 600) {
+        function isActionThrottled(key, cooldownMs = 240) {
             const now = Date.now();
             const store = isActionThrottled.store || (isActionThrottled.store = new Map());
             const until = Number(store.get(key) || 0);
@@ -7836,7 +7685,7 @@
         }
 
         function openWalletIfUnlocked() {
-            if (isActionThrottled('open-wallet', 500)) return;
+            if (isActionThrottled('open-wallet', 220)) return;
             if (!isWalletEarningUnlocked()) {
                 const required = getWalletUnlockRequiredAmount();
                 const earned = getWalletEarningAmount();
@@ -8000,10 +7849,8 @@
         }
 
         async function handleMainClick(e) {
-            if (isActionThrottled('main-watch-click', 900)) return;
+            if (isActionThrottled('main-watch-click', 260)) return;
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-            seedPaymentStatusFromCache();
-            seedActivationAccessFromCache();
             if (isActivationDepositLocked()) {
                 updateGrowthLockUi();
                 showCopyToast(t('activation_deposit_required'));
@@ -8026,17 +7873,6 @@
             return Math.floor(Math.random() * MRBEAST_RANDOM_START_MAX);
         }
 
-        function normalizeInlineWatchIndex(index = inlineWatchSceneIndex) {
-            const count = WATCH_INLINE_SCENES.length || 1;
-            const raw = Number.isFinite(Number(index)) ? Number(index) : 0;
-            return ((Math.floor(raw) % count) + count) % count;
-        }
-
-        function getInlineWatchScene(index = inlineWatchSceneIndex) {
-            inlineWatchSceneIndex = normalizeInlineWatchIndex(index);
-            return WATCH_INLINE_SCENES[inlineWatchSceneIndex] || WATCH_INLINE_SCENES[0];
-        }
-
         function resetWatchVideoState(message = t('watch_playing')) {
             currentWatchCompleted = false;
             currentMrBeastVideoId = null;
@@ -8045,7 +7881,7 @@
         }
 
         function playMrBeastAt(index) {
-            if (USE_INLINE_WATCH_PLAYER || !mrbeastPlayer || !mrbeastPlayer.playVideoAt) {
+            if (!mrbeastPlayer || !mrbeastPlayer.playVideoAt) {
                 showMrBeastFallbackPlayer(t('watch_playing'), index);
                 return;
             }
@@ -8054,18 +7890,14 @@
         }
 
         function playRandomMrBeastVideo() {
-            if (isActionThrottled('watch-random', 700)) return;
-            if (USE_INLINE_WATCH_PLAYER || usingFallbackPlayer || !mrbeastPlayer) {
-                showMrBeastFallbackPlayer(t('watch_playing'), Math.floor(Math.random() * WATCH_INLINE_SCENES.length));
-                return;
-            }
+            if (isActionThrottled('watch-random', 260)) return;
             playMrBeastAt(randomMrBeastIndex());
         }
 
         function playNextMrBeastVideo() {
-            if (isActionThrottled('watch-next', 700)) return;
-            if (USE_INLINE_WATCH_PLAYER || usingFallbackPlayer || !mrbeastPlayer || !mrbeastPlayer.nextVideo) {
-                showMrBeastFallbackPlayer(t('watch_playing'), inlineWatchSceneIndex + 1);
+            if (isActionThrottled('watch-next', 260)) return;
+            if (!mrbeastPlayer || !mrbeastPlayer.nextVideo) {
+                showMrBeastFallbackPlayer(t('watch_playing'));
                 return;
             }
             resetWatchVideoState(t('watch_playing'));
@@ -8073,9 +7905,9 @@
         }
 
         function playPreviousMrBeastVideo() {
-            if (isActionThrottled('watch-previous', 700)) return;
-            if (USE_INLINE_WATCH_PLAYER || usingFallbackPlayer || !mrbeastPlayer || !mrbeastPlayer.previousVideo) {
-                showMrBeastFallbackPlayer(t('watch_playing'), inlineWatchSceneIndex - 1);
+            if (isActionThrottled('watch-previous', 260)) return;
+            if (!mrbeastPlayer || !mrbeastPlayer.previousVideo) {
+                showMrBeastFallbackPlayer(t('watch_playing'));
                 return;
             }
             resetWatchVideoState(t('watch_playing'));
@@ -8100,29 +7932,20 @@
             const host = document.getElementById('mrbeast-player');
             if (!host || !pendingWatch) return;
 
-            const scene = getInlineWatchScene(index);
             mrbeastPlayer = null;
             usingFallbackPlayer = true;
-            currentMrBeastVideoId = `${scene.id}_${watchSessionGeneration}_${Date.now()}`;
+            currentMrBeastVideoId = currentMrBeastVideoId || `mrbeast_fallback_${Date.now()}`;
             watchSessionVideoIds.add(currentMrBeastVideoId);
-            stopWatchTimerDisplay();
-            host.innerHTML = `
-                <div id="vidipay-inline-watch-player" class="inline-watch-player" role="img" aria-label="${escapeHtml(scene.title)}">
-                    <div class="inline-watch-player-core">
-                        <div class="inline-watch-play"><i class="fas fa-play"></i></div>
-                    </div>
-                    <div class="inline-watch-caption">${escapeHtml(scene.title)}</div>
-                </div>`;
-            currentWatchCompleted = false;
-            startWatchTimerDisplay();
+            host.innerHTML = `<iframe src="${buildMrBeastEmbedUrl(index)}" title="MrBeast video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="width:100%;height:100%;border:0;display:block;background:#05070a;"></iframe>`;
             updateWatchSessionUi(message);
-            document.documentElement.dataset.vidipayWatchFallback = 'inline';
-            document.documentElement.dataset.vidipayWatchInlinePlayer = 'playing';
+            startWatchTimerDisplay();
         }
 
         function clearWatchFallbackPlayer() {
             clearTimeout(watchFallbackTimer);
             watchFallbackTimer = null;
+            clearTimeout(watchPlayerStartWatchdogTimer);
+            watchPlayerStartWatchdogTimer = null;
             if (usingFallbackPlayer) {
                 const host = document.getElementById('mrbeast-player');
                 if (host) host.innerHTML = '';
@@ -8131,10 +7954,6 @@
         }
 
         function startMrBeastPlayer() {
-            if (USE_INLINE_WATCH_PLAYER) {
-                showMrBeastFallbackPlayer(t('watch_playing'), inlineWatchSceneIndex);
-                return;
-            }
             if (!youtubeApiReady || !window.YT || !window.YT.Player) {
                 shouldStartMrBeastWhenApiReady = true;
                 updateWatchSessionUi(t('watch_loading'));
@@ -8153,6 +7972,12 @@
 
             if (!mrbeastPlayer) {
                 clearTimeout(watchFallbackTimer);
+                clearTimeout(watchPlayerStartWatchdogTimer);
+                watchPlayerStartWatchdogTimer = setTimeout(() => {
+                    if (pendingWatch && !usingFallbackPlayer && (!watchSegmentStartedAt || countedWatchSeconds <= 0)) {
+                        showMrBeastFallbackPlayer(t('watch_playing'));
+                    }
+                }, 4500);
                 mrbeastPlayer = new YT.Player('mrbeast-player', {
                     width: '100%',
                     height: '100%',
@@ -8169,6 +7994,8 @@
                     },
                     events: {
                         onReady: event => {
+                            clearTimeout(watchPlayerStartWatchdogTimer);
+                            watchPlayerStartWatchdogTimer = null;
                             const videoData = event.target?.getVideoData ? event.target.getVideoData() : {};
                             currentMrBeastVideoId = videoData?.video_id || currentMrBeastVideoId || `mrbeast_api_${Date.now()}`;
                             watchSessionVideoIds.add(currentMrBeastVideoId);
@@ -8177,7 +8004,11 @@
                             event.target.playVideo();
                         },
                         onStateChange: onMrBeastPlayerStateChange,
-                        onError: () => showMrBeastFallbackPlayer(t('watch_playing'))
+                        onError: () => {
+                            clearTimeout(watchPlayerStartWatchdogTimer);
+                            watchPlayerStartWatchdogTimer = null;
+                            showMrBeastFallbackPlayer(t('watch_playing'));
+                        }
                     }
                 });
             } else {
@@ -8198,15 +8029,6 @@
         }
 
         function openWatchModal() {
-            seedPaymentStatusFromCache();
-            seedActivationAccessFromCache();
-            if (isActivationDepositLocked()) {
-                updateGrowthLockUi();
-                showCopyToast(t('activation_deposit_required'));
-                setWatchUiState('activation_required');
-                closeModal('watchModal');
-                return;
-            }
             if (pendingWatch && !watchSessionSubmitted) {
                 setWatchUiState('active');
                 openModal('watchModal');
@@ -8402,246 +8224,61 @@
             return Number((Math.max(0, Number(seconds || 0)) * rate).toFixed(2));
         }
 
-        function normalizeWatchRewardAmount(value, fallbackSeconds = 0) {
-            const parsed = Number(value);
-            if (Number.isFinite(parsed) && parsed >= 0) return Number(parsed.toFixed(2));
-            return estimateWatchReward(fallbackSeconds);
+        function roundMoney(value) {
+            const amount = Number(value || 0);
+            return Number((Number.isFinite(amount) ? amount : 0).toFixed(2));
         }
 
-        function resolveWatchReward(result = {}, fallbackSeconds = 0) {
-            const candidates = [
-                result.reward,
-                result.amount,
-                result.earned,
-                result.view_reward,
-                result.watch_reward,
-                result.user?.last_view_reward,
-                result.user?.view_reward
-            ];
-            for (const candidate of candidates) {
-                const parsed = Number(candidate);
-                if (Number.isFinite(parsed) && parsed >= 0) return Number(parsed.toFixed(2));
-            }
-            return estimateWatchReward(fallbackSeconds);
-        }
+        function applyOptimisticWatchSettlement(watchSeconds, reward, videoId, reason = 'watch_finalize') {
+            const seconds = Math.max(0, Number(watchSeconds || 0));
+            const amount = roundMoney(reward);
+            if (!seconds || amount <= 0 || watchOptimisticSettlement) return amount;
 
-        function makeWatchRewardKey(videoId, seconds) {
-            return `${String(videoId || 'watch').slice(0, 80)}:${Math.max(0, Math.floor(Number(seconds || 0)))}`;
-        }
-
-        function snapshotWatchRewardState() {
-            return {
-                balance: Number(appState.balance || 0),
-                totalViews: Number(appState.totalViews || 0),
-                totalSeconds: Number(appState.totalSeconds || 0),
-                dailyViews: Number(appState.dailyViews || 0),
-                dailySeconds: Number(appState.dailySeconds || 0),
-                dailyEarned: Number(appState.dailyEarned || 0)
+            watchOptimisticSettlement = {
+                seconds,
+                reward: amount,
+                video_id: videoId || '',
+                reason,
+                applied_at: Date.now()
             };
-        }
 
-        function forceWatchRewardMinimum(entry, rewardOverride) {
-            if (!entry) return;
-            const reward = normalizeWatchRewardAmount(
-                rewardOverride === undefined ? entry.reward : rewardOverride,
-                entry.seconds
-            );
-            appState.totalSeconds = Math.max(Number(appState.totalSeconds || 0), entry.before.totalSeconds + entry.seconds);
-            appState.totalMinutes = Math.floor(Number(appState.totalSeconds || 0) / 60);
-            appState.dailySeconds = Math.max(Number(appState.dailySeconds || 0), entry.before.dailySeconds + entry.seconds);
-            appState.dailyMinutes = Math.floor(Number(appState.dailySeconds || 0) / 60);
-            appState.dailyEarned = Number(Math.max(Number(appState.dailyEarned || 0), entry.before.dailyEarned + reward).toFixed(2));
-            appState.balance = Number(Math.max(Number(appState.balance || 0), entry.before.balance + reward).toFixed(2));
-            appState.totalViews = Math.max(Number(appState.totalViews || 0), entry.before.totalViews + 1);
-            appState.dailyViews = Math.max(Number(appState.dailyViews || 0), entry.before.dailyViews + 1);
+            appState.balance = roundMoney(Number(appState.balance || 0) + amount);
+            appState.dailyEarned = roundMoney(Number(appState.dailyEarned || 0) + amount);
+            appState.totalSeconds = Math.max(0, Number(appState.totalSeconds || 0) + seconds);
+            appState.totalMinutes = Math.floor(appState.totalSeconds / 60);
+            appState.dailySeconds = Math.max(0, Number(appState.dailySeconds || 0) + seconds);
+            appState.dailyMinutes = Math.floor(appState.dailySeconds / 60);
+            appState.totalViews = Math.max(0, Number(appState.totalViews || 0) + 1);
+            appState.dailyViews = Math.max(0, Number(appState.dailyViews || 0) + 1);
             saveAppState();
             updateWatchDisplays();
+
+            if (isActivationDepositLocked()) {
+                handleActivationThresholdReached(reason);
+            }
+            return amount;
         }
 
-        function applyOptimisticWatchReward(videoId, seconds, reward) {
-            const safeSeconds = Math.max(0, Math.floor(Number(seconds || 0)));
-            if (!safeSeconds) return null;
-            const key = makeWatchRewardKey(videoId, safeSeconds);
-            if (optimisticWatchRewards.has(key)) return optimisticWatchRewards.get(key);
-            const entry = {
-                key,
-                videoId,
-                seconds: safeSeconds,
-                reward: normalizeWatchRewardAmount(reward, safeSeconds),
-                before: snapshotWatchRewardState(),
-                createdAt: Date.now()
-            };
-            optimisticWatchRewards.set(key, entry);
-            document.documentElement.dataset.vidipayWatchRewardState = 'optimistic';
-            document.documentElement.dataset.vidipayWatchRewardKey = key;
-            forceWatchRewardMinimum(entry);
-            return entry;
+        function clearOptimisticWatchSettlement() {
+            watchOptimisticSettlement = null;
         }
 
-        function confirmOptimisticWatchReward(videoId, seconds, reward) {
-            const key = makeWatchRewardKey(videoId, seconds);
-            const entry = optimisticWatchRewards.get(key);
-            if (!entry) return null;
-            entry.reward = normalizeWatchRewardAmount(reward, entry.seconds);
-            forceWatchRewardMinimum(entry, entry.reward);
-            optimisticWatchRewards.delete(key);
-            document.documentElement.dataset.vidipayWatchRewardState = 'confirmed';
-            return entry;
-        }
-
-        function rollbackOptimisticWatchReward(videoId, seconds) {
-            const key = makeWatchRewardKey(videoId, seconds);
-            const entry = optimisticWatchRewards.get(key);
-            if (!entry) return;
-            optimisticWatchRewards.delete(key);
-            appState.balance = Number(Math.max(entry.before.balance, Number(appState.balance || 0) - entry.reward).toFixed(2));
-            appState.dailyEarned = Number(Math.max(entry.before.dailyEarned, Number(appState.dailyEarned || 0) - entry.reward).toFixed(2));
-            appState.totalSeconds = Math.max(entry.before.totalSeconds, Number(appState.totalSeconds || 0) - entry.seconds);
-            appState.dailySeconds = Math.max(entry.before.dailySeconds, Number(appState.dailySeconds || 0) - entry.seconds);
-            appState.totalMinutes = Math.floor(Number(appState.totalSeconds || 0) / 60);
-            appState.dailyMinutes = Math.floor(Number(appState.dailySeconds || 0) / 60);
-            appState.totalViews = Math.max(entry.before.totalViews, Number(appState.totalViews || 0) - 1);
-            appState.dailyViews = Math.max(entry.before.dailyViews, Number(appState.dailyViews || 0) - 1);
+        function rollbackOptimisticWatchSettlement(reason = 'watch_save_failed') {
+            if (!watchOptimisticSettlement) return;
+            const { seconds, reward } = watchOptimisticSettlement;
+            watchOptimisticSettlement = null;
+            appState.balance = roundMoney(Math.max(0, Number(appState.balance || 0) - Number(reward || 0)));
+            appState.dailyEarned = roundMoney(Math.max(0, Number(appState.dailyEarned || 0) - Number(reward || 0)));
+            appState.totalSeconds = Math.max(0, Number(appState.totalSeconds || 0) - Number(seconds || 0));
+            appState.totalMinutes = Math.floor(appState.totalSeconds / 60);
+            appState.dailySeconds = Math.max(0, Number(appState.dailySeconds || 0) - Number(seconds || 0));
+            appState.dailyMinutes = Math.floor(appState.dailySeconds / 60);
+            appState.totalViews = Math.max(0, Number(appState.totalViews || 0) - 1);
+            appState.dailyViews = Math.max(0, Number(appState.dailyViews || 0) - 1);
             saveAppState();
             updateWatchDisplays();
-            document.documentElement.dataset.vidipayWatchRewardState = 'rolled_back';
-        }
-
-        function getPendingWatchRewardStorageKey() {
-            const scope = String(referralUserId || safeStorageGet('vidiPayReferralUserId') || 'guest').trim() || 'guest';
-            return `vidiPayPendingWatchRewards_${scope}`;
-        }
-
-        function readPendingWatchRewards() {
-            try {
-                const items = JSON.parse(safeStorageGet(getPendingWatchRewardStorageKey()));
-                return Array.isArray(items) ? items : [];
-            } catch (_) {
-                return [];
-            }
-        }
-
-        function writePendingWatchRewards(items) {
-            safeStorageSet(getPendingWatchRewardStorageKey(), JSON.stringify((items || []).slice(0, 25)));
-            document.documentElement.dataset.vidipayPendingWatchRewards = String((items || []).length);
-        }
-
-        function isWatchRewardDeferredError(message = '') {
-            const text = String(message || '').toLowerCase();
-            return text.includes('backend')
-                || text.includes('timeout')
-                || text.includes('network')
-                || text.includes('failed');
-        }
-
-        function enqueuePendingWatchReward(videoId, seconds, reward, reason = '') {
-            const safeSeconds = Math.max(0, Math.floor(Number(seconds || 0)));
-            if (!safeSeconds) return;
-            const key = makeWatchRewardKey(videoId, safeSeconds);
-            const items = readPendingWatchRewards().filter(item => item.key !== key);
-            items.unshift({
-                key,
-                videoId,
-                watch_seconds: safeSeconds,
-                reward: normalizeWatchRewardAmount(reward, safeSeconds),
-                reason: String(reason || '').slice(0, 180),
-                attempts: 0,
-                queued_at: new Date().toISOString()
-            });
-            writePendingWatchRewards(items);
-            schedulePendingWatchRewardSync(15000);
-        }
-
-        async function syncPendingWatchRewards() {
-            const items = readPendingWatchRewards();
-            if (!items.length || document.hidden || !navigator.onLine) return;
-            const remaining = [];
-            for (const item of items.slice(0, 5)) {
-                try {
-                    const result = await apiRequest('/view/add', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            telegram_id: String(referralUserId),
-                            watch_seconds: item.watch_seconds,
-                            video_source: 'mrbeast_uploads',
-                            video_id: item.videoId,
-                            completed: true,
-                            client_country_code: await detectClientCountryCode()
-                        }),
-                        timeoutMs: 12000
-                    });
-                    rewardedMrBeastVideos.add(item.videoId);
-                    applyBackendUser(result.user);
-                    if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
-                    if (isWalletActivationRequiredPayload(result)) {
-                        applyWalletActivationRequiredState(result);
-                        continue;
-                    }
-                    await refreshStatsFromBackend().catch(() => null);
-                    updateWatchDisplays();
-                } catch (err) {
-                    if (isWalletActivationRequiredPayload(err.data)) {
-                        applyWalletActivationRequiredState(err.data);
-                        continue;
-                    }
-                    const attempts = Number(item.attempts || 0) + 1;
-                    if (attempts < 8) remaining.push({ ...item, attempts, reason: friendlyErrorMessage(err).slice(0, 180) });
-                }
-            }
-            writePendingWatchRewards([...remaining, ...items.slice(5)]);
-            if (remaining.length) schedulePendingWatchRewardSync(45000);
-        }
-
-        function schedulePendingWatchRewardSync(delayMs = 30000) {
-            clearTimeout(pendingWatchRewardSyncTimer);
-            pendingWatchRewardSyncTimer = setTimeout(() => {
-                syncPendingWatchRewards().catch(err => rememberFrontendError('pending_watch_reward_sync', err));
-            }, Math.max(3000, Number(delayMs || 30000)));
-        }
-
-        function isWalletActivationRequiredPayload(payload = {}) {
-            return Boolean(
-                payload?.wallet_activation_required
-                || payload?.activation_payment_required
-                || payload?.force_watch_exit
-                || payload?.can_watch_more === false
-            );
-        }
-
-        function applyWalletActivationRequiredState(payload = {}) {
-            const currentBalance = Number(payload.wallet_earning_amount || payload.user?.balance || appState.balance || 0);
-            latestPaymentStatus = {
-                ...latestPaymentStatus,
-                telegram_id: String(referralUserId),
-                user_telegram_id: String(referralUserId),
-                wallet_activation_required: true,
-                activation_payment_required: true,
-                force_watch_exit: true,
-                can_watch_more: false,
-                wallet_locked: true,
-                wallet_unlock_required_amount: Number(payload.wallet_unlock_required_amount || getWalletUnlockRequiredAmount()),
-                wallet_earning_amount: currentBalance,
-                activation_deposit_verified: false,
-                deposit_refund_available: false,
-                deposit_refund: null,
-                withdraw_unlocked: false,
-                main_withdraw_unlocked: false,
-                order: payload.order || latestPaymentStatus.order || null,
-                orders: Array.isArray(payload.orders) ? payload.orders : (latestPaymentStatus.orders || []),
-                payment: payload.payment || latestPaymentStatus.payment || null
-            };
-            clearActivationDepositAccessCache();
-            safeStorageRemove(paymentStatusCacheKey);
-            if (payload.user) applyBackendUser(payload.user);
-            if (payload.growth_lock) setGrowthLockStatus(payload.growth_lock);
-            paymentStatusLastRefreshAt = 0;
-            updateWatchDisplays();
-            updateGrowthLockUi();
-            updateWalletLockUi();
-            updatePaymentActionButtons();
-            document.documentElement.dataset.vidipayActivationRequired = 'true';
-            document.documentElement.dataset.vidipayActivationRequiredAt = new Date().toISOString();
-            return true;
+            document.documentElement.dataset.vidipayWatchRollbackReason = String(reason || '').slice(0, 80);
+            document.documentElement.dataset.vidipayWatchRollbackAt = new Date().toISOString();
         }
 
         function shouldStopWatchAtActivationLimit(seconds = countedWatchSeconds) {
@@ -8649,7 +8286,6 @@
             const requiredSeconds = Number(backendSettings.view_seconds_required || 5);
             const requiredAmount = getWalletUnlockRequiredAmount();
             const currentAmount = getWalletEarningAmount();
-            if (hasActivationDepositAccess(latestPaymentStatus)) return false;
             if (currentAmount >= requiredAmount) return true;
             if (watchedSeconds < requiredSeconds) return false;
             return currentAmount + estimateWatchReward(watchedSeconds) >= requiredAmount;
@@ -8691,24 +8327,27 @@
             if (rewardedMrBeastVideos.has(videoId)) {
                 closeModal('watchModal');
                 showWatchResult(watchSeconds, 0, t('watch_video_duplicate'));
+                setWatchUiState('duplicate');
                 updateWatchDisplays();
                 return;
             }
 
             const estimatedReward = estimateWatchReward(watchSeconds);
-            applyOptimisticWatchReward(videoId, watchSeconds, estimatedReward);
-            showWatchResult(watchSeconds, estimatedReward, t('watch_reward_saving'));
-            watchFinalizeInflight = finalizeWatchedVideo(watchSeconds, videoId)
+            const immediateReward = applyOptimisticWatchSettlement(watchSeconds, estimatedReward, videoId, 'watch_reward_immediate');
+            closeModal('watchModal');
+            showWatchResult(watchSeconds, immediateReward, t('watch_reward_saving'));
+            watchFinalizeInflight = finalizeWatchedVideo(watchSeconds, videoId, { optimisticReward: immediateReward })
                 .finally(() => {
                     watchFinalizeInflight = null;
                 });
             return watchFinalizeInflight;
         }
 
-        async function finalizeWatchedVideo(watchSeconds, videoId) {
+        async function finalizeWatchedVideo(watchSeconds, videoId, options = {}) {
             try {
                 setWatchUiState('saving');
                 if (!videoId) {
+                    rollbackOptimisticWatchSettlement('missing_video');
                     updateWatchSessionUi(t('watch_video_missing'));
                     pendingWatch = null;
                     setWatchUiState('error', 'missing_video');
@@ -8716,6 +8355,7 @@
                 }
 
             if (rewardedMrBeastVideos.has(videoId)) {
+                rollbackOptimisticWatchSettlement('duplicate_video');
                 updateWatchSessionUi(t('watch_video_duplicate'));
                 showWatchResult(watchSeconds, 0, t('watch_video_duplicate'));
                 pendingWatch = null;
@@ -8724,6 +8364,7 @@
             }
 
             if (watchSeconds < Number(backendSettings.view_seconds_required || 5)) {
+                rollbackOptimisticWatchSettlement('too_short');
                 updateWatchSessionUi(t('watch_too_short_detail').replace('{time}', formatDuration(watchSeconds)));
                 showWatchResult(watchSeconds, 0, t('not_enough_time'));
                 pendingWatch = null;
@@ -8746,21 +8387,15 @@
 
                 rewardedMrBeastVideos.add(videoId);
                 pendingWatch = null;
-                const confirmedReward = resolveWatchReward(result, watchSeconds);
                 applyBackendUser(result.user);
+                clearOptimisticWatchSettlement();
                 if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
+                if (isActivationDepositLocked()) {
+                    closeWatchModalForActivationLock('watch_finalize_threshold');
+                }
                 await refreshStatsFromBackend().catch(() => null);
-                confirmOptimisticWatchReward(videoId, watchSeconds, confirmedReward);
                 updateWatchDisplays();
-                createFloatingText(null, confirmedReward);
-            if (isWalletActivationRequiredPayload(result) || isActivationDepositLocked()) {
-                applyWalletActivationRequiredState(result);
-                updateWatchSessionUi(t('activation_deposit_required'));
-                showWatchResult(watchSeconds, confirmedReward, t('activation_deposit_required'));
-                setWatchUiState('activation_required');
-                startPaymentStatusPolling();
-                return;
-            }
+                createFloatingText(null, result.reward);
             if (result.tier) {
                 currentTierStatus = {
                     ...currentTierStatus,
@@ -8771,37 +8406,19 @@
                 };
                 updateTierCards();
             }
-            updateWatchSessionUi(t('watch_reward_added_detail').replace('{time}', formatDuration(watchSeconds)).replace('{amount}', confirmedReward.toFixed(2)));
-            showWatchResult(watchSeconds, confirmedReward, t('watch_added'));
+            updateWatchSessionUi(t('watch_reward_added_detail').replace('{time}', formatDuration(watchSeconds)).replace('{amount}', Number(result.reward || 0).toFixed(2)));
+            showWatchResult(watchSeconds, result.reward, t('watch_added'));
+            addNotification(t('view_reward_title'), t('view_reward_added').replace('{seconds}', watchSeconds).replace('{amount}', Number(result.reward || 0).toFixed(2)));
             setWatchUiState('saved');
         } catch (err) {
             pendingWatch = null;
+            rollbackOptimisticWatchSettlement('view_add_failed');
             if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
-            if (isWalletActivationRequiredPayload(err.data)) {
-                rollbackOptimisticWatchReward(videoId, watchSeconds);
-                applyWalletActivationRequiredState(err.data);
-                updateWatchSessionUi(t('activation_deposit_required'));
-                showWatchResult(watchSeconds, 0, t('activation_deposit_required'));
-                setWatchUiState('activation_required');
-                startPaymentStatusPolling();
-                return;
-            }
-            const message = friendlyErrorMessage(err);
-            const deferred = isWatchRewardDeferredError(message);
-            const estimatedReward = estimateWatchReward(watchSeconds);
-            if (deferred) {
-                enqueuePendingWatchReward(videoId, watchSeconds, estimatedReward, message);
-                confirmOptimisticWatchReward(videoId, watchSeconds, estimatedReward);
-                updateWatchDisplays();
-                updateWatchSessionUi(t('watch_reward_added_detail').replace('{time}', formatDuration(watchSeconds)).replace('{amount}', estimatedReward.toFixed(2)));
-                showWatchResult(watchSeconds, estimatedReward, t('watch_added'));
-                setWatchUiState('queued', message);
-                return;
-            }
-            rollbackOptimisticWatchReward(videoId, watchSeconds);
             updateWatchDisplays();
+            const message = friendlyErrorMessage(err);
             updateWatchSessionUi(message);
             showWatchResult(watchSeconds, 0, `${message}. ${t('watch_reward_backend_failed')}`);
+            addNotification(t('view_reward_title'), message);
             setWatchUiState('error', message);
         }
     }
@@ -8893,29 +8510,6 @@
             return `${baseName}_${scope}`;
         }
 
-        function isNoisyWatchRewardNotification(item = {}) {
-            const raw = [
-                item.title,
-                item.text,
-                item.rawTitle,
-                item.rawText,
-                item.titleKey,
-                item.textKey
-            ].join(' ').toLowerCase();
-            return raw.includes('view reward')
-                || raw.includes('view_reward')
-                || raw.includes('reward added after')
-                || raw.includes('your balance reached $20')
-                || raw.includes('watch_reward_backend_failed');
-        }
-
-        function filterUsefulNotifications(items = []) {
-            const filtered = (Array.isArray(items) ? items : []).filter(item => !isNoisyWatchRewardNotification(item));
-            document.documentElement.dataset.vidipayNotificationFilter = filtered.length === (Array.isArray(items) ? items.length : 0) ? 'clean' : 'filtered';
-            document.documentElement.dataset.vidipayNotificationVisibleCount = String(filtered.length);
-            return filtered;
-        }
-
         function getNotifications() {
             const key = getNotificationStorageKey('vidiPayNotifications');
             let items;
@@ -8927,12 +8521,7 @@
                 ];
                 safeStorageSet(key, JSON.stringify(items));
             }
-            const filtered = filterUsefulNotifications(items);
-            if (filtered.length !== items.length) {
-                safeStorageSet(key, JSON.stringify(filtered));
-                setUnreadNotificationCount(Math.min(getUnreadNotificationCount(), filtered.length));
-            }
-            return filtered;
+            return items;
         }
 
         function getUnreadNotificationCount() {
@@ -8970,10 +8559,10 @@
                 }));
                 const localItems = getNotifications();
                 const existingKeys = new Set(localItems.map(item => item.key).filter(Boolean));
-                const newItems = filterUsefulNotifications(mapped.filter(item => !existingKeys.has(item.key)));
-                const merged = filterUsefulNotifications([...newItems, ...localItems]).slice(0, 50);
+                const newItems = mapped.filter(item => !existingKeys.has(item.key));
+                const merged = [...newItems, ...localItems].slice(0, 50);
                 safeStorageSet(getNotificationStorageKey('vidiPayNotifications'), JSON.stringify(merged));
-                setUnreadNotificationCount(Math.min(merged.length, getUnreadNotificationCount() + newItems.length));
+                if (newItems.length) setUnreadNotificationCount(getUnreadNotificationCount() + newItems.length);
                 notificationsFetchedAt = Date.now();
             } catch (err) {
                 rememberFrontendError('notifications_load', err);
@@ -9095,23 +8684,16 @@
                     markAllNotificationsRead();
                     renderNotifications();
                 }
-                if (id === 'withdrawHistoryModal') {
-                    prepareHistoryModalScroll({ reset: true });
-                    renderFullHistory();
-                }
+                if (id === 'withdrawHistoryModal') renderFullHistory();
                 if (id === 'profileModal') updateProfileModal();
                 if (id === 'bonusModal') updateBonusLockUi();
                 if (id === 'refModal') updateGrowthLockUi();
                 if (id === 'withdrawModal') {
-                    seedPaymentStatusFromCache();
-                    updateWithdrawUi(latestPaymentStatus);
                     loadBackendSettings()
                         .then(() => updateWithdrawUi(latestPaymentStatus))
                         .catch(() => null);
                 }
                 if (id === 'walletModal') {
-                    seedPaymentStatusFromCache();
-                    updateWalletLockUi();
                     updateWalletModal();
                     setDomText(document.getElementById('payment-status-text'), t('card_order_loading'));
                     loadBackendSettings()
@@ -9170,7 +8752,7 @@
                 amount: Number(amount || 0).toFixed(2),
                 status: status || 'Pending',
                 method: extra.method || 'TON',
-                currency: extra.currency || (extra.method === 'TON_DEPOSIT_REFUND' ? 'TONCOIN' : ''),
+                currency: extra.currency || (extra.method === 'TON_DEPOSIT_REFUND' ? DISPLAY_COIN_NAME : ''),
                 type: extra.type || 'withdraw',
                 wallet: extra.wallet || '',
                 tx_hash: extra.tx_hash || '',
@@ -9212,85 +8794,14 @@
             `).join('');
         }
 
-        function prepareHistoryModalScroll(options = {}) {
-            const modal = document.getElementById('withdrawHistoryModal');
-            const box = document.getElementById('withdraw-history-list');
-            if (!modal || !box) return;
-            const content = modal.querySelector('.modal-content');
-            const panel = box.closest('.info-sub-block');
-            modal.style.alignItems = 'flex-start';
-            modal.style.justifyContent = 'center';
-            modal.style.overflowY = 'auto';
-            modal.style.overflowX = 'hidden';
-            modal.style.webkitOverflowScrolling = 'touch';
-            modal.style.touchAction = 'pan-y';
-            if (content) {
-                content.style.display = 'flex';
-                content.style.flexDirection = 'column';
-                content.style.overflowY = 'auto';
-                content.style.overflowX = 'hidden';
-                content.style.height = 'calc(var(--app-vh, 100vh) - 36px)';
-                content.style.minHeight = '0';
-                content.style.maxHeight = 'calc(var(--app-vh, 100vh) - 36px)';
-                content.style.webkitOverflowScrolling = 'touch';
-                content.style.touchAction = 'pan-y';
-            }
-            if (panel) {
-                panel.style.display = 'block';
-                panel.style.flex = '0 0 auto';
-                panel.style.height = 'auto';
-                panel.style.minHeight = '0';
-                panel.style.maxHeight = 'none';
-                panel.style.overflowY = 'auto';
-                panel.style.overflowX = 'hidden';
-                panel.style.webkitOverflowScrolling = 'touch';
-                panel.style.touchAction = 'pan-y';
-                panel.setAttribute('tabindex', '0');
-                panel.setAttribute('role', 'region');
-            }
-            box.classList.add('history-scroll-target');
-            box.style.flex = 'none';
-            box.style.height = 'auto';
-            box.style.minHeight = '0';
-            box.style.maxHeight = 'none';
-            box.style.overflowY = 'visible';
-            box.style.overflowX = 'hidden';
-            box.style.webkitOverflowScrolling = 'touch';
-            box.style.touchAction = 'pan-y';
-            box.setAttribute('tabindex', '0');
-            box.setAttribute('role', 'list');
-            modal.dataset.historyScrollTarget = 'withdraw-history-panel';
-            modal.dataset.historyScrollMode = 'panel';
-            document.documentElement.dataset.vidipayHistoryScrollTarget = 'ready';
-            document.documentElement.dataset.vidipayHistoryScrollMode = 'panel';
-            if (options.reset) {
-                requestAnimationFrame(() => {
-                    if (modal.classList.contains('is-open')) {
-                        try {
-                            modal.scrollTop = 0;
-                            if (content) content.scrollTop = 0;
-                            if (panel) panel.scrollTop = 0;
-                            box.scrollTop = 0;
-                        } catch (_) {}
-                    }
-                });
-            }
-        }
-
         async function renderFullHistory() {
             const box = document.getElementById('withdraw-history-list');
             if (!box) return;
-            prepareHistoryModalScroll();
             if (historyInflight) return historyInflight;
 
             historyInflight = (async () => {
                 let items = [];
-                let historyLoadError = '';
                 const now = Date.now();
-                if (!box.innerHTML.trim()) {
-                    setDomHtml(box, `<div class="history-empty">Loading...</div>`);
-                    fullHistoryRenderSnapshot = '';
-                }
                 try {
                     if (historyFetchedAt && now - historyFetchedAt < 15000 && window.vidiPayCachedFullHistory) {
                         items = window.vidiPayCachedFullHistory;
@@ -9301,21 +8812,15 @@
                     }
                 } catch (err) {
                     rememberFrontendError('withdraw_history_load', err);
-                    historyLoadError = friendlyErrorMessage(err);
                     items = getWithdrawHistory();
                 }
 
                 if (!items.length) {
-                    const emptyText = historyLoadError
-                        ? `${t('history_load_failed')} ${historyLoadError}`
-                        : t('no_history');
-                    const emptyClass = historyLoadError ? 'history-empty history-error' : 'history-empty';
-                    const emptyHtml = `<div class="${emptyClass}">${escapeHtml(emptyText)}</div>`;
+                    const emptyHtml = `<div class="history-empty">${escapeHtml(t('no_history'))}</div>`;
                     if (fullHistoryRenderSnapshot !== emptyHtml) {
                         fullHistoryRenderSnapshot = emptyHtml;
                         setDomHtml(box, emptyHtml);
                     }
-                    prepareHistoryModalScroll();
                     return;
                 }
 
@@ -9324,7 +8829,6 @@
                     fullHistoryRenderSnapshot = html;
                     setDomHtml(box, html);
                 }
-                prepareHistoryModalScroll();
             })().finally(() => {
                 historyInflight = null;
             });
@@ -9374,7 +8878,7 @@
         }
 
         function receiptTypeLabel(item = {}) {
-            if (item.title) return item.title;
+            if (item.title) return displayText(item.title);
             if (isTonDepositRefundReceipt(item)) return t('deposit_refund_title') || 'Activation deposit refund';
             if (String(item.type || '').toLowerCase() === 'payment') return t('history_wallet_payment');
             return t('history_withdraw');
@@ -9382,8 +8886,8 @@
 
         function receiptAmountText(item = {}) {
             const amountValue = Number(item.amount || 0).toFixed(2);
-            if (isTonReceipt(item)) return `${amountValue} TONCOIN`;
-            return `$${amountValue} ${item.currency || item.method || ''}`.trim();
+            if (isTonReceipt(item)) return formatDisplayCoinAmount(amountValue);
+            return displayText(`$${amountValue} ${item.currency || item.method || ''}`.trim());
         }
 
         function receiptWalletText(item = {}) {
@@ -9391,40 +8895,9 @@
         }
 
         function receiptNetworkText(item = {}) {
-            if (isTonDepositRefundReceipt(item)) return 'TON_DEPOSIT_REFUND';
-            if (isTonReceipt(item)) return 'TON';
-            return item.network || item.method || '-';
-        }
-
-        function firstReceiptValue(item = {}, keys = []) {
-            for (const key of keys) {
-                const value = item[key];
-                if (value !== undefined && value !== null && String(value).trim()) return value;
-            }
-            return '';
-        }
-
-        function receiptTxText(item = {}) {
-            return firstReceiptValue(item, [
-                'tx_hash',
-                'payout_tx_hash',
-                'refund_tx_hash',
-                'payment_tx_hash',
-                'detected_tx_hash',
-                'external_hash'
-            ]);
-        }
-
-        function receiptDetailText(item = {}) {
-            return firstReceiptValue(item, [
-                'admin_note',
-                'status_reason',
-                'reason',
-                'reject_reason',
-                'failed_reason',
-                'error',
-                'message'
-            ]);
+            if (isTonDepositRefundReceipt(item)) return 'DEPOSIT_REFUND';
+            if (isTonReceipt(item)) return DISPLAY_COIN_NETWORK;
+            return displayText(item.network || item.method || '-');
         }
 
         function renderReceiptItem(item) {
@@ -9436,8 +8909,6 @@
             const statusClass = receiptStatusClass(item.status);
             const walletText = receiptWalletText(item);
             const networkText = receiptNetworkText(item);
-            const txText = receiptTxText(item);
-            const detailText = receiptDetailText(item);
 
             return `
                 <div class="history-item">
@@ -9452,8 +8923,8 @@
                     <div class="receipt-row"><span class="receipt-label">${escapeHtml(t('receipt_network'))}</span><span class="receipt-value">${escapeHtml(networkText)}</span></div>
                     <div class="receipt-row"><span class="receipt-label">${escapeHtml(t('receipt_wallet_label'))}</span><span class="receipt-value">${escapeHtml(walletText)}</span></div>
                     <div class="receipt-row"><span class="receipt-label">${escapeHtml(t('receipt_verified_at'))}</span><span class="receipt-value">${escapeHtml(processed)}</span></div>
-                    ${txText ? `<div class="receipt-row"><span class="receipt-label">TX</span><span class="receipt-value">${escapeHtml(txText)}</span></div>` : ''}
-                    ${detailText ? `<div class="receipt-row"><span class="receipt-label">${escapeHtml(t('receipt_note'))}</span><span class="receipt-value">${escapeHtml(detailText)}</span></div>` : ''}
+                    ${item.tx_hash ? `<div class="receipt-row"><span class="receipt-label">TX</span><span class="receipt-value">${escapeHtml(item.tx_hash)}</span></div>` : ''}
+                    ${item.admin_note ? `<div class="receipt-row"><span class="receipt-label">${escapeHtml(t('receipt_note'))}</span><span class="receipt-value">${escapeHtml(item.admin_note)}</span></div>` : ''}
                 </div>
             `;
         }
@@ -9511,7 +8982,6 @@
 
         document.addEventListener('visibilitychange', scheduleSettingsRefresh);
         document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) schedulePendingWatchRewardSync(3000);
             if (!document.hidden && isTonDepositModalOpen()) {
                 setPaymentPollingHealthy(true);
                 refreshPaymentStatus({ poll: true }).catch(err => rememberFrontendError('payment_visible_refresh', err));
@@ -9542,7 +9012,7 @@
             const addressEl = document.getElementById('payment-address-text');
             const expiryEl = document.getElementById('payment-expiry-text');
             if (addressBox) addressBox.style.display = 'block';
-            if (amountEl) amountEl.innerText = `${getTonActivationAmount().toFixed(2)} TONCOIN`;
+            if (amountEl) amountEl.innerText = formatDisplayCoinAmount(getTonActivationAmount());
             if (addressEl) addressEl.innerText = t('card_order_loading');
             if (expiryEl) {
                 expiryEl.innerText = '';
@@ -9575,12 +9045,10 @@
         }
 
         async function copyTonPaymentAddress() {
-            if (isActionThrottled('copy-ton-address', 500)) return;
+            if (isActionThrottled('copy-ton-address', 220)) return;
             const labelEl = document.getElementById('lbl-copy-ton-address');
             const originalLabel = t('copy_ton_address') || labelEl?.innerText || 'COPY ADDRESS';
             setActionBusy('ton-copy-address-btn', true);
-            if (labelEl) setDomText(labelEl, t('payment_copying') || 'COPYING...');
-            document.documentElement.dataset.vidipayCopyAddressState = 'copying';
             if (!currentPaymentOrder || !getPaymentWalletAddress(currentPaymentOrder)) {
                 const cachedOrder = getCachedPaymentOrder();
                 if (cachedOrder) currentPaymentOrder = cachedOrder;
@@ -9597,8 +9065,6 @@
             if (!walletAddress) {
                 showCopyToast(t('payment_address_unavailable'));
                 setActionBusy('ton-copy-address-btn', false);
-                if (labelEl) setDomText(labelEl, originalLabel);
-                document.documentElement.dataset.vidipayCopyAddressState = 'missing_address';
                 updatePaymentActionButtons();
                 updatePaymentRealTestReadiness('copy_address_missing');
                 return;
@@ -9608,21 +9074,11 @@
                 await copyTextToClipboard(walletAddress);
                 if (labelEl) setDomText(labelEl, t('copied') || 'Copied');
                 showCopyToast(t('ton_address_copied'));
-                document.documentElement.dataset.vidipayCopyAddressState = 'copied';
                 updatePaymentRealTestReadiness('copy_address_success');
-            } catch (err) {
-                document.documentElement.dataset.vidipayCopyAddressState = 'error';
-                showCopyToast(friendlyErrorMessage(err));
-                throw err;
             } finally {
                 setActionBusy('ton-copy-address-btn', false);
                 updatePaymentActionButtons();
-                if (labelEl) {
-                    setTimeout(() => {
-                        setDomText(labelEl, originalLabel);
-                        document.documentElement.dataset.vidipayCopyAddressState = 'ready';
-                    }, 900);
-                }
+                if (labelEl) setTimeout(() => setDomText(labelEl, originalLabel), 900);
             }
         }
 
@@ -9662,6 +9118,7 @@
 
         function startPaymentStatusPolling() {
             paymentPollingGeneration += 1;
+            paymentFastPollUntilAt = Math.max(paymentFastPollUntilAt, Date.now() + 25000);
             stopPaymentStatusPolling({ preserveGeneration: true });
             if (!document.getElementById('tonDepositModal')?.classList.contains('is-open')) return;
             updatePaymentRealTestReadiness('polling_start');
@@ -9706,68 +9163,6 @@
             return document.getElementById('watchModal')?.classList.contains('is-open');
         }
 
-        function isFrontendModalOpen(id) {
-            const modal = document.getElementById(id);
-            return Boolean(modal?.classList.contains('is-open') && modal.style.display !== 'none');
-        }
-
-        function runResumeUiStep(label, fn) {
-            try {
-                return fn();
-            } catch (err) {
-                rememberFrontendError(label, err);
-                return false;
-            }
-        }
-
-        function resumeFrontendUiFromCache(reason = 'resume') {
-            const now = Date.now();
-            const lastAt = Number(document.documentElement.dataset.vidipayResumeCacheLastAt || 0);
-            if (reason !== 'init' && now - lastAt < 250) return true;
-            document.documentElement.dataset.vidipayResumeCacheLastAt = String(now);
-            document.documentElement.dataset.vidipayResumeCacheReason = String(reason || '').slice(0, 60);
-
-            runResumeUiStep('resume_cache_status', () => seedPaymentStatusFromCache());
-            runResumeUiStep('resume_activation_access', () => seedActivationAccessFromCache());
-            runResumeUiStep('resume_cache_order', () => seedPaymentOrderFromCache());
-            runResumeUiStep('resume_top_account', () => updateTopAccountInfo());
-            runResumeUiStep('resume_watch_displays', () => updateWatchDisplays());
-            runResumeUiStep('resume_bonus_displays', () => updateBonusDisplays());
-            runResumeUiStep('resume_bonus_lock', () => updateBonusLockUi());
-            runResumeUiStep('resume_growth_lock', () => updateGrowthLockUi());
-            runResumeUiStep('resume_wallet_lock', () => updateWalletLockUi());
-            runResumeUiStep('resume_withdraw_ui', () => updateWithdrawUi(latestPaymentStatus));
-            runResumeUiStep('resume_notifications', () => renderNotifications());
-            runResumeUiStep('resume_history_scroll_setup', () => prepareHistoryModalScroll());
-
-            if (isTonDepositModalOpen()) {
-                runResumeUiStep('resume_payment_modal', () => {
-                    renderPaymentOrder(currentPaymentOrder, latestPaymentStatus);
-                    sanitizePaymentModalDom(`cache:${reason}`);
-                    updatePaymentActionButtons();
-                });
-            }
-            if (isFrontendModalOpen('withdrawHistoryModal')) {
-                runResumeUiStep('resume_history_scroll', () => prepareHistoryModalScroll());
-            }
-            if (isFrontendModalOpen('withdrawModal')) {
-                runResumeUiStep('resume_withdraw_modal', () => updateWithdrawUi(latestPaymentStatus));
-            }
-            if (isFrontendModalOpen('walletModal')) {
-                runResumeUiStep('resume_wallet_modal', () => {
-                    updateWalletLockUi();
-                    updateWalletModal();
-                });
-            }
-
-            runResumeUiStep('resume_actions', () => normalizeFrontendActionElements());
-            runResumeUiStep('resume_modal_accessibility', () => syncModalAccessibilityState(`resume_cache:${reason}`));
-            document.documentElement.dataset.vidipayResumeCache = 'ready';
-            document.documentElement.dataset.vidipayResumeCacheAt = new Date(now).toISOString();
-            updatePaymentRealTestReadiness(`resume_cache:${reason}`);
-            return true;
-        }
-
         function setPaymentPollingHealthy(ok) {
             if (ok) {
                 paymentPollingFailures = 0;
@@ -9801,6 +9196,11 @@
 
         function getPaymentPollingDelay() {
             if (!navigator.onLine) return 20000;
+            if (isTonDepositModalOpen() && Date.now() < paymentFastPollUntilAt) {
+                const fastJitter = stableFrontendJitter(`${frontendPollJitterSeed}:fast:${paymentPollingFailures}`, paymentPollingFailures ? 1200 : 600);
+                paymentPollingLastJitterMs = fastJitter;
+                return Math.max(1200, Math.min(5000, 2200 + fastJitter));
+            }
             const baseDelay = getConnectionAwarePollingBaseDelay();
             if (document.hidden) return Math.max(30000, baseDelay);
             const jitter = stableFrontendJitter(`${frontendPollJitterSeed}:${paymentPollingFailures}`, paymentPollingFailures ? 8000 : 3500);
@@ -9849,7 +9249,6 @@
                 schedulePaymentStatusPoll(2500);
             }
             refreshSettingsInBackground();
-            schedulePendingWatchRewardSync(3000);
         });
 
         function pauseFrontendActivity(reason = 'page_pause') {
@@ -9867,7 +9266,6 @@
 
         function resumeFrontendActivity(reason = 'page_resume') {
             updateViewportMetrics();
-            resumeFrontendUiFromCache(reason);
             scheduleSettingsRefresh();
             if (isTonDepositModalOpen()) {
                 setPaymentPollingHealthy(true);
@@ -9908,7 +9306,6 @@
             document.documentElement.dataset.vidipayFrontendRuntimeGuardAt = new Date(frontendRuntimeGuardLastAt).toISOString();
             document.documentElement.dataset.vidipayFrontendRuntimeGuardReason = String(reason || '').slice(0, 60);
             updateViewportMetrics();
-            resumeFrontendUiFromCache(`runtime:${reason}`);
             resetStaleActionBusyLocks();
             syncModalAccessibilityState(`runtime:${reason}`);
 
@@ -10007,13 +9404,10 @@
                 adaptivePollingReady: typeof stableFrontendJitter === 'function' && typeof getConnectionAwarePollingBaseDelay === 'function',
                 paymentRuntimeStripReady: Boolean(runtimeStrip) && typeof refreshPaymentRuntimeStrip === 'function',
                 paymentExpiryReady: typeof renderPaymentExpiryText === 'function' && typeof getPaymentOrderExpiryTime === 'function',
-                receiptFormatterReady: typeof renderReceiptItem === 'function' && typeof receiptAmountText === 'function' && typeof receiptDetailText === 'function',
-                depositRefundDetailReady: typeof depositRefundDetailText === 'function' && /status_reason/.test(String(depositRefundDetailText)),
-                activationDepositAccessReady: typeof hasActivationDepositAccess === 'function' && /deposit_refund_available/.test(String(hasActivationDepositAccess)),
+                receiptFormatterReady: typeof renderReceiptItem === 'function' && typeof receiptAmountText === 'function',
                 actionGuardReady: document.documentElement.dataset.vidipayActionGuard === 'ready',
                 actionNormalizerReady: document.documentElement.dataset.vidipayFrontendActionNormalizerInstalled === 'ready',
                 modalStateGuardReady: document.documentElement.dataset.vidipayModalStateGuard === 'ready',
-                modalScrollLockReady: typeof lockModalPageScroll === 'function' && typeof unlockModalPageScroll === 'function' && document.documentElement.dataset.vidipayModalScrollLock !== undefined,
                 runtimeGuardReady: document.documentElement.dataset.vidipayFrontendRuntimeGuardInstalled === 'ready',
                 paymentModalWatchdogReady: document.documentElement.dataset.vidipayPaymentModalWatchdogInstalled === 'ready' && typeof sanitizePaymentModalDom === 'function',
                 paymentActionHandlersReady: document.documentElement.dataset.vidipayPaymentActionHandlers === 'ready',
@@ -10021,13 +9415,9 @@
                 withdrawWalletInputGuardReady: document.documentElement.dataset.vidipayWithdrawWalletInputGuard === 'ready' && typeof validateWithdrawWalletInput === 'function',
                 withdrawRefundScopeReady: /deposit_refund/.test(String(submitWithdrawRequest)),
                 withdrawRefundFollowupReady: typeof scheduleDepositRefundFollowup === 'function' && typeof clearDepositRefundFollowup === 'function',
-                resumeCacheReady: typeof resumeFrontendUiFromCache === 'function' && document.documentElement.dataset.vidipayResumeCache === 'ready',
-                historyListScrollReady: document.documentElement.dataset.vidipayHistoryScrollMode === 'panel',
-                inlineWatchFallbackReady: USE_INLINE_WATCH_PLAYER === true && Array.isArray(WATCH_INLINE_SCENES) && WATCH_INLINE_SCENES.length >= 3,
                 paymentExpiryHealthDatasetReady: document.getElementById('payment-expiry-text')?.dataset.paymentValidityHealthy !== undefined,
                 manualCheckHandlerReady: checkBtn?.getAttribute('onclick') === 'checkTonPaymentNow()',
                 copyHandlerReady: copyBtn?.getAttribute('onclick') === 'copyTonPaymentAddress()',
-                copyAddressFeedbackReady: /vidipayCopyAddressState/.test(String(copyTonPaymentAddress)),
                 modalLockReady: !document.body.classList.contains('modal-open')
             };
             checks.ok = checks.backendUrl
@@ -10053,12 +9443,9 @@
                 && checks.paymentRuntimeStripReady
                 && checks.paymentExpiryReady
                 && checks.receiptFormatterReady
-                && checks.depositRefundDetailReady
-                && checks.activationDepositAccessReady
                 && checks.actionGuardReady
                 && checks.actionNormalizerReady
                 && checks.modalStateGuardReady
-                && checks.modalScrollLockReady
                 && checks.runtimeGuardReady
                 && checks.paymentModalWatchdogReady
                 && checks.paymentActionHandlersReady
@@ -10066,13 +9453,9 @@
                 && checks.withdrawWalletInputGuardReady
                 && checks.withdrawRefundScopeReady
                 && checks.withdrawRefundFollowupReady
-                && checks.resumeCacheReady
-                && checks.historyListScrollReady
-                && checks.inlineWatchFallbackReady
                 && checks.paymentExpiryHealthDatasetReady
                 && checks.manualCheckHandlerReady
-                && checks.copyHandlerReady
-                && checks.copyAddressFeedbackReady;
+                && checks.copyHandlerReady;
             window.__vidipayFrontendContract = {
                 checked_at: new Date().toISOString(),
                 ...checks
@@ -10113,14 +9496,11 @@
                 paymentRuntimeStrip: Boolean(runtimeStrip) && typeof refreshPaymentRuntimeStrip === 'function',
                 paymentRuntimeSnapshot: typeof paymentRuntimeLastSnapshot === 'string',
                 paymentExpiry: typeof renderPaymentExpiryText === 'function' && typeof formatPaymentCountdown === 'function',
-                receiptFormatter: typeof receiptAmountText === 'function' && typeof receiptStatusLabel === 'function' && typeof receiptDetailText === 'function',
-                depositRefundDetail: typeof depositRefundDetailText === 'function' && /status_reason/.test(String(depositRefundDetailText)),
-                activationDepositAccess: typeof hasActivationDepositAccess === 'function' && /deposit_refund_available/.test(String(hasActivationDepositAccess)),
+                receiptFormatter: typeof receiptAmountText === 'function' && typeof receiptStatusLabel === 'function',
                 actionGuard: document.documentElement.dataset.vidipayActionGuard === 'ready',
                 actionNormalizer: document.documentElement.dataset.vidipayFrontendActionNormalizerInstalled === 'ready',
                 actionReadyCount: Array.from(document.querySelectorAll(FRONTEND_ACTION_SELECTOR)).filter(el => el.classList.contains('frontend-action-ready')).length,
                 modalStateGuard: document.documentElement.dataset.vidipayModalStateGuard === 'ready',
-                modalScrollLock: typeof lockModalPageScroll === 'function' && typeof unlockModalPageScroll === 'function' && document.documentElement.dataset.vidipayModalScrollLock !== undefined,
                 openModalCountFinite: Number.isFinite(Number(document.documentElement.dataset.vidipayOpenModalCount || 0)),
                 watchFinalizeGuard: watchFinalizeInflight === null || typeof watchFinalizeInflight?.then === 'function',
                 runtimeGuard: document.documentElement.dataset.vidipayFrontendRuntimeGuard === 'ready',
@@ -10133,13 +9513,9 @@
                 withdrawWalletInputGuard: document.documentElement.dataset.vidipayWithdrawWalletInputGuard === 'ready' && typeof validateWithdrawWalletInput === 'function',
                 withdrawRefundScope: /deposit_refund/.test(String(submitWithdrawRequest)),
                 withdrawRefundFollowup: typeof scheduleDepositRefundFollowup === 'function' && typeof clearDepositRefundFollowup === 'function',
-                resumeCache: typeof resumeFrontendUiFromCache === 'function' && document.documentElement.dataset.vidipayResumeCache === 'ready',
-                historyListScroll: document.documentElement.dataset.vidipayHistoryScrollMode === 'panel',
-                inlineWatchFallback: USE_INLINE_WATCH_PLAYER === true && Array.isArray(WATCH_INLINE_SCENES) && WATCH_INLINE_SCENES.length >= 3,
                 paymentExpiryHealthDataset: document.getElementById('payment-expiry-text')?.dataset.paymentValidityHealthy !== undefined,
                 manualCheckClickHandler: checkBtn?.getAttribute('onclick') === 'checkTonPaymentNow()',
                 copyAddressClickHandler: copyBtn?.getAttribute('onclick') === 'copyTonPaymentAddress()',
-                copyAddressFeedback: /vidipayCopyAddressState/.test(String(copyTonPaymentAddress)),
                 staleBusyCleanup: !Array.from(document.querySelectorAll('[data-busy-lock-active="true"]')).some(btn => {
                     if (btn.id === 'ton-check-payment-btn') return !(paymentStatusInflight || paymentStatusRefreshBusy || paymentManualCheckInflight);
                     if (btn.id === 'fiat-pay-btn') return !(tonDepositOpenBusy || createPaymentOrderInflight || paymentOrderResolveInflight);
@@ -10178,13 +9554,10 @@
                 && checks.paymentRuntimeSnapshot
                 && checks.paymentExpiry
                 && checks.receiptFormatter
-                && checks.depositRefundDetail
-                && checks.activationDepositAccess
                 && checks.actionGuard
                 && checks.actionNormalizer
                 && checks.actionReadyCount > 0
                 && checks.modalStateGuard
-                && checks.modalScrollLock
                 && checks.openModalCountFinite
                 && checks.watchFinalizeGuard
                 && checks.runtimeGuard
@@ -10197,13 +9570,9 @@
                 && checks.withdrawWalletInputGuard
                 && checks.withdrawRefundScope
                 && checks.withdrawRefundFollowup
-                && checks.resumeCache
-                && checks.historyListScroll
-                && checks.inlineWatchFallback
                 && checks.paymentExpiryHealthDataset
                 && checks.manualCheckClickHandler
                 && checks.copyAddressClickHandler
-                && checks.copyAddressFeedback
                 && checks.staleBusyCleanup
                 && checks.tapFeedback
                 && checks.viewportHeight
@@ -10254,11 +9623,16 @@
             }
         }
 
+        seedPaymentStatusFromCache();
+        seedPaymentOrderFromCache();
         changeLang(currentLang);
-        resumeFrontendUiFromCache('init');
+        installCoinDisplayNormalizer();
+        updateTopAccountInfo();
+        updateWatchDisplays();
+        renderNotifications();
+        updateBonusDisplays();
         updateFrontendHealth({ ok: navigator.onLine });
         scheduleFrontendContractSelfCheck();
-        schedulePendingWatchRewardSync(8000);
         initBackendApp();
 
     </script>

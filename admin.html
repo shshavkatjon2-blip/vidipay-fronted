@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="vidipay-admin-build" content="frontend-admin-readiness-20260711-v21">
+  <meta name="vidipay-admin-build" content="frontend-admin-readiness-20260711-v5">
   <title>VidiPay Admin Panel</title>
-  <script src="./config.js?v=frontend-admin-readiness-20260711-v21"></script>
+  <script src="./config.js?v=frontend-admin-readiness-20260711-v5"></script>
   <style>
     :root {
       --bg: #080d10;
@@ -109,32 +109,6 @@
       font-size: 12px;
       line-height: 1.45;
     }
-    .admin-detail {
-      max-width: 320px;
-      color: #e5e7eb;
-      font-size: 12px;
-      line-height: 1.45;
-      overflow-wrap: anywhere;
-    }
-    .admin-detail-row + .admin-detail-row {
-      margin-top: 4px;
-    }
-    .admin-detail-label {
-      color: var(--muted);
-      font-weight: 800;
-      margin-right: 4px;
-    }
-    .admin-table-state {
-      display: block;
-      min-width: 220px;
-      padding: 8px 0;
-      color: var(--muted);
-      font-weight: 900;
-      line-height: 1.45;
-    }
-    .admin-table-state.loading { color: var(--accent); }
-    .admin-table-state.error { color: #fecaca; }
-    .admin-table-state.empty { color: var(--muted); }
     .pending { color: var(--warn); }
     .approved, .verified, .confirmed { color: var(--ok); }
     .rejected { color: var(--danger); }
@@ -202,6 +176,74 @@
       margin: 10px 0 14px;
       font-weight: 700;
     }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+      gap: 10px;
+      margin: 10px 0 4px;
+    }
+    .summary-card {
+      min-height: 88px;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 8px;
+      background: rgba(255,255,255,.035);
+      padding: 12px;
+      overflow: hidden;
+    }
+    .summary-card[data-tone="ok"] {
+      border-color: rgba(34,197,94,.32);
+      background: rgba(34,197,94,.07);
+    }
+    .summary-card[data-tone="warn"] {
+      border-color: rgba(245,158,11,.34);
+      background: rgba(245,158,11,.08);
+    }
+    .summary-card[data-tone="error"] {
+      border-color: rgba(239,68,68,.34);
+      background: rgba(239,68,68,.08);
+    }
+    .summary-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .summary-value {
+      margin-top: 6px;
+      color: var(--text);
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1.05;
+      overflow-wrap: anywhere;
+    }
+    .summary-meta {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    .action-stack {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .action-stack button {
+      min-width: 118px;
+    }
     .settings-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -255,6 +297,7 @@
         font-size: 15px;
       }
       .timer-actions button,
+      .action-stack button,
       button.user-action {
         width: 100%;
         min-width: 0;
@@ -277,16 +320,13 @@
         max-width: 260px;
         word-break: break-all;
       }
-      .admin-detail {
-        max-width: 280px;
-      }
     }
   </style>
 </head>
 <body>
   <header>
     <h1>VidiPay Admin Panel</h1>
-    <button id="btn-refresh-all" onclick="refreshAll()">Refresh</button>
+    <button onclick="refreshAll()">Refresh</button>
   </header>
   <main>
     <div class="login-row">
@@ -294,6 +334,53 @@
       <button onclick="saveToken()">Save token</button>
       <span class="notice" id="status-line">Enter the admin token.</span>
     </div>
+
+    <section>
+      <h2>Operational snapshot</h2>
+      <div class="summary-grid" id="admin-summary">
+        <div class="summary-card" id="summary-users-card" data-tone="warn">
+          <div class="summary-label">Users</div>
+          <div class="summary-value" id="summary-users">-</div>
+          <div class="summary-meta" id="summary-users-meta">Save token to load.</div>
+        </div>
+        <div class="summary-card" id="summary-withdraws-card" data-tone="warn">
+          <div class="summary-label">Withdrawals</div>
+          <div class="summary-value" id="summary-withdraws">-</div>
+          <div class="summary-meta" id="summary-withdraws-meta">Waiting for data.</div>
+        </div>
+        <div class="summary-card" id="summary-payments-card" data-tone="warn">
+          <div class="summary-label">Payments</div>
+          <div class="summary-value" id="summary-payments">-</div>
+          <div class="summary-meta" id="summary-payments-meta">Waiting for data.</div>
+        </div>
+        <div class="summary-card" id="summary-scanner-card" data-tone="warn">
+          <div class="summary-label">Scanner</div>
+          <div class="summary-value" id="summary-scanner">-</div>
+          <div class="summary-meta" id="summary-scanner-meta">Waiting for data.</div>
+        </div>
+        <div class="summary-card" id="summary-finance-in-card" data-tone="warn">
+          <div class="summary-label">Deposit income</div>
+          <div class="summary-value" id="summary-finance-in">-</div>
+          <div class="summary-meta" id="summary-finance-in-meta">Waiting for payment orders.</div>
+        </div>
+        <div class="summary-card" id="summary-finance-out-card" data-tone="warn">
+          <div class="summary-label">Refund outflow</div>
+          <div class="summary-value" id="summary-finance-out">-</div>
+          <div class="summary-meta" id="summary-finance-out-meta">Waiting for refund requests.</div>
+        </div>
+        <div class="summary-card" id="summary-finance-fees-card" data-tone="warn">
+          <div class="summary-label">Withheld fees</div>
+          <div class="summary-value" id="summary-finance-fees">-</div>
+          <div class="summary-meta" id="summary-finance-fees-meta">Uses backend fee fields when present.</div>
+        </div>
+        <div class="summary-card" id="summary-finance-net-card" data-tone="warn">
+          <div class="summary-label">Net balance</div>
+          <div class="summary-value" id="summary-finance-net">-</div>
+          <div class="summary-meta" id="summary-finance-net-meta">Deposit income minus refund outflow.</div>
+        </div>
+      </div>
+      <div class="notice">Live-changing admin buttons ask for confirmation before sending.</div>
+    </section>
 
     <section>
       <h2>Telegram mini app URL</h2>
@@ -388,7 +475,7 @@
           </div>
           <div class="timer-field">
             <label>Wallet type</label>
-            <input id="history-wallet-type" placeholder="TON" value="TON">
+            <input id="history-wallet-type" placeholder="Gram" value="Gram">
           </div>
           <div class="timer-field">
             <label>Wallet address</label>
@@ -444,6 +531,7 @@
           <option value="pending">Pending</option>
           <option value="approved">Approved</option>
           <option value="rejected">Rejected</option>
+          <option value="all">All</option>
         </select>
       </div>
       <div class="grid"><table id="withdraws-table"></table></div>
@@ -459,13 +547,13 @@
         </select>
       </div>
       <div class="timer-panel">
-        <h3>Automatic TON scanner</h3>
+        <h3>Automatic Gram scanner <span class="sr-only">Automatic Gram scanner</span></h3>
         <div class="notice" id="payment-scanner-status">Loading status...</div>
         <div class="timer-actions" style="margin-top:10px;">
           <button class="primary" id="btn-run-payment-scan" onclick="runPaymentScan()">Scan blockchain now</button>
           <button id="btn-load-payment-wallets" onclick="loadPaymentWallets()">Refresh scanner status</button>
         </div>
-        <div class="notice">Main flow is automatic: when a TON blockchain payment is found, the system unlocks withdrawal by itself. Manual approval is only a backup if TonAPI is temporarily unavailable.</div>
+        <div class="notice">Main flow is automatic: when a Gram blockchain payment is found, the system unlocks withdrawal by itself. Manual approval is only a backup if the chain API is temporarily unavailable.</div>
       </div>
       <div class="grid"><table id="payments-table"></table></div>
     </section>
@@ -528,9 +616,40 @@
 
     let adminCommandBusy = false;
     let settingsFormRendered = false;
-    const USERS_TABLE_HEADERS = ['Database ID', 'Telegram ID', 'Username', 'Name', 'Balance', 'Total time', 'Daily income', 'Lock', 'Status', 'Action'];
-    const WITHDRAWS_TABLE_HEADERS = ['ID', 'Telegram', 'Amount', 'Wallet', 'Type', 'Status', 'TX', 'Details', 'Created', 'Actions'];
-    const PAYMENTS_TABLE_HEADERS = ["ID", "Telegram ID", "Required", "Paid", "Wallet", "Valid until", "Status", "TX", "Details", "Actions"];
+    const ADMIN_DISPLAY_COIN_NAME = 'Gram';
+    const adminFinanceSnapshot = {
+      payments: [],
+      withdraws: [],
+      settings: {},
+      partial: true
+    };
+
+    function setSummary(kind, value, meta, tone = 'warn') {
+      const valueEl = document.getElementById(`summary-${kind}`);
+      const metaEl = document.getElementById(`summary-${kind}-meta`);
+      const cardEl = document.getElementById(`summary-${kind}-card`);
+      if (valueEl) valueEl.innerText = String(value ?? '-');
+      if (metaEl) metaEl.innerText = String(meta || '');
+      if (cardEl) cardEl.dataset.tone = tone;
+    }
+
+    function countWhere(items, predicate) {
+      return Array.isArray(items) ? items.filter(predicate).length : 0;
+    }
+
+    function confirmAdminAction(title, lines = []) {
+      const message = [
+        title,
+        ...lines.filter(Boolean),
+        '',
+        'This changes live admin state. Continue?'
+      ].join('\n');
+      return window.confirm(message);
+    }
+
+    function setCancelledStatus(action) {
+      setStatus(`${action} cancelled.`);
+    }
 
     function setText(id, text) {
       const el = document.getElementById(id);
@@ -601,6 +720,8 @@
     }
 
     function applySettings(settings) {
+      adminFinanceSnapshot.settings = settings || {};
+      updateFinanceSummary();
       renderWindowStatus(settings);
       fillTimerInputs(settings);
       return settings;
@@ -617,7 +738,15 @@
 
       for (const baseUrl of candidates) {
         try {
-          const res = await fetch(`${baseUrl}${path}`, options);
+          const res = await fetch(`${baseUrl}${path}`, {
+            cache: 'no-store',
+            ...options,
+            headers: {
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache',
+              ...(options.headers || {})
+            }
+          });
           const text = await res.text();
           let data = null;
           if (text) {
@@ -680,7 +809,96 @@
     }
 
     function formatTon(value) {
-      return `${Number(value || 0).toFixed(2)} TONCOIN`;
+      return `${Number(value || 0).toFixed(2)} ${ADMIN_DISPLAY_COIN_NAME}`;
+    }
+
+    function displayAdminText(value) {
+      return String(value ?? '').replace(/TONCOIN/gi, ADMIN_DISPLAY_COIN_NAME).replace(/\bTON\b/g, ADMIN_DISPLAY_COIN_NAME);
+    }
+
+    function numericField(item, keys, fallback = 0) {
+      for (const key of keys) {
+        const value = Number(item?.[key]);
+        if (Number.isFinite(value)) return value;
+      }
+      return Number(fallback || 0);
+    }
+
+    function completedAdminItem(item) {
+      return normalizeAdminStatus(item?.status) === 'completed';
+    }
+
+    function isDepositRefundItem(item = {}) {
+      const walletType = item.wallet_type || item.method || item.type || '';
+      const scope = item.withdraw_scope || item.scope || item.kind || '';
+      const raw = `${walletType} ${scope}`.toLowerCase();
+      return raw.includes('deposit_refund') || (raw.includes('activation') && raw.includes('refund'));
+    }
+
+    function configuredActivationDepositAmount() {
+      return numericField(adminFinanceSnapshot.settings, [
+        'activation_deposit_amount',
+        'ton_activation_amount',
+        'wallet_activation_amount',
+        'activation_refund_amount'
+      ], 6.99);
+    }
+
+    function refundFeeAmount(item = {}, refundAmount = 0) {
+      const explicitFee = numericField(item, [
+        'fee_amount',
+        'commission_amount',
+        'commission',
+        'service_fee',
+        'platform_fee',
+        'withheld_amount',
+        'retained_amount',
+        'admin_fee'
+      ], NaN);
+      if (Number.isFinite(explicitFee) && explicitFee > 0) return { amount: explicitFee, estimated: false };
+      const percent = Number(adminFinanceSnapshot.settings.withdraw_commission_percent || 0);
+      if (Number.isFinite(percent) && percent > 0 && Number(refundAmount) > 0) {
+        return { amount: Number(refundAmount) * percent / 100, estimated: true };
+      }
+      const depositAmount = configuredActivationDepositAmount();
+      if (Number.isFinite(depositAmount) && depositAmount > Number(refundAmount || 0)) {
+        return { amount: depositAmount - Number(refundAmount || 0), estimated: true };
+      }
+      return { amount: 0, estimated: true };
+    }
+
+    function updateFinanceSummary() {
+      const payments = Array.isArray(adminFinanceSnapshot.payments) ? adminFinanceSnapshot.payments : [];
+      const withdraws = Array.isArray(adminFinanceSnapshot.withdraws) ? adminFinanceSnapshot.withdraws : [];
+      const confirmedDeposits = payments.filter(completedAdminItem);
+      const depositTotal = confirmedDeposits.reduce((sum, item) => sum + numericField(item, [
+        'paid_amount',
+        'detected_amount',
+        'amount_paid',
+        'required_amount',
+        'amount'
+      ]), 0);
+
+      const refundItems = withdraws.filter(isDepositRefundItem);
+      const completedRefunds = refundItems.filter(completedAdminItem);
+      const refundTotal = completedRefunds.reduce((sum, item) => sum + numericField(item, ['amount', 'payout_amount', 'refund_amount']), 0);
+      const pendingRefunds = countWhere(refundItems, item => normalizeAdminStatus(item.status) === 'processing');
+      const rejectedRefunds = countWhere(refundItems, item => normalizeAdminStatus(item.status) === 'rejected');
+      let estimatedFees = 0;
+      let feeTotal = 0;
+      completedRefunds.forEach(item => {
+        const refundAmount = numericField(item, ['amount', 'payout_amount', 'refund_amount']);
+        const fee = refundFeeAmount(item, refundAmount);
+        feeTotal += Number(fee.amount || 0);
+        if (fee.estimated) estimatedFees += 1;
+      });
+
+      const netBalance = depositTotal - refundTotal;
+      const sourceMeta = adminFinanceSnapshot.partial ? 'current filters/available API data' : 'all-status API data';
+      setSummary('finance-in', formatTon(depositTotal), `${confirmedDeposits.length} confirmed deposits, ${sourceMeta}`, confirmedDeposits.length ? 'ok' : 'warn');
+      setSummary('finance-out', formatTon(refundTotal), `${completedRefunds.length} returned, ${pendingRefunds} pending, ${rejectedRefunds} rejected`, pendingRefunds ? 'warn' : 'ok');
+      setSummary('finance-fees', formatTon(feeTotal), estimatedFees ? `${estimatedFees} fee rows estimated from commission/deposit settings` : 'backend fee fields used where available', estimatedFees ? 'warn' : 'ok');
+      setSummary('finance-net', formatTon(netBalance), 'confirmed deposit income minus returned refunds; withheld fees stay in net balance', netBalance >= 0 ? 'ok' : 'warn');
     }
 
     function normalizeAdminStatus(value) {
@@ -719,36 +937,10 @@
       return tx ? `<div class="admin-address">${escapeHtml(tx)}</div>` : '<span class="admin-muted">-</span>';
     }
 
-    function firstAdminValue(item, keys) {
-      for (const key of keys) {
-        const value = item && item[key];
-        if (value !== undefined && value !== null && String(value).trim()) return value;
-      }
-      return '';
-    }
-
-    function adminDetail(item = {}, rows = []) {
-      const detailRows = rows
-        .map(([label, keys]) => {
-          const value = firstAdminValue(item, Array.isArray(keys) ? keys : [keys]);
-          return value ? `<div class="admin-detail-row"><span class="admin-detail-label">${escapeHtml(label)}:</span>${escapeHtml(value)}</div>` : '';
-        })
-        .filter(Boolean);
-      return detailRows.length ? `<div class="admin-detail">${detailRows.join('')}</div>` : '<span class="admin-muted">-</span>';
-    }
-
     function renderTable(id, headers, rows) {
       const table = document.getElementById(id);
       table.innerHTML = `<thead><tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>` +
         `<tbody>${rows.join('') || `<tr><td colspan="${headers.length}">No data</td></tr>`}</tbody>`;
-    }
-
-    function renderTableState(id, headers, message, tone = 'empty') {
-      const table = document.getElementById(id);
-      if (!table) return;
-      const safeTone = String(tone || 'empty').replace(/[^a-z0-9_-]/gi, '').toLowerCase() || 'empty';
-      table.innerHTML = `<thead><tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>` +
-        `<tbody><tr><td colspan="${headers.length}"><span class="admin-table-state ${safeTone}">${escapeHtml(message)}</span></td></tr></tbody>`;
     }
 
     async function loadPublicSettings() {
@@ -770,6 +962,11 @@
         const url = (input.value || backendStatus.webapp_url || '').trim();
         if (!url) throw new Error('Mini app URL was not found. Deploy the backend first.');
         if (input) input.value = url;
+        if (!confirmAdminAction('Update Telegram menu URL?', [`URL: ${url}`])) {
+          if (statusBox) statusBox.innerText = 'Telegram menu update cancelled.';
+          setCancelledStatus('Telegram menu update');
+          return;
+        }
 
         const result = await api('/admin/telegram/set-menu-button', {
           method: 'POST',
@@ -817,6 +1014,10 @@
           const value = document.getElementById(`setting-${key}`).value;
           body[key] = key === 'withdraw_requires_payment' ? value === 'true' : value;
         }
+        if (!confirmAdminAction('Save admin settings?', ['Withdrawal/payment UI can change for users after this save.'])) {
+          setCancelledStatus('Settings save');
+          return;
+        }
         await api('/admin/settings', { method: 'POST', body: JSON.stringify(body) });
         setStatus('Settings saved.');
         await loadSettings();
@@ -841,11 +1042,23 @@
         return;
       }
 
+      const opensAt = new Date(`${dateValue}T${timeValue}:00`);
+      if (Number.isNaN(opensAt.getTime())) {
+        setStatus('Opening date or time is invalid.');
+        return;
+      }
+      if (!confirmAdminAction('Schedule withdrawal timer?', [
+        `Opening time: ${formatDateTime(opensAt.toISOString())}`,
+        `Duration: ${hours} hours`
+      ])) {
+        setCancelledStatus('Timer schedule');
+        return;
+      }
+
       try {
         adminCommandBusy = true;
         setBusy('btn-schedule-withdraw', true, 'Scheduling...');
         setStatus('Scheduling the withdrawal timer...');
-        const opensAt = new Date(`${dateValue}T${timeValue}:00`);
         const result = await api('/admin/settings', {
           method: 'POST',
           body: JSON.stringify({
@@ -875,6 +1088,11 @@
         return;
       }
 
+      if (!confirmAdminAction('Open withdrawal window now?', [`Duration: ${hours} hours`])) {
+        setCancelledStatus('Open withdrawal window');
+        return;
+      }
+
       try {
         adminCommandBusy = true;
         setBusy('btn-open-withdraw-now', true, 'Opening...');
@@ -901,6 +1119,10 @@
 
     async function closeWithdrawNow() {
       if (adminCommandBusy) return;
+      if (!confirmAdminAction('Lock withdrawal window now?', ['Users will see withdrawal as locked after the backend accepts it.'])) {
+        setCancelledStatus('Lock withdrawal window');
+        return;
+      }
       try {
         adminCommandBusy = true;
         setBusy('btn-close-withdraw-now', true, 'Closing...');
@@ -926,13 +1148,14 @@
     }
 
     async function loadUsers() {
-      renderTableState('users-table', USERS_TABLE_HEADERS, 'Loading users...', 'loading');
-      try {
-        const payload = await api('/admin/users?limit=10000');
-        const users = Array.isArray(payload) ? payload : (payload.users || []);
-        const countEl = document.getElementById('users-count');
-        if (countEl) countEl.innerText = `${users.length} users loaded. Real Telegram users and backend-synced guests are shown in this list.`;
-        renderTable('users-table', USERS_TABLE_HEADERS, users.map(u => `
+      const payload = await api('/admin/users?limit=10000');
+      const users = Array.isArray(payload) ? payload : (payload.users || []);
+      const blocked = countWhere(users, u => Boolean(u.is_blocked || u.deleted_at));
+      const unlocked = countWhere(users, u => Boolean(u.withdraw_unlocked));
+      setSummary('users', users.length, `${users.length - blocked} active, ${blocked} blocked, ${unlocked} withdrawal-unlocked`, blocked ? 'warn' : 'ok');
+      const countEl = document.getElementById('users-count');
+      if (countEl) countEl.innerText = `${users.length}  users loaded. Real Telegram users and backend-synced guests are shown in this list.`;
+      renderTable('users-table', ['Database ID', 'Telegram ID', 'Username', 'Name', 'Balance', 'Total time', 'Daily income', 'Lock', 'Status', 'Action'], users.map(u => `
         <tr id="${safeDomId('user-row', u.telegram_id)}">
           <td>${escapeHtml(u.id)}</td><td>${escapeHtml(u.telegram_id)}</td>
           <td>${escapeHtml(u.username || '-')}</td><td>${escapeHtml([u.first_name, u.last_name].filter(Boolean).join(' ') || '-')}</td>
@@ -940,11 +1163,7 @@
           <td>${formatMoney(u.daily_income)}</td><td>${u.withdraw_unlocked ? 'yes' : 'no'}</td>
           ${renderUserControlCells(u)}
         </tr>
-        `));
-      } catch (err) {
-        renderTableState('users-table', USERS_TABLE_HEADERS, `Users did not load: ${err.message}`, 'error');
-        throw err;
-      }
+      `));
     }
 
     function renderUserControlCells(user) {
@@ -996,6 +1215,10 @@
     }
 
     async function setUserBlock(telegramId, shouldBlock) {
+      if (!confirmAdminAction(shouldBlock ? 'Block this user?' : 'Unblock this user?', [`Telegram ID: ${telegramId}`])) {
+        setCancelledStatus(shouldBlock ? 'User block' : 'User unblock');
+        return;
+      }
       try {
         paintUserBlockState(telegramId, shouldBlock, true);
         setStatus(shouldBlock ? 'Blocking user...' : 'Unblocking user...');
@@ -1023,6 +1246,15 @@
         return;
       }
 
+      if (!confirmAdminAction('Add manual earning?', [
+        `Telegram ID: ${telegramId}`,
+        `Amount: ${formatMoney(amount)}`,
+        `Minutes: ${Number(minutes || 0)}`
+      ])) {
+        status.innerText = 'Manual earning cancelled.';
+        return;
+      }
+
       try {
         setBusy('btn-add-earning', true, "Adding...");
         status.innerText = "Balance va vaqt yangilanyapti...";
@@ -1044,7 +1276,7 @@
       const amount = Number(document.getElementById('history-amount').value);
       const dateValue = document.getElementById('history-date').value;
       const timeValue = document.getElementById('history-time').value || '00:00';
-      const walletType = document.getElementById('history-wallet-type').value.trim() || 'TON';
+      const walletType = document.getElementById('history-wallet-type').value.trim() || 'Gram';
       const walletAddress = document.getElementById('history-wallet-address').value.trim() || 'Admin wallet';
       const historyStatus = document.getElementById('history-status').value;
       const note = document.getElementById('history-note').value.trim() || "Admin-added history";
@@ -1055,10 +1287,23 @@
         return;
       }
 
+      const createdAt = new Date(`${dateValue}T${timeValue}:00`);
+      if (Number.isNaN(createdAt.getTime())) {
+        status.innerText = "Date or time is invalid.";
+        return;
+      }
+      if (!confirmAdminAction('Add manual history entry?', [
+        `Telegram ID: ${telegramId}`,
+        `Amount: ${formatMoney(amount)}`,
+        `Status: ${historyStatus}`
+      ])) {
+        status.innerText = 'Manual history entry cancelled.';
+        return;
+      }
+
       try {
         setBusy('btn-add-history', true, "Adding...");
         status.innerText = "Adding history entry...";
-        const createdAt = new Date(`${dateValue}T${timeValue}:00`);
         const result = await api(`/admin/users/${encodeURIComponent(telegramId)}/history/withdraw`, {
           method: 'POST',
           body: JSON.stringify({
@@ -1086,6 +1331,14 @@
         const title = document.getElementById('notify-title').value.trim();
         const message = document.getElementById('notify-message').value.trim();
         const telegram_id = document.getElementById('notify-telegram-id').value.trim();
+        if (!title || !message) throw new Error('Enter notification title and message.');
+        if (!confirmAdminAction('Send notification?', [
+          `Audience: ${telegram_id || 'all users'}`,
+          `Title: ${title}`
+        ])) {
+          setCancelledStatus('Notification send');
+          return;
+        }
 
         await api('/admin/notification/send', {
           method: 'POST',
@@ -1102,63 +1355,116 @@
       }
     }
 
+    async function loadFinanceSnapshot() {
+      const [paymentsResult, withdrawsResult] = await Promise.allSettled([
+        api('/admin/payment-orders?status=all'),
+        api('/admin/withdraws?status=all')
+      ]);
+      const errors = [];
+      if (paymentsResult.status === 'fulfilled' && Array.isArray(paymentsResult.value)) {
+        adminFinanceSnapshot.payments = paymentsResult.value;
+      } else if (paymentsResult.status === 'rejected') {
+        errors.push(`Payments finance: ${paymentsResult.reason.message}`);
+      }
+      if (withdrawsResult.status === 'fulfilled' && Array.isArray(withdrawsResult.value)) {
+        adminFinanceSnapshot.withdraws = withdrawsResult.value;
+      } else if (withdrawsResult.status === 'rejected') {
+        errors.push(`Refund finance: ${withdrawsResult.reason.message}`);
+      }
+      adminFinanceSnapshot.partial = errors.length > 0;
+      updateFinanceSummary();
+      if (errors.length && !adminFinanceSnapshot.payments.length && !adminFinanceSnapshot.withdraws.length) {
+        throw new Error(errors.join(' | '));
+      }
+      return adminFinanceSnapshot;
+    }
+
     async function loadWithdraws() {
       const status = document.getElementById('withdraw-status').value;
-      renderTableState('withdraws-table', WITHDRAWS_TABLE_HEADERS, 'Loading withdrawals...', 'loading');
-      try {
-        const items = await api(`/admin/withdraws?status=${encodeURIComponent(status)}`);
-        renderTable('withdraws-table', WITHDRAWS_TABLE_HEADERS, items.map(w => {
+      const items = await api(`/admin/withdraws?status=${encodeURIComponent(status)}`);
+      if (status === 'all' || adminFinanceSnapshot.partial) {
+        adminFinanceSnapshot.withdraws = Array.isArray(items) ? items : [];
+        adminFinanceSnapshot.partial = status !== 'all';
+        updateFinanceSummary();
+      }
+      const processing = countWhere(items, item => normalizeAdminStatus(item.status) === 'processing');
+      const completed = countWhere(items, item => normalizeAdminStatus(item.status) === 'completed');
+      const rejected = countWhere(items, item => normalizeAdminStatus(item.status) === 'rejected');
+      setSummary('withdraws', items.length, `${status} filter, ${processing} processing, ${completed} completed, ${rejected} rejected`, processing ? 'warn' : 'ok');
+      renderTable('withdraws-table', ['ID', 'Telegram', 'Amount', 'Wallet', 'Type', 'Status', 'TX', 'Created', 'Actions'], items.map(w => {
         const withdrawStatus = normalizeAdminStatus(w.status);
         const walletType = w.wallet_type || w.method || 'TON';
         const scope = w.withdraw_scope || w.scope || (walletType === 'TON_DEPOSIT_REFUND' ? 'deposit_refund' : 'withdraw');
         const scopeLabel = adminScopeLabel(scope, walletType);
         const canApprove = withdrawStatus === 'processing' || String(w.status || '').toLowerCase() === 'pending';
-        const withdrawTx = w.tx_hash || w.payout_tx_hash || w.refund_tx_hash || w.external_hash || '';
         return `
         <tr>
           <td>${escapeHtml(w.id)}</td>
           <td>${escapeHtml(w.telegram_id)}</td>
           <td>${formatTon(w.amount)}</td>
-          <td><div class="admin-muted">${escapeHtml(walletType)}</div>${adminAddress(w.wallet_address)}</td>
+          <td><div class="admin-muted">${escapeHtml(displayAdminText(walletType))}</div>${adminAddress(w.wallet_address)}</td>
           <td>${escapeHtml(scopeLabel)}</td>
           <td>${statusCell(w.status)}</td>
-          <td>${adminTx(withdrawTx)}</td>
-          <td>${adminDetail(w, [
-            ['Reason', ['admin_note', 'status_reason', 'reason', 'reject_reason', 'failed_reason', 'error', 'message']],
-            ['Processed', ['processed_at', 'confirmed_at', 'updated_at']],
-            ['External', ['external_id', 'external_status']]
-          ])}</td>
+          <td>${adminTx(w.tx_hash || w.payout_tx_hash)}</td>
           <td>${adminDate(w.created_at || w.requested_at)}</td>
-          <td>
+          <td><div class="action-stack">
             ${canApprove ? `<button class="ok" onclick='approveWithdraw(${safeJsString(w.id)})'>Mark as paid</button>
             <button class="danger" onclick='rejectWithdraw(${safeJsString(w.id)})'>Reject</button>` : '<span class="admin-muted">No action</span>'}
-          </td>
+          </div></td>
         </tr>
-        `;
-        }));
-      } catch (err) {
-        renderTableState('withdraws-table', WITHDRAWS_TABLE_HEADERS, `Withdrawals did not load: ${err.message}`, 'error');
-        throw err;
-      }
+      `;
+      }));
     }
 
     async function approveWithdraw(id) {
-      await api(`/admin/withdraw/${id}/approve`, { method: 'POST', body: '{}' });
-      await loadWithdraws();
+      if (!confirmAdminAction('Mark withdrawal as paid?', [`Withdrawal ID: ${id}`, 'Use only after payout is verified outside this UI.'])) {
+        setCancelledStatus('Withdrawal approve');
+        return;
+      }
+      try {
+        setStatus('Withdrawal approval is being sent...');
+        await api(`/admin/withdraw/${id}/approve`, { method: 'POST', body: '{}' });
+        await loadWithdraws();
+        setStatus('Withdrawal marked as paid.');
+      } catch (err) {
+        setStatus(`Withdrawal approve error: ${err.message}`);
+      }
     }
 
     async function rejectWithdraw(id) {
-      const reason = prompt('Reject reason') || 'Rejected by admin';
-      await api(`/admin/withdraw/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) });
-      await loadWithdraws();
+      const rawReason = prompt('Reject reason');
+      if (rawReason === null) {
+        setCancelledStatus('Withdrawal reject');
+        return;
+      }
+      const reason = rawReason.trim() || 'Rejected by admin';
+      if (!confirmAdminAction('Reject withdrawal?', [`Withdrawal ID: ${id}`, `Reason: ${reason}`])) {
+        setCancelledStatus('Withdrawal reject');
+        return;
+      }
+      try {
+        setStatus('Withdrawal rejection is being sent...');
+        await api(`/admin/withdraw/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) });
+        await loadWithdraws();
+        setStatus('Withdrawal rejected.');
+      } catch (err) {
+        setStatus(`Withdrawal reject error: ${err.message}`);
+      }
     }
 
     async function loadPaymentOrders() {
       const status = document.getElementById('payment-status').value;
-      renderTableState('payments-table', PAYMENTS_TABLE_HEADERS, 'Loading payment orders...', 'loading');
-      try {
-        const items = await api(`/admin/payment-orders?status=${encodeURIComponent(status)}`);
-        renderTable('payments-table', PAYMENTS_TABLE_HEADERS, items.map(p => {
+      const items = await api(`/admin/payment-orders?status=${encodeURIComponent(status)}`);
+      if (status === 'all' || adminFinanceSnapshot.partial) {
+        adminFinanceSnapshot.payments = Array.isArray(items) ? items : [];
+        adminFinanceSnapshot.partial = status !== 'all';
+        updateFinanceSummary();
+      }
+      const processing = countWhere(items, item => normalizeAdminStatus(item.status) === 'processing');
+      const completed = countWhere(items, item => normalizeAdminStatus(item.status) === 'completed');
+      const rejected = countWhere(items, item => normalizeAdminStatus(item.status) === 'rejected');
+      setSummary('payments', items.length, `${status} filter, ${processing} waiting, ${completed} confirmed, ${rejected} rejected`, processing ? 'warn' : 'ok');
+      renderTable('payments-table', ["ID", "Telegram ID", "Required", "Paid", "Wallet", "Valid until", "Status", "TX", "Actions"], items.map(p => {
         const paymentStatus = normalizeAdminStatus(p.status);
         const wallet = p.wallet_address || p.ton_wallet_address || p.to_wallet || p.admin_wallet || '';
         const paidAmount = p.paid_amount || p.detected_amount || p.amount_paid || '';
@@ -1174,25 +1480,22 @@
           <td>${adminDate(p.expires_at || p.valid_until)}</td>
           <td>${statusCell(p.status)}</td>
           <td>${adminTx(paymentTx)}</td>
-          <td>${adminDetail(p, [
-            ['Detected', ['detected_amount', 'paid_amount', 'amount_paid']],
-            ['Reason', ['admin_note', 'status_reason', 'reason', 'reject_reason', 'failed_reason', 'error', 'message']],
-            ['Detected at', ['detected_at', 'confirmed_at', 'updated_at']]
-          ])}</td>
-          <td>
+          <td><div class="action-stack">
             ${canManualApprove ? `<button class="warning" onclick='approvePaymentOrder(${safeJsString(p.id)})'>Manual backup</button>` : '<span style="color:var(--ok);">Completed</span>'}
-          </td>
+          </div></td>
         </tr>
-        `;
-        }));
-      } catch (err) {
-        renderTableState('payments-table', PAYMENTS_TABLE_HEADERS, `Payment orders did not load: ${err.message}`, 'error');
-        throw err;
-      }
+      `;
+      }));
     }
 
     async function approvePaymentOrder(id) {
-      if(!confirm("This is only a backup manual approval. Checking the automatic scanner first is recommended. Approve anyway?")) return;
+      if (!confirmAdminAction('Run manual payment backup approval?', [
+        `Payment order ID: ${id}`,
+        'Use only after backend/scanner evidence confirms the payment.'
+      ])) {
+        setCancelledStatus('Payment backup approval');
+        return;
+      }
       try {
         setStatus('Manual backup approval is running...');
         await api(`/admin/payment-orders/${id}/approve`, { method: 'POST', body: '{}' });
@@ -1211,6 +1514,8 @@
         const scanner = data.scanner || {};
         const config = data.config || {};
         const lastRun = scanner.lastRunAt ? new Date(scanner.lastRunAt).toLocaleString() : 'not yet';
+        const scannerTone = scanner.lastError ? 'error' : 'ok';
+        setSummary('scanner', scanner.lastError ? 'Check' : 'OK', `Available ${data.available || 0}, pending ${data.pending_orders || 0}, confirmed ${scanner.confirmed || 0}, last check ${lastRun}`, scannerTone);
         if (box) {
           box.innerText = [
             `Wallets: total ${data.total || 0}, active ${data.active || 0}, available ${data.available || 0}, assigned ${data.assigned || 0}`,
@@ -1221,12 +1526,17 @@
           ].join('\\n');
         }
       } catch (err) {
+        setSummary('scanner', 'Error', err.message, 'error');
         if (box) box.innerText = `Scanner status did not load: ${err.message}`;
         throw err;
       }
     }
 
     async function runPaymentScan() {
+      if (!confirmAdminAction('Run blockchain scanner check now?', ['This does not send Gram from the UI, but it asks the backend to scan payment orders.'])) {
+        setCancelledStatus('Scanner check');
+        return;
+      }
       try {
         setBusy('btn-run-payment-scan', true, 'Scanning...');
         const result = await api('/admin/payment-scan/run', {
@@ -1244,18 +1554,14 @@
     }
 
     async function refreshAll() {
-      setBusy('btn-refresh-all', true, 'Refreshing...');
       const errors = [];
-      try {
-        try { await loadSettings({ renderForm: !settingsFormRendered }); } catch (err) { errors.push(err.message); }
-        try { await loadUsers(); } catch (err) { errors.push(`Users: ${err.message}`); }
-        try { await loadWithdraws(); } catch (err) { errors.push(`Withdrawals: ${err.message}`); }
-        try { await loadPaymentOrders(); } catch (err) { errors.push(`Payments: ${err.message}`); }
-        try { await loadPaymentWallets(); } catch (err) { errors.push(`Scanner: ${err.message}`); }
-        setStatus(errors.length ? errors.join(' | ') : 'Data loaded.');
-      } finally {
-        setBusy('btn-refresh-all', false);
-      }
+      try { await loadSettings({ renderForm: !settingsFormRendered }); } catch (err) { errors.push(err.message); }
+      try { await loadFinanceSnapshot(); } catch (err) { updateFinanceSummary(); errors.push(`Finance: ${err.message}`); }
+      try { await loadUsers(); } catch (err) { setSummary('users', 'Error', err.message, 'error'); errors.push(`Users: ${err.message}`); }
+      try { await loadWithdraws(); } catch (err) { setSummary('withdraws', 'Error', err.message, 'error'); errors.push(`Withdrawals: ${err.message}`); }
+      try { await loadPaymentOrders(); } catch (err) { setSummary('payments', 'Error', err.message, 'error'); errors.push(`To‘lovlar: ${err.message}`); }
+      try { await loadPaymentWallets(); } catch (err) { setSummary('scanner', 'Error', err.message, 'error'); errors.push(`Scanner: ${err.message}`); }
+      setStatus(errors.length ? errors.join(' | ') : 'Data loaded.');
     }
 
     document.getElementById('admin-token').value = localStorage.getItem('vidipay_admin_token') || '';

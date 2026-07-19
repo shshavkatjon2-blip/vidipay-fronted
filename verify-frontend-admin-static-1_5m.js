@@ -4,7 +4,7 @@ const vm = require("vm");
 const crypto = require("crypto");
 
 const targetDir = path.resolve(process.argv[2] || __dirname);
-const expectedBuild = "frontend-admin-readiness-20260711-v21";
+const expectedBuild = "frontend-admin-readiness-20260711-v5";
 
 const expectedFiles = [
   "admin.html",
@@ -42,31 +42,6 @@ const appRequiredPatterns = [
   { name: "wallet_ready_i18n", pattern: /wallet_ready_for_activation/ },
   { name: "deposit_refund_withdrawal", pattern: /submitWithdrawRequest[\s\S]*withdraw_scope:\s*['"]deposit_refund['"]/ },
   { name: "deposit_refund_followup", pattern: /scheduleDepositRefundFollowup[\s\S]*refreshPaymentStatus/ },
-  { name: "deposit_refund_detail", pattern: /depositRefundDetailText[\s\S]*status_reason[\s\S]*vidipayDepositRefundDetail/ },
-  { name: "receipt_detail_fallback", pattern: /receiptDetailText[\s\S]*status_reason[\s\S]*failed_reason/ },
-  { name: "receipt_mobile_wrap", pattern: /\.receipt-value[\s\S]*overflow-wrap:\s*anywhere[\s\S]*@media \(max-width:\s*380px\)[\s\S]*\.receipt-row[\s\S]*display:\s*block/ },
-  { name: "history_error_fallback", pattern: /history_load_failed[\s\S]*historyLoadError[\s\S]*history-error/ },
-  { name: "copy_address_feedback", pattern: /copyTonPaymentAddress[\s\S]*payment_copying[\s\S]*vidipayCopyAddressState/ },
-  { name: "activation_deposit_video_unlock", pattern: /hasActivationDepositAccess[\s\S]*deposit_refund_available[\s\S]*isActivationDepositLocked/ },
-  { name: "watch_activation_limit_after_deposit", pattern: /shouldStopWatchAtActivationLimit[\s\S]*hasActivationDepositAccess\(latestPaymentStatus\)[\s\S]*return false/ },
-  { name: "modal_scroll_lock_guard", pattern: /lockModalPageScroll[\s\S]*vidipay-modal-scroll-lock[\s\S]*unlockModalPageScroll/ },
-  { name: "modal_background_scroll_guard", pattern: /guardModalBackgroundScroll[\s\S]*touchmove[\s\S]*vidipayModalScrollGuard/ },
-  { name: "history_scroll_target", pattern: /prepareHistoryModalScroll[\s\S]*history-scroll-target[\s\S]*vidipayHistoryScrollTarget/ },
-  { name: "history_modal_content_scroll", pattern: /#withdrawHistoryModal\.is-open[\s\S]*overflow-y:\s*auto[\s\S]*#withdrawHistoryModal\.is-open \.modal-content[\s\S]*overflow-y:\s*auto[\s\S]*#withdrawHistoryModal\.is-open \.info-sub-block[\s\S]*overflow-y:\s*auto[\s\S]*#withdrawHistoryModal\.is-open \.history-list[\s\S]*overflow-y:\s*visible/ },
-  { name: "history_modal_inline_scroll_guard", pattern: /prepareHistoryModalScroll[\s\S]*content\.style\.overflowY = 'auto'[\s\S]*panel\.style\.overflowY = 'auto'[\s\S]*box\.style\.overflowY = 'visible'[\s\S]*vidipayHistoryScrollMode = 'panel'/ },
-  { name: "inline_watch_fallback", pattern: /USE_INLINE_WATCH_PLAYER = true[\s\S]*WATCH_INLINE_SCENES[\s\S]*vidipay-inline-watch-player[\s\S]*vidipayWatchFallback = 'inline'/ },
-  { name: "resume_cache_ui", pattern: /resumeFrontendUiFromCache[\s\S]*seedPaymentStatusFromCache\(\)[\s\S]*updateWithdrawUi\(latestPaymentStatus\)[\s\S]*vidipayResumeCache = 'ready'/ },
-  { name: "resume_cache_hooks", pattern: /resumeFrontendActivity[\s\S]*resumeFrontendUiFromCache\(reason\)[\s\S]*runFrontendRuntimeGuard[\s\S]*resumeFrontendUiFromCache\(`runtime:\$\{reason\}`\)[\s\S]*resumeFrontendUiFromCache\('init'\)/ },
-  { name: "activation_access_cache", pattern: /getActivationAccessCacheScopes[\s\S]*getActivationAccessCacheKey[\s\S]*rememberActivationDepositAccess[\s\S]*hasCachedActivationDepositAccess[\s\S]*seedActivationAccessFromCache[\s\S]*hasActivationDepositAccess/ },
-  { name: "activation_cache_seed_before_actions", pattern: /handleMainClick[\s\S]*seedPaymentStatusFromCache\(\)[\s\S]*isActivationDepositLocked[\s\S]*if \(id === 'withdrawModal'\)[\s\S]*seedPaymentStatusFromCache\(\)[\s\S]*if \(id === 'walletModal'\)[\s\S]*seedPaymentStatusFromCache\(\)/ },
-  { name: "activation_growth_lock_split", pattern: /isGrowthReferralWatchLocked[\s\S]*checkpoint_499[\s\S]*checkpoint_1499[\s\S]*const referralWatchLocked = isGrowthReferralWatchLocked\(status\)/ },
-  { name: "optimistic_watch_reward", pattern: /applyOptimisticWatchReward[\s\S]*confirmOptimisticWatchReward[\s\S]*rollbackOptimisticWatchReward/ },
-  { name: "watch_reward_reconcile", pattern: /resolveWatchReward[\s\S]*forceWatchRewardMinimum[\s\S]*confirmOptimisticWatchReward/ },
-  { name: "pending_watch_reward_queue", pattern: /enqueuePendingWatchReward[\s\S]*syncPendingWatchRewards[\s\S]*schedulePendingWatchRewardSync/ },
-  { name: "watch_notification_filter", pattern: /isNoisyWatchRewardNotification[\s\S]*getNotifications[\s\S]*filter/ },
-  { name: "server_notification_filter", pattern: /filterUsefulNotifications[\s\S]*vidipayNotificationFilter[\s\S]*const newItems = filterUsefulNotifications[\s\S]*setUnreadNotificationCount\(Math\.min/ },
-  { name: "scrollable_modal_lists", pattern: /notification-list[\s\S]*support-chat-box[\s\S]*withdraw-history-list, #notification-list, #support-chat-box/ },
-  { name: "history_reset_only_on_open", pattern: /prepareHistoryModalScroll\(\{ reset: true \}\)[\s\S]*function prepareHistoryModalScroll\(options = \{\}\)[\s\S]*if \(options\.reset\)/ },
   { name: "admin_notification_translation", pattern: /translateAdminNotificationText/ },
   { name: "notification_list_layout", pattern: /notification-list/ },
   { name: "growth_lock_status", pattern: /currentGrowthLockStatus/ }
@@ -74,12 +49,10 @@ const appRequiredPatterns = [
 
 const adminRequiredPatterns = [
   { name: "admin_backend_primary", pattern: /vidipay-backend-1\.onrender\.com/ },
-  { name: "admin_ton_scanner_panel", pattern: /Automatic TON scanner/ },
+  { name: "admin_gram_scanner_panel", pattern: /Automatic Gram scanner/ },
   { name: "admin_payment_wallets_endpoint", pattern: /\/admin\/payment-wallets/ },
   { name: "admin_notification_endpoint", pattern: /\/admin\/notification\/send/ },
-  { name: "admin_manual_backup_text", pattern: /Manual backup/ },
-  { name: "admin_detail_fallback", pattern: /adminDetail[\s\S]*status_reason[\s\S]*failed_reason/ },
-  { name: "admin_table_state", pattern: /renderTableState[\s\S]*admin-table-state[\s\S]*Loading withdrawals[\s\S]*Payment orders did not load/ }
+  { name: "admin_manual_backup_text", pattern: /Manual backup/ }
 ];
 
 function readText(file) {
