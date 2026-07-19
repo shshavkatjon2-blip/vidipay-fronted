@@ -247,6 +247,11 @@
         .frontend-action-ready {
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            transition: transform 80ms ease, filter 80ms ease;
+        }
+        .frontend-action-ready.is-pressed {
+            filter: brightness(1.08);
         }
         .payment-runtime-strip {
             display: none;
@@ -2505,6 +2510,49 @@
             -webkit-overflow-scrolling: touch !important;
         }
 
+        #withdrawHistoryModal.modal-overlay {
+            align-items: center !important;
+            overflow: hidden !important;
+            touch-action: pan-y !important;
+            overscroll-behavior: contain !important;
+            padding: max(12px, env(safe-area-inset-top)) 14px max(12px, env(safe-area-inset-bottom)) !important;
+        }
+
+        #withdrawHistoryModal .modal-content {
+            height: min(calc(var(--app-vh, 100vh) - 28px), 560px) !important;
+            max-height: min(calc(var(--app-vh, 100vh) - 28px), 560px) !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+            touch-action: pan-y !important;
+            overscroll-behavior: contain !important;
+        }
+
+        #withdrawHistoryModal .info-sub-block {
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+
+        #withdrawHistoryModal .history-list {
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow-y: scroll !important;
+            overflow-x: hidden !important;
+            overscroll-behavior: contain !important;
+            -webkit-overflow-scrolling: touch !important;
+            touch-action: pan-y !important;
+            scrollbar-gutter: stable;
+            padding-right: 6px !important;
+        }
+
+        #withdrawHistoryModal .history-item {
+            flex: 0 0 auto;
+        }
+
 </style>
 </head>
 <body>
@@ -3219,6 +3267,9 @@
             const setPressed = (target, pressed) => {
                 const btn = findButton(target);
                 if (!btn || btn.disabled) return;
+                normalizeFrontendActionElement(btn);
+                btn.setAttribute('aria-disabled', btn.disabled ? 'true' : 'false');
+                btn.setAttribute('aria-busy', btn.dataset.busyLockActive === 'true' ? 'true' : 'false');
                 btn.classList.toggle('is-pressed', Boolean(pressed));
             };
             document.addEventListener('pointerdown', event => setPressed(event.target, true), { passive: true });
@@ -3249,7 +3300,7 @@
                     || btn.dataset.busyLockActive === 'true';
                 const now = Date.now();
                 const lastClickAt = Number(lastClickByButton.get(btn) || 0);
-                const duplicate = now - lastClickAt < 240;
+                const duplicate = now - lastClickAt < 120;
                 if (blocked || duplicate) {
                     event.preventDefault();
                     event.stopImmediatePropagation();
@@ -3403,8 +3454,12 @@
         const BONUS_PER_FRIEND = 9.99;
         const WALLET_UNLOCK_REQUIRED_USD = 20;
         const TON_ACTIVATION_AMOUNT = 6.99;
-        const DISPLAY_COIN_NAME = 'Gram';
-        const DISPLAY_COIN_NETWORK = 'Gram';
+        const DISPLAY_COIN_NAME = 'Gram ex TON';
+        const DISPLAY_COIN_NETWORK = 'Gram ex TON';
+        const DISPLAY_COIN_SENTINEL = '__VIDIPAY_DISPLAY_COIN__';
+        const DISPLAY_COIN_CURRENT_PATTERN = /Gram\s+ex\s+TON/gi;
+        const DISPLAY_COIN_LEGACY_PATTERN = /TONCOIN|\bTON\b|\bGram\b/gi;
+        const DISPLAY_COIN_LEGACY_TEST_PATTERN = /TONCOIN|\bTON\b|\bGram\b/i;
         const storageKey = `vidiPayState_${referralUserId}`;
         const defaultState = {
             balance: 0,
@@ -4267,8 +4322,9 @@
 
         function displayText(value) {
             return String(value ?? '')
-                .replace(/TONCOIN/gi, DISPLAY_COIN_NAME)
-                .replace(/\bTON\b/g, DISPLAY_COIN_NETWORK);
+                .replace(DISPLAY_COIN_CURRENT_PATTERN, DISPLAY_COIN_SENTINEL)
+                .replace(DISPLAY_COIN_LEGACY_PATTERN, DISPLAY_COIN_SENTINEL)
+                .replaceAll(DISPLAY_COIN_SENTINEL, DISPLAY_COIN_NAME);
         }
 
         function formatDisplayCoinAmount(value) {
@@ -4281,12 +4337,16 @@
             const skipTags = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT']);
             const applyAttr = (el, attr) => {
                 const value = el.getAttribute(attr);
-                if (value && /TONCOIN|\bTON\b/i.test(value)) el.setAttribute(attr, displayText(value));
+                if (!value || !DISPLAY_COIN_LEGACY_TEST_PATTERN.test(value)) return;
+                const nextValue = displayText(value);
+                if (nextValue !== value) el.setAttribute(attr, nextValue);
             };
 
             if (root.nodeType === Node.TEXT_NODE) {
-                if (!skipTags.has(root.parentElement?.tagName || '') && /TONCOIN|\bTON\b/i.test(root.nodeValue || '')) {
-                    root.nodeValue = displayText(root.nodeValue);
+                const value = root.nodeValue || '';
+                if (!skipTags.has(root.parentElement?.tagName || '') && DISPLAY_COIN_LEGACY_TEST_PATTERN.test(value)) {
+                    const nextValue = displayText(value);
+                    if (nextValue !== value) root.nodeValue = nextValue;
                 }
                 return;
             }
@@ -4297,13 +4357,18 @@
                 acceptNode(node) {
                     const tag = node.parentElement?.tagName || '';
                     if (skipTags.has(tag)) return NodeFilter.FILTER_REJECT;
-                    return /TONCOIN|\bTON\b/i.test(node.nodeValue || '') ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+                    const value = node.nodeValue || '';
+                    return DISPLAY_COIN_LEGACY_TEST_PATTERN.test(value) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
                 }
             });
 
             const textNodes = [];
             while (walker.nextNode()) textNodes.push(walker.currentNode);
-            textNodes.forEach(node => { node.nodeValue = displayText(node.nodeValue); });
+            textNodes.forEach(node => {
+                const value = node.nodeValue || '';
+                const nextValue = displayText(value);
+                if (nextValue !== value) node.nodeValue = nextValue;
+            });
 
             const attrRoot = root.querySelectorAll ? root : document;
             attrRoot.querySelectorAll?.('[placeholder],[aria-label],[title]').forEach(el => {
@@ -7642,7 +7707,7 @@
             else btn.setAttribute('aria-disabled', wasDisabled ? 'true' : 'false');
         }
 
-        function isActionThrottled(key, cooldownMs = 240) {
+        function isActionThrottled(key, cooldownMs = 120) {
             const now = Date.now();
             const store = isActionThrottled.store || (isActionThrottled.store = new Map());
             const until = Number(store.get(key) || 0);

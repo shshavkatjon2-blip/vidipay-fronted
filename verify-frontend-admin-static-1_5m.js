@@ -49,7 +49,7 @@ const appRequiredPatterns = [
 
 const adminRequiredPatterns = [
   { name: "admin_backend_primary", pattern: /vidipay-backend-1\.onrender\.com/ },
-  { name: "admin_gram_scanner_panel", pattern: /Automatic Gram scanner/ },
+  { name: "admin_gram_ex_ton_scanner_panel", pattern: /Automatic Gram ex TON scanner/ },
   { name: "admin_payment_wallets_endpoint", pattern: /\/admin\/payment-wallets/ },
   { name: "admin_notification_endpoint", pattern: /\/admin\/notification\/send/ },
   { name: "admin_manual_backup_text", pattern: /Manual backup/ }

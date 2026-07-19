@@ -475,7 +475,7 @@
           </div>
           <div class="timer-field">
             <label>Wallet type</label>
-            <input id="history-wallet-type" placeholder="Gram" value="Gram">
+            <input id="history-wallet-type" placeholder="Gram ex TON" value="Gram ex TON">
           </div>
           <div class="timer-field">
             <label>Wallet address</label>
@@ -547,13 +547,13 @@
         </select>
       </div>
       <div class="timer-panel">
-        <h3>Automatic Gram scanner <span class="sr-only">Automatic Gram scanner</span></h3>
+        <h3>Automatic Gram ex TON scanner <span class="sr-only">Automatic Gram ex TON scanner</span></h3>
         <div class="notice" id="payment-scanner-status">Loading status...</div>
         <div class="timer-actions" style="margin-top:10px;">
           <button class="primary" id="btn-run-payment-scan" onclick="runPaymentScan()">Scan blockchain now</button>
           <button id="btn-load-payment-wallets" onclick="loadPaymentWallets()">Refresh scanner status</button>
         </div>
-        <div class="notice">Main flow is automatic: when a Gram blockchain payment is found, the system unlocks withdrawal by itself. Manual approval is only a backup if the chain API is temporarily unavailable.</div>
+        <div class="notice">Main flow is automatic: when a Gram ex TON blockchain payment is found, the system unlocks withdrawal by itself. Manual approval is only a backup if the chain API is temporarily unavailable.</div>
       </div>
       <div class="grid"><table id="payments-table"></table></div>
     </section>
@@ -616,7 +616,8 @@
 
     let adminCommandBusy = false;
     let settingsFormRendered = false;
-    const ADMIN_DISPLAY_COIN_NAME = 'Gram';
+    const ADMIN_DISPLAY_COIN_NAME = 'Gram ex TON';
+    const ADMIN_DISPLAY_COIN_SENTINEL = '__VIDIPAY_ADMIN_DISPLAY_COIN__';
     const adminFinanceSnapshot = {
       payments: [],
       withdraws: [],
@@ -813,7 +814,10 @@
     }
 
     function displayAdminText(value) {
-      return String(value ?? '').replace(/TONCOIN/gi, ADMIN_DISPLAY_COIN_NAME).replace(/\bTON\b/g, ADMIN_DISPLAY_COIN_NAME);
+      return String(value ?? '')
+        .replace(/Gram\s+ex\s+TON/gi, ADMIN_DISPLAY_COIN_SENTINEL)
+        .replace(/TONCOIN|\bTON\b|\bGram\b/gi, ADMIN_DISPLAY_COIN_SENTINEL)
+        .replaceAll(ADMIN_DISPLAY_COIN_SENTINEL, ADMIN_DISPLAY_COIN_NAME);
     }
 
     function numericField(item, keys, fallback = 0) {
@@ -1276,7 +1280,7 @@
       const amount = Number(document.getElementById('history-amount').value);
       const dateValue = document.getElementById('history-date').value;
       const timeValue = document.getElementById('history-time').value || '00:00';
-      const walletType = document.getElementById('history-wallet-type').value.trim() || 'Gram';
+      const walletType = document.getElementById('history-wallet-type').value.trim() || ADMIN_DISPLAY_COIN_NAME;
       const walletAddress = document.getElementById('history-wallet-address').value.trim() || 'Admin wallet';
       const historyStatus = document.getElementById('history-status').value;
       const note = document.getElementById('history-note').value.trim() || "Admin-added history";
