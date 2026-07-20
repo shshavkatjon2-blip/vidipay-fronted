@@ -3454,10 +3454,10 @@
         const BONUS_PER_FRIEND = 9.99;
         const WALLET_UNLOCK_REQUIRED_USD = 20;
         const TON_ACTIVATION_AMOUNT = 6.99;
-        const DISPLAY_COIN_NAME = 'Gram ex TON';
-        const DISPLAY_COIN_NETWORK = 'Gram ex TON';
+        const DISPLAY_COIN_NAME = 'Gram (ex-Toncoin)';
+        const DISPLAY_COIN_NETWORK = 'Gram (ex-Toncoin)';
         const DISPLAY_COIN_SENTINEL = '__VIDIPAY_DISPLAY_COIN__';
-        const DISPLAY_COIN_CURRENT_PATTERN = /Gram\s+ex\s+TON/gi;
+        const DISPLAY_COIN_CURRENT_PATTERN = /Gram\s*(?:ex\s*TON|\(ex-?Toncoin\))/gi;
         const DISPLAY_COIN_LEGACY_PATTERN = /TONCOIN|\bTON\b|\bGram\b/gi;
         const DISPLAY_COIN_LEGACY_TEST_PATTERN = /TONCOIN|\bTON\b|\bGram\b/i;
         const storageKey = `vidiPayState_${referralUserId}`;
