@@ -4,7 +4,7 @@ const vm = require("vm");
 const crypto = require("crypto");
 
 const targetDir = path.resolve(process.argv[2] || __dirname);
-const expectedBuild = "frontend-admin-readiness-20260711-v5";
+const expectedBuild = "frontend-admin-readiness-20260721-v22";
 
 const expectedFiles = [
   "admin.html",
@@ -44,7 +44,14 @@ const appRequiredPatterns = [
   { name: "deposit_refund_followup", pattern: /scheduleDepositRefundFollowup[\s\S]*refreshPaymentStatus/ },
   { name: "admin_notification_translation", pattern: /translateAdminNotificationText/ },
   { name: "notification_list_layout", pattern: /notification-list/ },
-  { name: "growth_lock_status", pattern: /currentGrowthLockStatus/ }
+  { name: "growth_lock_status", pattern: /currentGrowthLockStatus/ },
+  { name: "pending_watch_reward_storage", pattern: /pendingWatchRewardsKey/ },
+  { name: "instant_watch_reward_queue", pattern: /applyOptimisticWatchSettlement[\s\S]*queuePendingWatchReward[\s\S]*finalizeWatchedVideo/ },
+  { name: "transient_watch_reward_sync", pattern: /isTransientWatchRewardError[\s\S]*watch_reward_pending_backend_sync/ },
+  { name: "stale_watch_reward_guard", pattern: /expectedWatchRewardRevision[\s\S]*vidipayStaleStatsSkippedAt/ },
+  { name: "fast_country_lookup", pattern: /firstValidCountryLookup[\s\S]*clientCountryDetectedAt/ },
+  { name: "forced_vpn_tier_refresh", pattern: /refreshTierStatusFromLiveNetwork\(\{ force: true \}\)/ },
+  { name: "youtube_end_auto_finalize", pattern: /PlayerState\.ENDED[\s\S]*finalizeWatchSession\(\)/ }
 ];
 
 const adminRequiredPatterns = [
@@ -124,6 +131,16 @@ function checkInlineScripts(file) {
   }
 }
 
+function checkAppEntryParity() {
+  const appFiles = ["app-v3.html", "app-v4.html", "app-v5.html", "app-v6.html", "index.html"];
+  const expectedHash = sha256(readText(appFiles[0]));
+  for (const file of appFiles.slice(1)) {
+    if (sha256(readText(file)) !== expectedHash) {
+      fail(`${file} must match the canonical frontend entry`);
+    }
+  }
+}
+
 function buildReport() {
   return expectedFiles.map((file) => {
     const text = readText(file);
@@ -142,6 +159,7 @@ function main() {
   checkRequiredPatterns("app-v6.html", appRequiredPatterns);
   checkRequiredPatterns("index.html", appRequiredPatterns);
   checkRequiredPatterns("admin.html", adminRequiredPatterns);
+  checkAppEntryParity();
   for (const file of expectedFiles) {
     if (file.endsWith(".html") && !readText(file).includes(expectedBuild)) {
       fail(`${file} is missing current build marker: ${expectedBuild}`);

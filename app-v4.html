@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="frontend-admin-readiness-20260711-v5">
+    <meta name="vidipay-build" content="frontend-admin-readiness-20260721-v22">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=frontend-admin-readiness-20260711-v5"></script>
+    <script src="./config.js?v=frontend-admin-readiness-20260721-v22"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -3413,7 +3413,7 @@
         }
         const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260711-v5';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260721-v22';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
@@ -3461,6 +3461,7 @@
         const DISPLAY_COIN_LEGACY_PATTERN = /TONCOIN|\bTON\b|\bGram\b/gi;
         const DISPLAY_COIN_LEGACY_TEST_PATTERN = /TONCOIN|\bTON\b|\bGram\b/i;
         const storageKey = `vidiPayState_${referralUserId}`;
+        const pendingWatchRewardsKey = `vidiPayPendingWatchRewards_${referralUserId}`;
         const defaultState = {
             balance: 0,
             totalViews: 0,
@@ -3495,6 +3496,10 @@
         let watchSessionGeneration = 0;
         let watchFinalizeInflight = null;
         let watchOptimisticSettlement = null;
+        let watchRewardRevision = 0;
+        let latestBackendUserUpdatedAt = 0;
+        let pendingWatchRewardSyncInflight = null;
+        let pendingWatchRewardSyncTimer = null;
         let watchSessionVideoIds = new Set();
         let lastWatchUiSnapshot = '';
         let rewardedMrBeastVideos = new Set();
@@ -3580,6 +3585,8 @@
         let selectedLocalCardMethod = DEFAULT_LOCAL_CARD_METHOD;
         let clientCountryCode = '';
         let clientCountrySource = '';
+        let clientCountryDetectedAt = 0;
+        let latestDetectedTierStatus = null;
         let growthLockStatus = null;
 
         window.onYouTubeIframeAPIReady = function() {
@@ -3651,6 +3658,7 @@
                     if (!response.ok) {
                         const err = new Error(data?.error || data?.message || runtimeText('request_failed'));
                         err.data = data;
+                        err.status = response.status;
                         throw err;
                     }
 
@@ -3677,8 +3685,25 @@
             throw finalError;
         }
 
-        function applyBackendUser(serverUser) {
-            if (!serverUser) return;
+        function backendUserUpdatedAtMs(serverUser) {
+            const timestamp = new Date(serverUser?.updated_at || serverUser?.updatedAt || 0).getTime();
+            return Number.isFinite(timestamp) ? timestamp : 0;
+        }
+
+        function applyBackendUser(serverUser, options = {}) {
+            if (!serverUser) return false;
+            if (Number.isFinite(options.expectedWatchRewardRevision)
+                && options.expectedWatchRewardRevision !== watchRewardRevision) {
+                document.documentElement.dataset.vidipayStaleUserSyncSkipped = 'true';
+                return false;
+            }
+
+            const serverUpdatedAt = backendUserUpdatedAtMs(serverUser);
+            if (serverUpdatedAt && latestBackendUserUpdatedAt && serverUpdatedAt < latestBackendUserUpdatedAt) {
+                document.documentElement.dataset.vidipayStaleBackendUserSkippedAt = new Date().toISOString();
+                return false;
+            }
+            if (serverUpdatedAt) latestBackendUserUpdatedAt = Math.max(latestBackendUserUpdatedAt, serverUpdatedAt);
 
             const previousBalance = Number(appState.balance || 0);
             appState.balance = Number(serverUser.balance || 0);
@@ -3689,8 +3714,10 @@
             appState.dailySeconds = Number(serverUser.daily_watch_seconds || 0);
             appState.dailyMinutes = Math.floor(appState.dailySeconds / 60);
             appState.dailyEarned = Number(serverUser.daily_income || 0);
+            applyPendingWatchRewardOverlay('backend_user_overlay');
             saveAppState();
             syncFrontendAfterBackendUser(previousBalance, 'apply_backend_user');
+            return true;
         }
 
         function syncFrontendAfterBackendUser(previousBalance = 0, reason = 'backend_user') {
@@ -3852,6 +3879,7 @@
             const now = Date.now();
             if (userSyncInflight) return userSyncInflight;
             if (userSyncFetchedAt && now - userSyncFetchedAt < 20000) return appState;
+            const requestWatchRewardRevision = watchRewardRevision;
 
             const payload = {
                 telegram_id: String(referralUserId),
@@ -3868,7 +3896,7 @@
                 })
                 .then((result) => {
                     userSyncFetchedAt = Date.now();
-                    applyBackendUser(result.user);
+                    applyBackendUser(result.user, { expectedWatchRewardRevision: requestWatchRewardRevision });
                     if (result.referral?.applied) {
                         safeStorageRemove('vidiPayPendingReferrerId');
                         addNotification(t('bonus_title'), t('referral_bonus_added'));
@@ -3905,6 +3933,64 @@
             if (!code) return '';
             if (code === 'UK') return 'GB';
             return code.slice(0, 2);
+        }
+
+        const DEFAULT_TIER_1_COUNTRIES = ['US', 'AU', 'CA', 'NO', 'CH', 'DE', 'GB', 'NL', 'SE', 'DK'];
+        const DEFAULT_TIER_2_COUNTRIES = ['FR', 'BE', 'AT', 'FI', 'IE', 'NZ', 'IT', 'ES', 'JP', 'KR'];
+
+        function tierCountryList(value, fallback) {
+            const items = Array.isArray(value) ? value : String(value || '').split(',');
+            const normalized = items.map(normalizeClientCountryCode).filter(Boolean);
+            return normalized.length ? normalized : fallback;
+        }
+
+        function tierRate(settingName, fallback) {
+            const value = Number(backendSettings?.[settingName]);
+            return Number.isFinite(value) && value > 0 ? value : fallback;
+        }
+
+        function localTierStatusForCountry(countryCode, source = 'browser_ip_lookup') {
+            const code = normalizeClientCountryCode(countryCode);
+            const tier1Countries = tierCountryList(backendSettings.tier1_countries, DEFAULT_TIER_1_COUNTRIES);
+            const tier2Countries = tierCountryList(backendSettings.tier2_countries, DEFAULT_TIER_2_COUNTRIES);
+            const tier = tier1Countries.includes(code) ? 1 : (tier2Countries.includes(code) ? 2 : 3);
+            const rewardPerSecond = tier === 1
+                ? tierRate('tier1_reward_per_second', 10)
+                : tier === 2
+                    ? tierRate('tier2_reward_per_second', 7)
+                    : tierRate('tier3_reward_per_second', tierRate('view_reward_per_second', 0.01));
+            return {
+                tier,
+                reward_per_second: rewardPerSecond,
+                country_code: code || null,
+                country_name: code || 'Unknown',
+                country_source: source
+            };
+        }
+
+        function applyTierStatusSnapshot(status, source = '') {
+            if (!status) return currentTierStatus;
+            const code = normalizeClientCountryCode(status.country_code || status.detected_country_code || status.country);
+            const fallback = localTierStatusForCountry(code, source || status.country_source || 'tier_fallback');
+            currentTierStatus = {
+                ...currentTierStatus,
+                ...fallback,
+                ...status,
+                tier: Number(status.tier || fallback.tier),
+                reward_per_second: Number(status.reward_per_second || fallback.reward_per_second),
+                country_code: code || fallback.country_code,
+                country_name: status.country_name || fallback.country_name,
+                country_source: status.country_source || source || fallback.country_source
+            };
+            updateTierCards();
+            document.documentElement.dataset.vidipayTierCountry = currentTierStatus.country_code || '';
+            document.documentElement.dataset.vidipayTier = String(currentTierStatus.tier || 3);
+            document.documentElement.dataset.vidipayTierUpdatedAt = new Date().toISOString();
+            if (pendingWatch && !watchSessionSubmitted) {
+                lastWatchUiSnapshot = '';
+                updateWatchSessionUi(t('watch_counting'));
+            }
+            return currentTierStatus;
         }
 
         async function fetchJsonWithTimeout(url, timeoutMs = 3500) {
@@ -3946,8 +4032,35 @@
             return normalizeClientCountryCode(locLine ? locLine.replace('loc=', '') : '');
         }
 
-        async function detectClientCountryCode() {
-            if (clientCountryCode) return clientCountryCode;
+        function firstValidCountryLookup(lookups, timeoutMs = 2400) {
+            return new Promise((resolve) => {
+                let completed = 0;
+                let resolved = false;
+                const finish = (value) => {
+                    if (resolved) return;
+                    resolved = true;
+                    clearTimeout(timer);
+                    resolve(value || null);
+                };
+                const timer = setTimeout(() => finish(null), timeoutMs);
+                lookups.forEach((lookup) => {
+                    Promise.resolve(lookup)
+                        .then((value) => {
+                            completed += 1;
+                            if (normalizeClientCountryCode(value?.code)) finish(value);
+                            else if (completed >= lookups.length) finish(null);
+                        })
+                        .catch(() => {
+                            completed += 1;
+                            if (completed >= lookups.length) finish(null);
+                        });
+                });
+            });
+        }
+
+        async function detectClientCountryCode(options = {}) {
+            const now = Date.now();
+            if (!options.force && clientCountryCode && now - clientCountryDetectedAt < 15000) return clientCountryCode;
 
             const urlCountry = normalizeClientCountryCode(
                 pageParams.get('country') ||
@@ -3958,48 +4071,44 @@
             if (urlCountry) {
                 clientCountryCode = urlCountry;
                 clientCountrySource = 'url_country';
+                clientCountryDetectedAt = Date.now();
+                latestDetectedTierStatus = localTierStatusForCountry(clientCountryCode, clientCountrySource);
+                applyTierStatusSnapshot(latestDetectedTierStatus, clientCountrySource);
                 return clientCountryCode;
             }
 
-            const backendGeo = await fetchJsonWithTimeout(`${API_BASE_URL}/tier/status`);
+            const backendGeo = await fetchJsonWithTimeout(`${API_BASE_URL}/tier/status?fresh=${Date.now()}`, 1800);
             clientCountryCode = normalizeClientCountryCode(
                 backendGeo?.country_code ||
                 backendGeo?.detected_country_code ||
                 backendGeo?.country
             );
-            if (clientCountryCode) clientCountrySource = backendGeo?.country_source || 'backend_geo';
+            if (clientCountryCode) {
+                clientCountrySource = backendGeo?.country_source || 'backend_geo';
+                clientCountryDetectedAt = Date.now();
+                latestDetectedTierStatus = backendGeo;
+                applyTierStatusSnapshot(backendGeo, clientCountrySource);
+            }
 
             if (clientCountryCode) return clientCountryCode;
 
-            const localTrace = await fetchTextWithTimeout('/cdn-cgi/trace');
-            clientCountryCode = countryCodeFromTrace(localTrace);
-            if (clientCountryCode) clientCountrySource = 'cloudflare_trace';
+            const fallback = await firstValidCountryLookup([
+                fetchTextWithTimeout('https://www.cloudflare.com/cdn-cgi/trace', 2200)
+                    .then(value => ({ code: countryCodeFromTrace(value), source: 'cloudflare_trace' })),
+                fetchJsonWithTimeout('https://api.country.is/', 2200)
+                    .then(value => ({ code: normalizeClientCountryCode(value?.country), source: 'country_is' })),
+                fetchJsonWithTimeout('https://ipwho.is/', 2200)
+                    .then(value => ({ code: normalizeClientCountryCode(value?.country_code), source: 'ipwho_is' })),
+                fetchJsonWithTimeout('https://ipapi.co/json/', 2200)
+                    .then(value => ({ code: normalizeClientCountryCode(value?.country_code || value?.country), source: 'ipapi' }))
+            ]);
 
-            if (!clientCountryCode) {
-                const lookups = await Promise.allSettled([
-                    fetchJsonWithTimeout('https://ipapi.co/json/'),
-                    fetchJsonWithTimeout('https://ipwho.is/'),
-                    fetchJsonWithTimeout('https://api.country.is/'),
-                    fetchJsonWithTimeout('https://get.geojs.io/v1/ip/country.json'),
-                    fetchJsonWithTimeout('https://ipinfo.io/json'),
-                    fetchJsonWithTimeout('https://ifconfig.co/json'),
-                    fetchTextWithTimeout('https://www.cloudflare.com/cdn-cgi/trace')
-                ]);
-
-                const candidates = lookups.map((result, index) => {
-                    if (result.status !== 'fulfilled') return '';
-                    const value = result.value;
-                    if (index === 0) return normalizeClientCountryCode(value?.country_code || value?.country);
-                    if (index === 1) return normalizeClientCountryCode(value?.country_code);
-                    if (index === 2) return normalizeClientCountryCode(value?.country);
-                    if (index === 3) return normalizeClientCountryCode(value?.country);
-                    if (index === 4) return normalizeClientCountryCode(value?.country);
-                    if (index === 5) return normalizeClientCountryCode(value?.country || value?.country_iso);
-                    return countryCodeFromTrace(value);
-                }).filter(Boolean);
-
-                clientCountryCode = candidates[0] || '';
-                if (clientCountryCode) clientCountrySource = 'browser_ip_lookup';
+            clientCountryCode = normalizeClientCountryCode(fallback?.code);
+            clientCountrySource = clientCountryCode ? (fallback?.source || 'browser_ip_lookup') : '';
+            clientCountryDetectedAt = clientCountryCode ? Date.now() : 0;
+            if (clientCountryCode) {
+                latestDetectedTierStatus = localTierStatusForCountry(clientCountryCode, clientCountrySource);
+                applyTierStatusSnapshot(latestDetectedTierStatus, clientCountrySource);
             }
 
             return clientCountryCode;
@@ -4007,21 +4116,28 @@
 
         async function loadTierStatus(options = {}) {
             const now = Date.now();
-            if (!options.force && tierStatusFetchedAt && now - tierStatusFetchedAt < 300000) {
+            if (!options.force && tierStatusFetchedAt && now - tierStatusFetchedAt < 15000) {
                 updateTierCards();
                 return currentTierStatus;
             }
             if (tierStatusInflight) return tierStatusInflight;
 
             tierStatusInflight = (async () => {
-                const code = await detectClientCountryCode();
+                const code = await detectClientCountryCode({ force: Boolean(options.forceCountry) });
+                if (latestDetectedTierStatus
+                    && Number(latestDetectedTierStatus.tier)
+                    && normalizeClientCountryCode(latestDetectedTierStatus.country_code) === code) {
+                    applyTierStatusSnapshot(latestDetectedTierStatus, clientCountrySource);
+                    tierStatusFetchedAt = Date.now();
+                    return currentTierStatus;
+                }
                 const tierParams = new URLSearchParams();
                 if (code) tierParams.set('client_country_code', code);
                 if (clientCountrySource) tierParams.set('client_country_source', clientCountrySource);
                 const query = tierParams.toString();
-                currentTierStatus = await apiRequest(`/tier/status${query ? `?${query}` : ''}`, { timeoutMs: 8000 });
+                const serverTierStatus = await apiRequest(`/tier/status${query ? `?${query}` : ''}`, { timeoutMs: 3500 });
+                applyTierStatusSnapshot(serverTierStatus, clientCountrySource);
                 tierStatusFetchedAt = Date.now();
-                updateTierCards();
                 return currentTierStatus;
             })().catch((err) => {
                 updateTierCards();
@@ -4032,35 +4148,46 @@
             return tierStatusInflight;
         }
 
-        function refreshTierStatusFromLiveNetwork() {
+        function refreshTierStatusFromLiveNetwork(options = {}) {
             const now = Date.now();
-            if (tierStatusFetchedAt && now - tierStatusFetchedAt < 30000) {
+            const force = Boolean(options.force);
+            if (!force && tierStatusFetchedAt && now - tierStatusFetchedAt < 5000) {
                 updateTierCards();
                 return Promise.resolve(currentTierStatus);
             }
             clientCountryCode = '';
             clientCountrySource = '';
-            return loadTierStatus({ force: true });
+            clientCountryDetectedAt = 0;
+            latestDetectedTierStatus = null;
+            return loadTierStatus({ force: true, forceCountry: true });
         }
 
         function scheduleLiveTierRefresh() {
-            [800, 5000, 15000].forEach((delay) => {
+            [300, 3000].forEach((delay, index) => {
                 setTimeout(() => {
                     if (document.hidden) return;
-                    refreshTierStatusFromLiveNetwork().catch(() => null);
+                    refreshTierStatusFromLiveNetwork({ force: index === 0 }).catch(() => null);
                 }, delay);
             });
         }
 
         window.addEventListener('pageshow', () => {
-            refreshTierStatusFromLiveNetwork().catch(() => null);
+            refreshTierStatusFromLiveNetwork({ force: true }).catch(() => null);
+            syncPendingWatchRewards('pageshow').catch(err => rememberFrontendError('pending_watch_reward_pageshow', err));
         });
 
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden) {
-                refreshTierStatusFromLiveNetwork().catch(() => null);
+                refreshTierStatusFromLiveNetwork({ force: true }).catch(() => null);
+                syncPendingWatchRewards('visibility').catch(err => rememberFrontendError('pending_watch_reward_visibility', err));
             }
         });
+
+        if (navigator.connection?.addEventListener) {
+            navigator.connection.addEventListener('change', () => {
+                refreshTierStatusFromLiveNetwork({ force: true }).catch(() => null);
+            }, { passive: true });
+        }
 
         function updateTierCards() {
             const activeTier = Number(currentTierStatus.tier || 3);
@@ -4177,9 +4304,14 @@
                 updateWatchDisplays();
                 return appState;
             }
+            const requestWatchRewardRevision = watchRewardRevision;
 
             statsInflight = apiRequest(`/stats/${encodeURIComponent(referralUserId)}`, { timeoutMs: 8000 })
                 .then((stats) => {
+                    if (requestWatchRewardRevision !== watchRewardRevision) {
+                        document.documentElement.dataset.vidipayStaleStatsSkippedAt = new Date().toISOString();
+                        return stats;
+                    }
                     const previousBalance = Number(appState.balance || 0);
                     appState.balance = Number(stats.balance || 0);
                     appState.totalViews = Number(stats.total_views || 0);
@@ -4191,6 +4323,7 @@
                     appState.dailyEarned = Number(stats.daily_income || 0);
                     appState.joinedFriends = Number(stats.referrals || appState.joinedFriends || 0);
                     if (stats.growth_lock) setGrowthLockStatus(stats.growth_lock);
+                    applyPendingWatchRewardOverlay('backend_stats_overlay');
                     statsFetchedAt = Date.now();
                     saveAppState();
                     updateWatchDisplays();
@@ -8099,6 +8232,8 @@
                 openModal('watchModal');
                 return;
             }
+            refreshTierStatusFromLiveNetwork({ force: true })
+                .catch(err => rememberFrontendError('watch_open_tier_refresh', err));
             countedWatchSeconds = 0;
             watchAccumulatedMs = 0;
             watchSegmentStartedAt = null;
@@ -8244,6 +8379,13 @@
                 currentWatchCompleted = true;
                 stopWatchTimerDisplay();
                 updateWatchSessionUi(t('watch_finished'));
+                setWatchUiState('finished');
+                Promise.resolve()
+                    .then(() => finalizeWatchSession())
+                    .catch((err) => {
+                        const watchSeconds = syncCountedWatchSeconds();
+                        showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), friendlyErrorMessage(err) || t('watch_reward_save_failed'));
+                    });
             }
         }
 
@@ -8284,14 +8426,264 @@
             }, 1000);
         }
 
+        function getEffectiveWatchRewardRate() {
+            const tierRateValue = Number(currentTierStatus.reward_per_second);
+            if (Number.isFinite(tierRateValue) && tierRateValue > 0) return tierRateValue;
+            const settingsRate = Number(backendSettings.view_reward_per_second);
+            return Number.isFinite(settingsRate) && settingsRate > 0 ? settingsRate : 0.01;
+        }
+
         function estimateWatchReward(seconds) {
-            const rate = Number(currentTierStatus.reward_per_second || backendSettings.view_reward_per_second || 0.01);
-            return Number((Math.max(0, Number(seconds || 0)) * rate).toFixed(2));
+            const rawReward = Math.max(0, Number(seconds || 0)) * getEffectiveWatchRewardRate();
+            if (hasServerConfirmedActivationPayment(latestPaymentStatus)) return roundMoney(rawReward);
+            const activationRemaining = Math.max(0, getWalletUnlockRequiredAmount() - getWalletEarningAmount());
+            return roundMoney(Math.min(rawReward, activationRemaining));
         }
 
         function roundMoney(value) {
             const amount = Number(value || 0);
             return Number((Number.isFinite(amount) ? amount : 0).toFixed(2));
+        }
+
+        function bumpWatchRewardRevision(reason = 'watch_reward_update') {
+            watchRewardRevision += 1;
+            document.documentElement.dataset.vidipayWatchRewardRevision = String(watchRewardRevision);
+            document.documentElement.dataset.vidipayWatchRewardRevisionReason = String(reason || '').slice(0, 80);
+            return watchRewardRevision;
+        }
+
+        function loadPendingWatchRewards() {
+            try {
+                const parsed = JSON.parse(safeStorageGet(pendingWatchRewardsKey, '[]') || '[]');
+                if (!Array.isArray(parsed)) return [];
+                return parsed
+                    .map(item => ({
+                        id: String(item.id || item.video_id || `pending_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`),
+                        telegram_id: String(item.telegram_id || referralUserId),
+                        watch_seconds: Math.max(0, Number(item.watch_seconds || item.seconds || 0)),
+                        reward: roundMoney(item.reward),
+                        video_source: String(item.video_source || 'mrbeast_uploads'),
+                        video_id: String(item.video_id || ''),
+                        completed: true,
+                        client_country_code: item.client_country_code || null,
+                        queued_at: Number(item.queued_at || Date.now()),
+                        attempts: Math.max(0, Number(item.attempts || 0)),
+                        last_error: String(item.last_error || '')
+                    }))
+                    .filter(item => item.video_id && item.watch_seconds > 0 && item.reward > 0);
+            } catch (_) {
+                return [];
+            }
+        }
+
+        function savePendingWatchRewards(items) {
+            const unique = [];
+            const seen = new Set();
+            (Array.isArray(items) ? items : []).forEach(item => {
+                const videoId = String(item?.video_id || '');
+                if (!videoId || seen.has(videoId)) return;
+                seen.add(videoId);
+                unique.push(item);
+            });
+            safeStorageSet(pendingWatchRewardsKey, JSON.stringify(unique.slice(0, 30)));
+            document.documentElement.dataset.vidipayPendingWatchRewards = String(unique.length);
+        }
+
+        function hasPendingWatchReward(videoId) {
+            const id = String(videoId || '');
+            return Boolean(id && loadPendingWatchRewards().some(item => item.video_id === id));
+        }
+
+        function queuePendingWatchReward(item) {
+            const rewardItem = {
+                id: String(item.video_id || `pending_${Date.now()}`),
+                telegram_id: String(referralUserId),
+                watch_seconds: Math.max(0, Number(item.watch_seconds || 0)),
+                reward: roundMoney(item.reward),
+                video_source: item.video_source || 'mrbeast_uploads',
+                video_id: String(item.video_id || ''),
+                completed: true,
+                client_country_code: item.client_country_code || null,
+                queued_at: Date.now(),
+                attempts: 0,
+                last_error: ''
+            };
+            if (!rewardItem.video_id || rewardItem.watch_seconds <= 0 || rewardItem.reward <= 0) return;
+            const previousItems = loadPendingWatchRewards();
+            const items = previousItems.filter(existing => existing.video_id !== rewardItem.video_id);
+            items.unshift(rewardItem);
+            savePendingWatchRewards(items);
+            bumpWatchRewardRevision(previousItems.some(existing => existing.video_id === rewardItem.video_id)
+                ? 'pending_watch_reward_updated'
+                : 'pending_watch_reward_added');
+            document.documentElement.dataset.vidipayWatchPendingSyncAt = new Date().toISOString();
+        }
+
+        function removePendingWatchReward(videoId) {
+            const id = String(videoId || '');
+            if (!id) return;
+            const items = loadPendingWatchRewards();
+            if (!items.some(item => item.video_id === id)) return;
+            savePendingWatchRewards(items.filter(item => item.video_id !== id));
+            bumpWatchRewardRevision('pending_watch_reward_removed');
+        }
+
+        function markPendingWatchRewardError(videoId, err) {
+            const id = String(videoId || '');
+            if (!id) return;
+            const items = loadPendingWatchRewards().map(item => item.video_id === id
+                ? {
+                    ...item,
+                    attempts: Number(item.attempts || 0) + 1,
+                    last_error: friendlyErrorMessage(err)
+                }
+                : item);
+            savePendingWatchRewards(items);
+        }
+
+        function rollbackPendingWatchRewardItem(item, reason = 'pending_watch_rejected') {
+            if (!item?.video_id) return;
+            removePendingWatchReward(item.video_id);
+            appState.balance = roundMoney(Math.max(0, Number(appState.balance || 0) - Number(item.reward || 0)));
+            appState.dailyEarned = roundMoney(Math.max(0, Number(appState.dailyEarned || 0) - Number(item.reward || 0)));
+            appState.totalSeconds = Math.max(0, Number(appState.totalSeconds || 0) - Number(item.watch_seconds || 0));
+            appState.totalMinutes = Math.floor(appState.totalSeconds / 60);
+            appState.dailySeconds = Math.max(0, Number(appState.dailySeconds || 0) - Number(item.watch_seconds || 0));
+            appState.dailyMinutes = Math.floor(appState.dailySeconds / 60);
+            appState.totalViews = Math.max(0, Number(appState.totalViews || 0) - 1);
+            appState.dailyViews = Math.max(0, Number(appState.dailyViews || 0) - 1);
+            saveAppState();
+            updateWatchDisplays();
+            document.documentElement.dataset.vidipayPendingWatchRollbackReason = String(reason || '').slice(0, 80);
+            document.documentElement.dataset.vidipayPendingWatchRollbackAt = new Date().toISOString();
+        }
+
+        function applyPendingWatchRewardOverlay(reason = 'pending_watch_overlay') {
+            const items = loadPendingWatchRewards();
+            if (watchOptimisticSettlement
+                && !items.some(item => item.video_id === watchOptimisticSettlement.video_id)) {
+                items.push({
+                    video_id: watchOptimisticSettlement.video_id,
+                    watch_seconds: watchOptimisticSettlement.seconds,
+                    reward: watchOptimisticSettlement.reward
+                });
+            }
+            if (!items.length) return;
+            const totals = items.reduce((sum, item) => {
+                sum.reward += Number(item.reward || 0);
+                sum.seconds += Number(item.watch_seconds || 0);
+                sum.views += 1;
+                return sum;
+            }, { reward: 0, seconds: 0, views: 0 });
+            appState.balance = roundMoney(Number(appState.balance || 0) + totals.reward);
+            appState.dailyEarned = roundMoney(Number(appState.dailyEarned || 0) + totals.reward);
+            appState.totalSeconds = Math.max(0, Number(appState.totalSeconds || 0) + totals.seconds);
+            appState.totalMinutes = Math.floor(appState.totalSeconds / 60);
+            appState.dailySeconds = Math.max(0, Number(appState.dailySeconds || 0) + totals.seconds);
+            appState.dailyMinutes = Math.floor(appState.dailySeconds / 60);
+            appState.totalViews = Math.max(0, Number(appState.totalViews || 0) + totals.views);
+            appState.dailyViews = Math.max(0, Number(appState.dailyViews || 0) + totals.views);
+            document.documentElement.dataset.vidipayPendingWatchOverlayReason = String(reason || '').slice(0, 80);
+        }
+
+        function isTransientWatchRewardError(err) {
+            const status = Number(err?.status || 0);
+            if (status >= 500 || status === 408 || status === 429) return true;
+            if (status === 404 && /user|foydalanuvchi|topilmadi|not found/i.test(String(err?.message || ''))) return true;
+            if (err?.name === 'AbortError') return true;
+            if (!err?.data) return true;
+            return /timeout|timed out|abort|failed to fetch|network|unavailable|offline|connection/i.test(String(err?.message || ''));
+        }
+
+        function watchPendingSyncMessage(errorMessage = '') {
+            const base = t('watch_reward_pending_sync');
+            if (base && base !== 'watch_reward_pending_sync') return base;
+            return errorMessage
+                ? `Reward added instantly. Backend sync is pending: ${errorMessage}`
+                : 'Reward added instantly. Backend sync is pending.';
+        }
+
+        async function buildWatchRewardPayload(watchSeconds, videoId) {
+            if (tierStatusInflight) {
+                await tierStatusInflight.catch(() => null);
+            } else if (!clientCountryDetectedAt || Date.now() - clientCountryDetectedAt > 10000) {
+                await refreshTierStatusFromLiveNetwork({ force: true }).catch(() => null);
+            }
+            const countryCode = await detectClientCountryCode();
+            return {
+                telegram_id: String(referralUserId),
+                watch_seconds: watchSeconds,
+                video_source: 'mrbeast_uploads',
+                video_id: videoId,
+                completed: true,
+                client_country_code: countryCode,
+                client_country_source: clientCountrySource || 'browser_ip_lookup'
+            };
+        }
+
+        function schedulePendingWatchRewardSync(delayMs = 2500) {
+            if (pendingWatchRewardSyncTimer) return;
+            pendingWatchRewardSyncTimer = setTimeout(() => {
+                pendingWatchRewardSyncTimer = null;
+                syncPendingWatchRewards('scheduled').catch(err => rememberFrontendError('pending_watch_reward_sync', err));
+            }, Math.max(500, Number(delayMs || 2500)));
+        }
+
+        async function syncPendingWatchRewards(reason = 'manual') {
+            if (pendingWatchRewardSyncInflight) return pendingWatchRewardSyncInflight;
+            if (watchFinalizeInflight || watchOptimisticSettlement) {
+                schedulePendingWatchRewardSync(1500);
+                return;
+            }
+            if (!navigator.onLine) return;
+            const queued = loadPendingWatchRewards();
+            if (!queued.length) return;
+
+            pendingWatchRewardSyncInflight = (async () => {
+                for (const item of queued) {
+                    try {
+                        const result = await apiRequest('/view/add', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                telegram_id: String(item.telegram_id || referralUserId),
+                                watch_seconds: item.watch_seconds,
+                                video_source: item.video_source || 'mrbeast_uploads',
+                                video_id: item.video_id,
+                                completed: true,
+                                client_country_code: item.client_country_code || await detectClientCountryCode(),
+                                client_country_source: clientCountrySource || 'browser_ip_lookup'
+                            }),
+                            timeoutMs: 5000
+                        });
+                        rewardedMrBeastVideos.add(item.video_id);
+                        removePendingWatchReward(item.video_id);
+                        if (result?.growth_lock) setGrowthLockStatus(result.growth_lock);
+                        if (result?.user) {
+                            applyBackendUser(result.user);
+                        } else {
+                            const confirmedReward = roundMoney(result?.reward || item.reward);
+                            const delta = roundMoney(confirmedReward - Number(item.reward || 0));
+                            if (delta) {
+                                appState.balance = roundMoney(Number(appState.balance || 0) + delta);
+                                appState.dailyEarned = roundMoney(Number(appState.dailyEarned || 0) + delta);
+                                saveAppState();
+                                updateWatchDisplays();
+                            }
+                        }
+                        addNotification(t('view_reward_title'), t('view_reward_added').replace('{seconds}', item.watch_seconds).replace('{amount}', Number(result?.reward || item.reward || 0).toFixed(2)));
+                    } catch (err) {
+                        markPendingWatchRewardError(item.video_id, err);
+                        if (!isTransientWatchRewardError(err)) {
+                            rollbackPendingWatchRewardItem(item, 'pending_watch_rejected');
+                        }
+                        break;
+                    }
+                }
+                if (loadPendingWatchRewards().length && navigator.onLine) schedulePendingWatchRewardSync(reason === 'online' ? 6000 : 15000);
+            })().finally(() => {
+                pendingWatchRewardSyncInflight = null;
+            });
+            return pendingWatchRewardSyncInflight;
         }
 
         function applyOptimisticWatchSettlement(watchSeconds, reward, videoId, reason = 'watch_finalize') {
@@ -8306,6 +8698,7 @@
                 reason,
                 applied_at: Date.now()
             };
+            bumpWatchRewardRevision('optimistic_watch_reward_applied');
 
             appState.balance = roundMoney(Number(appState.balance || 0) + amount);
             appState.dailyEarned = roundMoney(Number(appState.dailyEarned || 0) + amount);
@@ -8324,14 +8717,17 @@
             return amount;
         }
 
-        function clearOptimisticWatchSettlement() {
+        function clearOptimisticWatchSettlement(reason = 'optimistic_watch_reward_cleared') {
+            if (!watchOptimisticSettlement) return;
             watchOptimisticSettlement = null;
+            bumpWatchRewardRevision(reason);
         }
 
         function rollbackOptimisticWatchSettlement(reason = 'watch_save_failed') {
             if (!watchOptimisticSettlement) return;
             const { seconds, reward } = watchOptimisticSettlement;
             watchOptimisticSettlement = null;
+            bumpWatchRewardRevision(reason);
             appState.balance = roundMoney(Math.max(0, Number(appState.balance || 0) - Number(reward || 0)));
             appState.dailyEarned = roundMoney(Math.max(0, Number(appState.dailyEarned || 0) - Number(reward || 0)));
             appState.totalSeconds = Math.max(0, Number(appState.totalSeconds || 0) - Number(seconds || 0));
@@ -8389,7 +8785,7 @@
                 return;
             }
 
-            if (rewardedMrBeastVideos.has(videoId)) {
+            if (rewardedMrBeastVideos.has(videoId) || hasPendingWatchReward(videoId)) {
                 closeModal('watchModal');
                 showWatchResult(watchSeconds, 0, t('watch_video_duplicate'));
                 setWatchUiState('duplicate');
@@ -8399,6 +8795,14 @@
 
             const estimatedReward = estimateWatchReward(watchSeconds);
             const immediateReward = applyOptimisticWatchSettlement(watchSeconds, estimatedReward, videoId, 'watch_reward_immediate');
+            queuePendingWatchReward({
+                watch_seconds: watchSeconds,
+                reward: immediateReward,
+                video_id: videoId,
+                video_source: 'mrbeast_uploads',
+                client_country_code: clientCountryCode || currentTierStatus.country_code || null
+            });
+            rewardedMrBeastVideos.add(videoId);
             closeModal('watchModal');
             showWatchResult(watchSeconds, immediateReward, t('watch_reward_saving'));
             watchFinalizeInflight = finalizeWatchedVideo(watchSeconds, videoId, { optimisticReward: immediateReward })
@@ -8419,15 +8823,6 @@
                     return;
                 }
 
-            if (rewardedMrBeastVideos.has(videoId)) {
-                rollbackOptimisticWatchSettlement('duplicate_video');
-                updateWatchSessionUi(t('watch_video_duplicate'));
-                showWatchResult(watchSeconds, 0, t('watch_video_duplicate'));
-                pendingWatch = null;
-                setWatchUiState('duplicate');
-                return;
-            }
-
             if (watchSeconds < Number(backendSettings.view_seconds_required || 5)) {
                 rollbackOptimisticWatchSettlement('too_short');
                 updateWatchSessionUi(t('watch_too_short_detail').replace('{time}', formatDuration(watchSeconds)));
@@ -8439,21 +8834,15 @@
 
                 const result = await apiRequest('/view/add', {
                     method: 'POST',
-                    body: JSON.stringify({
-                        telegram_id: String(referralUserId),
-                        watch_seconds: watchSeconds,
-                        video_source: 'mrbeast_uploads',
-                        video_id: videoId,
-                        completed: true,
-                        client_country_code: await detectClientCountryCode()
-                    }),
-                    timeoutMs: 15000
+                    body: JSON.stringify(await buildWatchRewardPayload(watchSeconds, videoId)),
+                    timeoutMs: 4500
                 });
 
                 rewardedMrBeastVideos.add(videoId);
                 pendingWatch = null;
+                removePendingWatchReward(videoId);
+                clearOptimisticWatchSettlement('watch_reward_confirmed');
                 applyBackendUser(result.user);
-                clearOptimisticWatchSettlement();
                 if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
                 if (isActivationDepositLocked()) {
                     closeWatchModalForActivationLock('watch_finalize_threshold');
@@ -8477,8 +8866,37 @@
             setWatchUiState('saved');
         } catch (err) {
             pendingWatch = null;
-            rollbackOptimisticWatchSettlement('view_add_failed');
             if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
+            if (isTransientWatchRewardError(err)) {
+                const keptReward = roundMoney(options.optimisticReward || estimateWatchReward(watchSeconds));
+                if (!hasPendingWatchReward(videoId)) {
+                    queuePendingWatchReward({
+                        watch_seconds: watchSeconds,
+                        reward: keptReward,
+                        video_id: videoId,
+                        video_source: 'mrbeast_uploads',
+                        client_country_code: clientCountryCode || currentTierStatus.country_code || null
+                    });
+                } else {
+                    markPendingWatchRewardError(videoId, err);
+                }
+                rewardedMrBeastVideos.add(videoId);
+                clearOptimisticWatchSettlement('watch_reward_pending_backend_sync');
+                updateWatchDisplays();
+                const message = watchPendingSyncMessage(friendlyErrorMessage(err));
+                updateWatchSessionUi(message);
+                showWatchResult(watchSeconds, keptReward, message);
+                addNotification(t('view_reward_title'), message);
+                setWatchUiState('pending_sync', message);
+                if (Number(err?.status || 0) === 404) {
+                    syncBackendUser().catch(syncErr => rememberFrontendError('pending_watch_user_sync', syncErr));
+                }
+                schedulePendingWatchRewardSync(2000);
+                return;
+            }
+            removePendingWatchReward(videoId);
+            rewardedMrBeastVideos.delete(videoId);
+            rollbackOptimisticWatchSettlement('view_add_failed');
             updateWatchDisplays();
             const message = friendlyErrorMessage(err);
             updateWatchSessionUi(message);
@@ -8500,9 +8918,8 @@
             const timeEl = document.getElementById('watch-session-time');
             const rewardEl = document.getElementById('watch-session-reward');
             const statusEl = document.getElementById('watch-session-status');
-            const rate = Number(currentTierStatus.reward_per_second || backendSettings.view_reward_per_second || 0);
             const timeText = formatDuration(countedWatchSeconds);
-            const rewardText = `$${(countedWatchSeconds * rate).toFixed(2)}`;
+            const rewardText = `$${estimateWatchReward(countedWatchSeconds).toFixed(2)}`;
             const snapshot = `${timeText}|${rewardText}|${message}`;
 
             if (snapshot === lastWatchUiSnapshot) return;
@@ -9314,6 +9731,7 @@
                 schedulePaymentStatusPoll(2500);
             }
             refreshSettingsInBackground();
+            syncPendingWatchRewards('online').catch(err => rememberFrontendError('pending_watch_reward_online', err));
         });
 
         function pauseFrontendActivity(reason = 'page_pause') {
@@ -9341,7 +9759,8 @@
                 setWatchUiState('active', reason);
                 updateWatchSessionUi(t('watch_counting'));
             }
-            refreshTierStatusFromLiveNetwork().catch(err => rememberFrontendError(`${reason}_tier`, err));
+            syncPendingWatchRewards(reason).catch(err => rememberFrontendError(`${reason}_pending_watch_reward`, err));
+            refreshTierStatusFromLiveNetwork({ force: true }).catch(err => rememberFrontendError(`${reason}_tier`, err));
         }
 
         function resetStaleActionBusyLocks() {
@@ -9699,6 +10118,7 @@
         updateFrontendHealth({ ok: navigator.onLine });
         scheduleFrontendContractSelfCheck();
         initBackendApp();
+        if (loadPendingWatchRewards().length) schedulePendingWatchRewardSync(3000);
 
     </script>
 </body>
