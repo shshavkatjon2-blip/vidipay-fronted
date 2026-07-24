@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="vidipay-admin-build" content="frontend-admin-readiness-20260721-v22">
+  <meta name="vidipay-admin-build" content="frontend-backend-resilience-20260724-v23">
   <title>VidiPay Admin Panel</title>
-  <script src="./config.js?v=frontend-admin-readiness-20260721-v22"></script>
+  <script src="./config.js?v=frontend-backend-resilience-20260724-v23"></script>
   <style>
     :root {
       --bg: #080d10;
@@ -582,13 +582,24 @@
       return normalizeApiBaseUrl(window.location.origin);
     }
 
+    function isAdminLocalDevelopmentRuntime() {
+      const hostname = String(window.location.hostname || '').toLowerCase();
+      return window.location.protocol === 'file:'
+        || hostname === 'localhost'
+        || hostname === '127.0.0.1'
+        || hostname === '::1';
+    }
+
     function getAdminApiCandidates() {
-      return [...new Set([
-        window.VIDIPAY_API_BASE,
-        getCurrentOriginApiBase(),
-        localStorage.getItem('vidiPayAdminApiBase'),
-        ...ADMIN_API_FALLBACKS
-      ].map(normalizeApiBaseUrl).filter(Boolean))];
+      const candidates = isAdminLocalDevelopmentRuntime()
+        ? [
+          window.VIDIPAY_API_BASE,
+          getCurrentOriginApiBase(),
+          localStorage.getItem('vidiPayAdminApiBase'),
+          ...ADMIN_API_FALLBACKS
+        ]
+        : [ADMIN_PRODUCTION_API_BASE_URL];
+      return [...new Set(candidates.map(normalizeApiBaseUrl).filter(Boolean))];
     }
 
     let API_BASE_URL = getAdminApiCandidates()[0] || ADMIN_PRODUCTION_API_BASE_URL;
@@ -738,15 +749,35 @@
       let lastError = null;
 
       for (const baseUrl of candidates) {
+        const timeoutMs = Number(options.timeoutMs || 8000);
+        const { timeoutMs: _timeoutMs, signal: externalSignal, ...fetchOptions } = options;
+        if (externalSignal?.aborted) {
+          const cancelledError = new Error('Request cancelled.');
+          cancelledError.name = 'AbortError';
+          throw cancelledError;
+        }
+        const controller = new AbortController();
+        let timeoutTriggered = false;
+        const timer = setTimeout(() => {
+          timeoutTriggered = true;
+          controller.abort();
+        }, timeoutMs);
+        let externalAbortHandler = null;
+        if (externalSignal) {
+          externalAbortHandler = () => controller.abort();
+          externalSignal.addEventListener('abort', externalAbortHandler, { once: true });
+          if (externalSignal.aborted) externalAbortHandler();
+        }
         try {
           const res = await fetch(`${baseUrl}${path}`, {
             cache: 'no-store',
-            ...options,
+            ...fetchOptions,
             headers: {
               'Cache-Control': 'no-cache',
               'Pragma': 'no-cache',
-              ...(options.headers || {})
-            }
+              ...(fetchOptions.headers || {})
+            },
+            signal: controller.signal
           });
           const text = await res.text();
           let data = null;
@@ -767,8 +798,16 @@
           localStorage.setItem('vidiPayAdminApiBase', baseUrl);
           return data;
         } catch (err) {
-          lastError = err;
+          if (externalSignal?.aborted && !timeoutTriggered) throw err;
+          lastError = timeoutTriggered
+            ? new Error('Backend response timeout. Try again.')
+            : err;
           if (err.data) throw err;
+        } finally {
+          clearTimeout(timer);
+          if (externalSignal && externalAbortHandler) {
+            externalSignal.removeEventListener('abort', externalAbortHandler);
+          }
         }
       }
 

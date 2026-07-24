@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="frontend-admin-readiness-20260721-v22">
+    <meta name="vidipay-build" content="frontend-backend-resilience-20260724-v23">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=frontend-admin-readiness-20260721-v22"></script>
+    <script src="./config.js?v=frontend-backend-resilience-20260724-v23"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -3128,6 +3128,7 @@
 
         function friendlyErrorMessage(err) {
             const raw = String(err?.message || err || '').trim();
+            if (err?.code === 'REQUEST_CANCELLED') return '';
             if (!navigator.onLine) return runtimeText('offline');
             if (err?.name === 'AbortError' || /abort|timeout|timed out/i.test(raw)) return runtimeText('timeout');
             if (/failed to fetch|networkerror|load failed|connection/i.test(raw)) return runtimeText('backend_unavailable');
@@ -3156,10 +3157,13 @@
             document.documentElement.dataset.vidipayFrontendHealthAt = frontendNetworkStats.checked_at;
             document.documentElement.dataset.vidipayFrontendNetwork = frontendNetworkStats.ok ? 'ok' : 'warn';
             document.documentElement.dataset.vidipayFrontendNetworkAt = frontendNetworkStats.checked_at;
+            document.documentElement.dataset.vidipayApiBase = API_BASE_URL;
             if (document.getElementById('tonDepositModal')?.classList.contains('is-open')) {
+                const shouldSurfaceFailure = !frontendNetworkStats.ok
+                    && Number(frontendNetworkStats.consecutive_failure_count || 0) >= 2;
                 refreshPaymentRuntimeStrip(
-                    frontendNetworkStats.ok ? document.documentElement.dataset.vidipayPaymentUiState : 'retrying',
-                    frontendNetworkStats.ok ? '' : frontendNetworkStats.last_error
+                    shouldSurfaceFailure ? 'retrying' : document.documentElement.dataset.vidipayPaymentUiState,
+                    shouldSurfaceFailure ? frontendNetworkStats.last_error : ''
                 );
             }
             if (typeof updatePaymentRealTestReadiness === 'function') updatePaymentRealTestReadiness('frontend_health');
@@ -3176,9 +3180,25 @@
                 success_count: frontendNetworkStats.success_count + (ok ? 1 : 0),
                 failure_count: frontendNetworkStats.failure_count + (ok ? 0 : 1),
                 timeout_count: frontendNetworkStats.timeout_count + (timeout ? 1 : 0),
+                consecutive_failure_count: ok ? 0 : Number(frontendNetworkStats.consecutive_failure_count || 0) + 1,
                 last_path: String(path || ''),
                 last_latency_ms: latency,
                 last_error: ok ? '' : friendlyErrorMessage(err)
+            });
+        }
+
+        function createRequestCancelledError() {
+            const error = new Error('Request cancelled.');
+            error.name = 'AbortError';
+            error.code = 'REQUEST_CANCELLED';
+            return error;
+        }
+
+        function recordFrontendCancellation(path, startedAt) {
+            updateFrontendHealth({
+                inflight: Math.max(0, frontendNetworkStats.inflight - 1),
+                last_path: String(path || ''),
+                last_latency_ms: Math.max(0, Date.now() - Number(startedAt || Date.now()))
             });
         }
 
@@ -3408,12 +3428,9 @@
         }
         const TARGET_URL = "https://www.youtube.com/@MrBeast";
         const apiOverrideParam = pageParams.get('api');
-        if (apiOverrideParam && /^https:\/\/.+/i.test(apiOverrideParam)) {
-            safeStorageSet('vidiPayApiBase', apiOverrideParam.replace(/\/$/, ''));
-        }
         const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-admin-readiness-20260721-v22';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-backend-resilience-20260724-v23';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
@@ -3436,19 +3453,31 @@
             return normalizeApiBaseUrl(window.location.origin);
         }
 
+        function isLocalDevelopmentRuntime() {
+            const hostname = String(window.location.hostname || '').toLowerCase();
+            return window.location.protocol === 'file:'
+                || hostname === 'localhost'
+                || hostname === '127.0.0.1'
+                || hostname === '::1';
+        }
+
         function getApiBaseCandidates() {
-            const candidates = [
-                apiOverrideParam,
-                window.VIDIPAY_API_BASE,
-                getCurrentOriginApiBase(),
-                safeStorageGet('vidiPayApiBase'),
-                ...FALLBACK_API_BASE_URLS
-            ].map(normalizeApiBaseUrl).filter(Boolean);
-            return [...new Set(candidates)];
+            const localDevelopment = isLocalDevelopmentRuntime();
+            const candidates = localDevelopment
+                ? [
+                    apiOverrideParam,
+                    window.VIDIPAY_API_BASE,
+                    getCurrentOriginApiBase(),
+                    safeStorageGet('vidiPayApiBase'),
+                    ...FALLBACK_API_BASE_URLS
+                ]
+                : [PRODUCTION_API_BASE_URL];
+            return [...new Set(candidates.map(normalizeApiBaseUrl).filter(Boolean))];
         }
 
         let API_BASE_URL = getApiBaseCandidates()[0] || PRODUCTION_API_BASE_URL;
         safeStorageSet('vidiPayApiBase', API_BASE_URL);
+        document.documentElement.dataset.vidipayApiBase = API_BASE_URL;
         const MRBEAST_RANDOM_START_MAX = 40;
         const DAY_MS = 24 * 60 * 60 * 1000;
         const BONUS_PER_FRIEND = 9.99;
@@ -3481,7 +3510,17 @@
         let balance = appState.balance;
         let minutesWatched = appState.dailyMinutes;
         let earnedFromWatching = appState.dailyEarned;
-        let backendSettings = {};
+        const backendSettingsCacheKey = 'vidiPayBackendSettingsV1';
+        const backendSettingsCacheAtKey = 'vidiPayBackendSettingsV1At';
+        let backendSettings = (() => {
+            try {
+                const cached = JSON.parse(safeStorageGet(backendSettingsCacheKey) || '{}');
+                return cached && typeof cached === 'object' && !Array.isArray(cached) ? cached : {};
+            } catch (err) {
+                rememberFrontendError('settings_cache_parse', err);
+                return {};
+            }
+        })();
         let currentPaymentOrder = null;
         let watchTimerInterval = null;
         let pendingWatch = null;
@@ -3519,7 +3558,7 @@
         let paymentRuntimeLastSnapshot = '';
         let tonDepositOpenBusy = false;
         let backendSettingsInflight = null;
-        let backendSettingsFetchedAt = 0;
+        let backendSettingsFetchedAt = Number(safeStorageGet(backendSettingsCacheAtKey) || 0);
         let userSyncInflight = null;
         let userSyncFetchedAt = 0;
         let statsInflight = null;
@@ -3566,6 +3605,7 @@
             success_count: 0,
             failure_count: 0,
             timeout_count: 0,
+            consecutive_failure_count: 0,
             last_path: '',
             last_latency_ms: 0,
             last_error: '',
@@ -3617,19 +3657,28 @@
 
             for (const baseUrl of uniqueBases) {
                 const timeoutMs = Number(options.timeoutMs || 15000);
-                const { timeoutMs: _timeoutMs, ...fetchOptions } = options;
-                const externalSignal = fetchOptions.signal;
+                const { timeoutMs: _timeoutMs, signal: externalSignal, ...fetchOptions } = options;
+                if (externalSignal?.aborted) {
+                    const cancelledError = createRequestCancelledError();
+                    recordFrontendCancellation(path, requestStartedAt);
+                    throw cancelledError;
+                }
                 const controller = new AbortController();
-                const timer = setTimeout(() => controller.abort(), timeoutMs);
+                let timeoutTriggered = false;
+                let externallyAborted = false;
+                const timer = setTimeout(() => {
+                    timeoutTriggered = true;
+                    controller.abort();
+                }, timeoutMs);
                 const requestCacheMode = fetchOptions.cache || 'no-store';
                 let externalAbortHandler = null;
                 if (externalSignal) {
-                    if (externalSignal.aborted) {
+                    externalAbortHandler = () => {
+                        externallyAborted = true;
                         controller.abort();
-                    } else {
-                        externalAbortHandler = () => controller.abort();
-                        externalSignal.addEventListener('abort', externalAbortHandler, { once: true });
-                    }
+                    };
+                    externalSignal.addEventListener('abort', externalAbortHandler, { once: true });
+                    if (externalSignal.aborted) externalAbortHandler();
                 }
                 try {
                     const response = await fetch(`${baseUrl}${path}`, {
@@ -3667,7 +3716,18 @@
                     recordFrontendRequest(path, true, requestStartedAt);
                     return data;
                 } catch (err) {
-                    lastError = err;
+                    if (externallyAborted && !timeoutTriggered) {
+                        const cancelledError = createRequestCancelledError();
+                        recordFrontendCancellation(path, requestStartedAt);
+                        throw cancelledError;
+                    }
+                    if (timeoutTriggered) {
+                        lastError = new Error(runtimeText('timeout'));
+                        lastError.name = 'TimeoutError';
+                        lastError.code = 'REQUEST_TIMEOUT';
+                    } else {
+                        lastError = err;
+                    }
                     if (err.data) {
                         recordFrontendRequest(path, false, requestStartedAt, err);
                         throw err;
@@ -3681,6 +3741,8 @@
             }
 
             const finalError = new Error(friendlyErrorMessage(lastError || runtimeText('backend_unavailable')));
+            if (lastError?.code) finalError.code = lastError.code;
+            if (lastError?.name === 'TimeoutError') finalError.name = 'TimeoutError';
             recordFrontendRequest(path, false, requestStartedAt, finalError);
             throw finalError;
         }
@@ -3910,22 +3972,36 @@
             return userSyncInflight;
         }
 
-        async function loadBackendSettings(options = {}) {
-            const now = Date.now();
-            const hasSettings = backendSettings && Object.keys(backendSettings).length > 0;
-            if (!options.force && hasSettings && now - backendSettingsFetchedAt < 30000) return backendSettings;
-            if (backendSettingsInflight) return backendSettingsInflight;
+        function rememberBackendSettings(settings) {
+            if (!settings || typeof settings !== 'object' || Array.isArray(settings) || !Object.keys(settings).length) {
+                return backendSettings;
+            }
+            backendSettings = settings;
+            backendSettingsFetchedAt = Date.now();
+            safeStorageSet(backendSettingsCacheKey, JSON.stringify(backendSettings));
+            safeStorageSet(backendSettingsCacheAtKey, String(backendSettingsFetchedAt));
+            return backendSettings;
+        }
 
+        function refreshBackendSettings() {
+            if (backendSettingsInflight) return backendSettingsInflight;
             backendSettingsInflight = apiRequest('/settings', { timeoutMs: 8000 })
-                .then((settings) => {
-                    backendSettings = settings || {};
-                    backendSettingsFetchedAt = Date.now();
-                    return backendSettings;
-                })
+                .then(rememberBackendSettings)
                 .finally(() => {
                     backendSettingsInflight = null;
                 });
             return backendSettingsInflight;
+        }
+
+        async function loadBackendSettings(options = {}) {
+            const now = Date.now();
+            const hasSettings = backendSettings && Object.keys(backendSettings).length > 0;
+            if (!options.force && hasSettings && now - backendSettingsFetchedAt < 30000) return backendSettings;
+            if (!options.force && hasSettings) {
+                refreshBackendSettings().catch(err => rememberFrontendError('settings_background_refresh', err));
+                return backendSettings;
+            }
+            return refreshBackendSettings();
         }
 
         function normalizeClientCountryCode(value) {
@@ -5228,9 +5304,22 @@
                     updatePaymentRealTestReadiness(options.reason || (options.manual ? 'manual_status_success' : 'poll_status_success'));
                     return status;
                 } catch (err) {
-                    if (paymentStatusSignal.aborted) return latestPaymentStatus;
+                    if (paymentStatusSignal.aborted || err?.code === 'REQUEST_CANCELLED') return latestPaymentStatus;
                     if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
                     const message = friendlyErrorMessage(err);
+                    const hasCachedStatus = Object.keys(latestPaymentStatus || {}).length > 0
+                        || Boolean(getCachedPaymentStatus(false));
+                    const useQuietCachedState = Boolean(options.poll)
+                        && hasCachedStatus
+                        && paymentPollingFailures < 1;
+                    if (useQuietCachedState) {
+                        setPaymentUiState('cached');
+                        setPaymentPollingHealthy(false, { quiet: true });
+                        refreshPaymentRuntimeStrip('cached');
+                        updateFrontendHealth({ ok: false, last_error: message });
+                        updatePaymentRealTestReadiness(options.reason || 'status_cached_retry', { last_error: message });
+                        return latestPaymentStatus;
+                    }
                     const statusEl = document.getElementById('payment-status-text');
                     if (statusEl) statusEl.innerText = message;
                     if (depositStatusEl) depositStatusEl.innerText = message;
@@ -9645,7 +9734,7 @@
             return document.getElementById('watchModal')?.classList.contains('is-open');
         }
 
-        function setPaymentPollingHealthy(ok) {
+        function setPaymentPollingHealthy(ok, options = {}) {
             if (ok) {
                 paymentPollingFailures = 0;
                 paymentPollingDelayMs = 7000;
@@ -9654,7 +9743,7 @@
             }
             paymentPollingFailures = Math.min(6, paymentPollingFailures + 1);
             paymentPollingDelayMs = Math.min(60000, 7000 * Math.pow(1.75, paymentPollingFailures));
-            refreshPaymentRuntimeStrip(navigator.onLine ? 'retrying' : 'offline');
+            if (!options.quiet) refreshPaymentRuntimeStrip(navigator.onLine ? 'retrying' : 'offline');
         }
 
         function stableFrontendJitter(seed, maxMs = 2500) {

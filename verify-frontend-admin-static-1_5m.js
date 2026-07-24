@@ -4,7 +4,7 @@ const vm = require("vm");
 const crypto = require("crypto");
 
 const targetDir = path.resolve(process.argv[2] || __dirname);
-const expectedBuild = "frontend-admin-readiness-20260721-v22";
+const expectedBuild = "frontend-backend-resilience-20260724-v23";
 
 const expectedFiles = [
   "admin.html",
@@ -51,6 +51,9 @@ const appRequiredPatterns = [
   { name: "stale_watch_reward_guard", pattern: /expectedWatchRewardRevision[\s\S]*vidipayStaleStatsSkippedAt/ },
   { name: "fast_country_lookup", pattern: /firstValidCountryLookup[\s\S]*clientCountryDetectedAt/ },
   { name: "forced_vpn_tier_refresh", pattern: /refreshTierStatusFromLiveNetwork\(\{ force: true \}\)/ },
+  { name: "production_backend_lock", pattern: /isLocalDevelopmentRuntime[\s\S]*:\s*\[PRODUCTION_API_BASE_URL\]/ },
+  { name: "request_cancelled_not_failure", pattern: /REQUEST_CANCELLED[\s\S]*recordFrontendCancellation/ },
+  { name: "settings_stale_while_revalidate", pattern: /refreshBackendSettings[\s\S]*settings_background_refresh/ },
   { name: "youtube_end_auto_finalize", pattern: /PlayerState\.ENDED[\s\S]*finalizeWatchSession\(\)/ }
 ];
 
@@ -59,6 +62,8 @@ const adminRequiredPatterns = [
   { name: "admin_gram_ex_toncoin_scanner_panel", pattern: /Automatic Gram \(ex-Toncoin\) scanner/ },
   { name: "admin_payment_wallets_endpoint", pattern: /\/admin\/payment-wallets/ },
   { name: "admin_notification_endpoint", pattern: /\/admin\/notification\/send/ },
+  { name: "admin_production_backend_lock", pattern: /isAdminLocalDevelopmentRuntime[\s\S]*ADMIN_PRODUCTION_API_BASE_URL/ },
+  { name: "admin_request_timeout", pattern: /timeoutTriggered[\s\S]*Backend response timeout/ },
   { name: "admin_manual_backup_text", pattern: /Manual backup/ }
 ];
 
