@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="vidipay-admin-build" content="frontend-backend-resilience-20260724-v23">
+  <meta name="vidipay-admin-build" content="frontend-backend-resilience-20260724-v24">
   <title>VidiPay Admin Panel</title>
-  <script src="./config.js?v=frontend-backend-resilience-20260724-v23"></script>
+  <script src="./config.js?v=frontend-backend-resilience-20260724-v24"></script>
   <style>
     :root {
       --bg: #080d10;
@@ -772,11 +772,7 @@
           const res = await fetch(`${baseUrl}${path}`, {
             cache: 'no-store',
             ...fetchOptions,
-            headers: {
-              'Cache-Control': 'no-cache',
-              'Pragma': 'no-cache',
-              ...(fetchOptions.headers || {})
-            },
+            headers: fetchOptions.headers || {},
             signal: controller.signal
           });
           const text = await res.text();

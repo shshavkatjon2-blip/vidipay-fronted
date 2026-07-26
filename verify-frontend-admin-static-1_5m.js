@@ -4,7 +4,7 @@ const vm = require("vm");
 const crypto = require("crypto");
 
 const targetDir = path.resolve(process.argv[2] || __dirname);
-const expectedBuild = "frontend-backend-resilience-20260724-v23";
+const expectedBuild = "frontend-backend-resilience-20260724-v24";
 
 const expectedFiles = [
   "admin.html",
@@ -119,6 +119,16 @@ function checkRequiredPatterns(file, rules) {
   }
 }
 
+function checkCorsSafeRequestHeaders() {
+  const requestFiles = ["admin.html", "app-v3.html", "app-v4.html", "app-v5.html", "app-v6.html", "index.html"];
+  const unsafeHeaderPattern = /['"](?:Cache-Control|Pragma)['"]\s*:/i;
+  for (const file of requestFiles) {
+    if (unsafeHeaderPattern.test(readText(file))) {
+      fail(`${file} must not send cache-control request headers that require extra CORS permission`);
+    }
+  }
+}
+
 function checkInlineScripts(file) {
   const html = readText(file);
   const scriptRegex = /<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;
@@ -164,6 +174,7 @@ function main() {
   checkRequiredPatterns("app-v6.html", appRequiredPatterns);
   checkRequiredPatterns("index.html", appRequiredPatterns);
   checkRequiredPatterns("admin.html", adminRequiredPatterns);
+  checkCorsSafeRequestHeaders();
   checkAppEntryParity();
   for (const file of expectedFiles) {
     if (file.endsWith(".html") && !readText(file).includes(expectedBuild)) {

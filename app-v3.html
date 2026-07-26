@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="frontend-backend-resilience-20260724-v23">
+    <meta name="vidipay-build" content="frontend-backend-resilience-20260724-v24">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=frontend-backend-resilience-20260724-v23"></script>
+    <script src="./config.js?v=frontend-backend-resilience-20260724-v24"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -3430,7 +3430,7 @@
         const apiOverrideParam = pageParams.get('api');
         const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-backend-resilience-20260724-v23';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-backend-resilience-20260724-v24';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
@@ -3684,8 +3684,6 @@
                     const response = await fetch(`${baseUrl}${path}`, {
                         headers: {
                             'Content-Type': 'application/json',
-                            'Cache-Control': 'no-cache',
-                            'Pragma': 'no-cache',
                             ...(fetchOptions.headers || {})
                         },
                         ...fetchOptions,
