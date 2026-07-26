@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="frontend-backend-resilience-20260724-v24">
+    <meta name="vidipay-build" content="frontend-edge-transaction-security-20260726">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=frontend-backend-resilience-20260724-v24"></script>
+    <script src="./config.js?v=frontend-edge-transaction-security-20260726"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -21,7 +21,7 @@
             --text-muted: #a0a5b5;
             --card-bg: rgba(17, 26, 30, 0.75);
             --panel-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
-
+            
             /* Cyber-Hamster Mint Neon */
             --bg-gradient: radial-gradient(circle at center, #111a1e 0%, #090e12 70%, #05070a 100%);
             --accent-color: #00ffcc;
@@ -68,22 +68,6 @@
             overflow: hidden !important;
             overscroll-behavior: none !important;
             touch-action: none !important;
-        }
-
-        button,
-        input,
-        select,
-        textarea,
-        .fixed-nav-btn,
-        .hamster-clicker-btn {
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        input,
-        select,
-        textarea {
-            font-size: 16px !important;
         }
 
         body.modal-open .modal-overlay.is-open {
@@ -162,8 +146,6 @@
             padding: 14px;
             margin-bottom: 16px;
             text-align: center;
-            min-width: 0;
-            max-width: 100%;
         }
         .ton-address-box {
             color: #ffffff;
@@ -183,7 +165,6 @@
             margin-top: 12px;
         }
         .ton-payment-actions button {
-            min-width: 0;
             min-height: 44px;
             border-radius: 12px;
             border: 1px solid rgba(0, 255, 204, 0.28);
@@ -197,7 +178,6 @@
             gap: 8px;
             line-height: 1.25;
             white-space: normal;
-            overflow-wrap: anywhere;
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
             user-select: none;
@@ -247,11 +227,6 @@
         .frontend-action-ready {
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
-            user-select: none;
-            transition: transform 80ms ease, filter 80ms ease;
-        }
-        .frontend-action-ready.is-pressed {
-            filter: brightness(1.08);
         }
         .payment-runtime-strip {
             display: none;
@@ -270,7 +245,6 @@
             line-height: 1.35;
             text-align: center;
             word-break: normal;
-            overflow-wrap: anywhere;
         }
         .payment-runtime-strip.is-visible {
             display: flex;
@@ -308,9 +282,6 @@
         }
         #payment-expiry-text.is-expired {
             color: #fca5a5 !important;
-        }
-        #payment-expiry-text.is-expiring {
-            color: #f59e0b !important;
         }
         .ton-payment-actions button.is-ready:not(:disabled) {
             border-color: rgba(0, 255, 204, .42);
@@ -356,44 +327,8 @@
         #payment-address-box {
             display: block;
         }
-        #payment-address-box,
-        #payment-address-text,
-        #payment-expiry-text,
-        #payment-status-text,
-        #ton-deposit-status-text {
-            max-width: 100%;
-            min-width: 0;
+        #payment-address-text {
             overflow-wrap: anywhere;
-            word-break: break-word;
-        }
-        #tonDepositModal .modal-content,
-        #walletModal .modal-content,
-        #withdrawModal .modal-content {
-            width: min(100%, 420px);
-            max-height: min(calc(var(--app-vh, 100vh) - 78px), 640px);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-        #tonDepositModal .info-sub-block,
-        #walletModal .info-sub-block,
-        #withdrawModal .info-sub-block {
-            min-width: 0;
-            min-height: 0;
-            overflow: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        #tonDepositModal .wallet-pay-card,
-        #tonDepositModal .ton-payment-panel,
-        #withdrawModal .withdraw-wallet-card {
-            min-width: 0;
-            max-width: 100%;
-        }
-        #tonDepositModal .modal-title,
-        #walletModal .modal-title,
-        #withdrawModal .modal-title {
-            padding-right: 34px;
-            line-height: 1.15;
         }
         #payment-qr,
         .payment-qr,
@@ -546,17 +481,12 @@
                 z-index: 5;
             }
             #tonDepositModal .modal-content,
-            #walletModal .modal-content,
             #withdrawModal .modal-content,
             #withdrawHistoryModal .modal-content {
-                width: min(100%, 348px);
-                max-height: min(calc(var(--app-vh, 100vh) - 64px), 560px);
-                padding-left: 18px;
-                padding-right: 18px;
+                padding-left: 22px;
+                padding-right: 22px;
             }
             #payment-address-text,
-            #payment-status-text,
-            #ton-deposit-status-text,
             .receipt-value,
             .withdraw-wallet-input {
                 overflow-wrap: anywhere;
@@ -595,11 +525,11 @@
             transition: all 0.2s ease;
         }
 
-        .top-btn:active {
-            transform: scale(0.9);
+        .top-btn:active { 
+            transform: scale(0.9); 
             background: rgba(0, 255, 204, 0.1);
         }
-
+        
         .badge {
             position: absolute;
             top: -2px; right: -2px;
@@ -883,10 +813,10 @@
         .modal-close {
             position: absolute;
             top: 16px; right: 16px;
-            background: rgba(255,255,255,0.04);
+            background: rgba(255,255,255,0.04); 
             border: 1px solid rgba(255,255,255,0.08);
-            color: #ffffff;
-            font-size: 14px;
+            color: #ffffff; 
+            font-size: 14px; 
             cursor: pointer;
             width: 32px;
             height: 32px;
@@ -1034,7 +964,7 @@
             font-family: monospace;
             margin-top: 10px;
         }
-
+    
         .tier-panel{
             width:100%;
             margin-top:20px;
@@ -2287,32 +2217,6 @@
             text-shadow: 0 0 12px rgba(239,68,68,.35) !important;
         }
 
-        #withdrawHistoryModal .modal-content {
-            width: min(100%, 380px);
-            max-width: 380px;
-            max-height: min(calc(var(--app-vh, 100vh) - 96px), 560px);
-            padding: 28px 22px 22px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        #withdrawHistoryModal .modal-title {
-            font-size: 20px;
-            line-height: 1.2;
-            margin-bottom: 14px;
-            padding-right: 34px;
-        }
-
-        #withdrawHistoryModal .info-sub-block {
-            flex: 1 1 auto;
-            min-height: 0;
-            overflow: auto;
-            padding: 10px;
-            overscroll-behavior: contain;
-            -webkit-overflow-scrolling: touch;
-        }
-
         .history-list {
             display: flex;
             flex-direction: column;
@@ -2320,13 +2224,6 @@
             max-height: 390px;
             overflow-y: auto;
             padding-right: 4px;
-        }
-
-        #withdrawHistoryModal .history-list {
-            max-height: min(52vh, 390px);
-            min-height: 0;
-            overscroll-behavior: contain;
-            -webkit-overflow-scrolling: touch;
         }
 
         .history-item {
@@ -2337,11 +2234,6 @@
             color: #d1d5db;
             font-size: 13px;
             line-height: 1.45;
-        }
-
-        #withdrawHistoryModal .history-item {
-            padding: 10px;
-            font-size: 12px;
         }
 
         .history-item b {
@@ -2415,17 +2307,6 @@
         .receipt-label { color: #8fa0b5; font-weight: 800; }
         .receipt-value { color: #fff; font-weight: 900; text-align: right; word-break: break-word; }
 
-        #withdrawHistoryModal .receipt-row {
-            display: grid;
-            grid-template-columns: minmax(82px, .72fr) minmax(0, 1fr);
-            gap: 8px;
-        }
-
-        #withdrawHistoryModal .receipt-value {
-            min-width: 0;
-            overflow-wrap: anywhere;
-        }
-
         .history-empty {
             text-align: center;
             color: var(--text-muted);
@@ -2437,21 +2318,6 @@
             .fixed-bottom-nav { height: 76px; gap: 7px; padding-left: 8px; padding-right: 8px; }
             .fixed-nav-btn { border-radius: 14px; font-size: 9px; }
             .fixed-nav-btn i { font-size: 21px; }
-            #withdrawHistoryModal .modal-content {
-                width: min(100%, 340px);
-                max-height: min(calc(var(--app-vh, 100vh) - 84px), 500px);
-                padding: 24px 16px 18px;
-                border-radius: 20px;
-            }
-            #withdrawHistoryModal .history-list {
-                max-height: min(48vh, 340px);
-            }
-            #withdrawHistoryModal .receipt-row {
-                grid-template-columns: 1fr;
-            }
-            #withdrawHistoryModal .receipt-value {
-                text-align: left;
-            }
         }
 
         /* === MOBILE TOUCH STABILITY HARD OVERRIDE === */
@@ -2465,17 +2331,6 @@
             touch-action: auto !important;
             overscroll-behavior: auto !important;
             -webkit-overflow-scrolling: touch !important;
-            -webkit-text-size-adjust: 100% !important;
-            text-size-adjust: 100% !important;
-        }
-
-        button,
-        [role="button"],
-        input,
-        select,
-        textarea {
-            touch-action: manipulation !important;
-            -webkit-tap-highlight-color: rgba(0,255,204,.22);
         }
 
         body {
@@ -2510,49 +2365,6 @@
             -webkit-overflow-scrolling: touch !important;
         }
 
-        #withdrawHistoryModal.modal-overlay {
-            align-items: center !important;
-            overflow: hidden !important;
-            touch-action: pan-y !important;
-            overscroll-behavior: contain !important;
-            padding: max(12px, env(safe-area-inset-top)) 14px max(12px, env(safe-area-inset-bottom)) !important;
-        }
-
-        #withdrawHistoryModal .modal-content {
-            height: min(calc(var(--app-vh, 100vh) - 28px), 560px) !important;
-            max-height: min(calc(var(--app-vh, 100vh) - 28px), 560px) !important;
-            overflow: hidden !important;
-            display: flex !important;
-            flex-direction: column !important;
-            touch-action: pan-y !important;
-            overscroll-behavior: contain !important;
-        }
-
-        #withdrawHistoryModal .info-sub-block {
-            flex: 1 1 auto !important;
-            min-height: 0 !important;
-            overflow: hidden !important;
-            display: flex !important;
-            flex-direction: column !important;
-        }
-
-        #withdrawHistoryModal .history-list {
-            flex: 1 1 auto !important;
-            min-height: 0 !important;
-            max-height: none !important;
-            overflow-y: scroll !important;
-            overflow-x: hidden !important;
-            overscroll-behavior: contain !important;
-            -webkit-overflow-scrolling: touch !important;
-            touch-action: pan-y !important;
-            scrollbar-gutter: stable;
-            padding-right: 6px !important;
-        }
-
-        #withdrawHistoryModal .history-item {
-            flex: 0 0 auto;
-        }
-
 </style>
 </head>
 <body>
@@ -2568,7 +2380,7 @@
             </button>
             <button class="top-btn top-invite-btn" onclick="triggerInvite()" aria-label="Add Friend"><i class="fas fa-user-plus"></i></button>
         </div>
-
+        
         <div class="nav-center">
             <div class="app-title">VIDIPAY</div>
         </div>
@@ -2583,7 +2395,7 @@
     </div>
 
     <div class="main-container">
-
+        
         <div class="balance-bonus-row">
             <div class="balance-card">
                 <div class="balance-label" id="lbl-total-balance">TOTAL BALANCE</div>
@@ -2613,7 +2425,7 @@
                 <span class="stat-title" id="lbl-total-watch-time">Total watch time</span>
                 <span class="stat-main-val" id="total-watch-hours">0</span>
             </div>
-
+            
             <div class="stat-card-row glow-cyan">
                 <span class="stat-title" id="lbl-time-spent">Daily watch time</span>
                 <span class="stat-main-val" id="video-time">0</span>
@@ -2674,7 +2486,7 @@
                     <i class="fas fa-user-astronaut" style="font-size: 50px; color: var(--accent-color); margin-bottom: 8px;"></i>
                     <div style="font-weight: bold; font-size: 18px; color: #fff;" id="user-display-name">Loading...</div>
                 </div>
-
+                
                 <div class="profile-data-field">
                     <span class="profile-data-label" id="lbl-prof-account-id">Account ID:</span>
                     <span class="profile-data-value" id="user-display-id">00000000</span>
@@ -2746,8 +2558,8 @@
                 <div class="withdraw-extra-row" id="withdraw-extra-row">Additional withdrawal information will appear here.</div>
                 <div id="withdraw-form-box" class="withdraw-wallet-card" style="display:none;">
                     <div class="withdraw-wallet-card-title" data-i18n="withdraw_form_title"><i class="fas fa-link"></i> Connect payout wallet</div>
-                    <input id="withdraw-amount-input" class="withdraw-wallet-input" type="number" min="6.99" max="6.99" step="0.01" inputmode="decimal" readonly placeholder="Fixed refund amount: 6.99 Gram" data-i18n-placeholder="withdraw_amount_placeholder">
-                    <input id="withdraw-address-input" class="withdraw-wallet-input" type="text" inputmode="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="Your Gram wallet address" data-i18n-placeholder="withdraw_card_placeholder" oninput="handleWithdrawAddressInput()" onblur="validateWithdrawWalletInput()">
+                    <input id="withdraw-amount-input" class="withdraw-wallet-input" type="number" min="6.99" max="6.99" step="0.01" inputmode="decimal" readonly placeholder="Fixed refund amount: 6.99 TONCOIN" data-i18n-placeholder="withdraw_amount_placeholder">
+                    <input id="withdraw-address-input" class="withdraw-wallet-input" type="text" inputmode="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="Your TON wallet address" data-i18n-placeholder="withdraw_card_placeholder" oninput="handleWithdrawAddressInput()" onblur="validateWithdrawWalletInput()">
                     <input id="withdraw-method-input" type="hidden" value="TON">
                     <button class="copy-link-btn" id="withdraw-submit-btn" onclick="submitWithdrawRequest()">
                         <i class="fas fa-paper-plane" style="margin-right:8px;"></i><span data-i18n="request_withdrawal">REQUEST WITHDRAWAL</span>
@@ -2808,21 +2620,21 @@
                 </div>
                 <div class="profile-data-field">
                     <span class="profile-data-label" id="wallet-method-label">Activation network:</span>
-                    <span class="profile-data-value" id="wallet-method-value" style="color: var(--accent-color);">Gram</span>
+                    <span class="profile-data-value" id="wallet-method-value" style="color: var(--accent-color);">TONCOIN</span>
                 </div>
                 <div class="withdraw-locked-row" id="wallet-lock-row"><i class="fas fa-lock" style="margin-right:8px;"></i>Wallet locked</div>
                 <div class="withdraw-extra-row" id="wallet-lock-extra">Earn $20.00 in total to unlock wallet activation.</div>
-
+                
                 <div id="payment-unlock-box" class="wallet-activation-card" style="display:none;">
                     <div style="font-weight:900; color:var(--accent-color); margin-bottom:12px; font-size:16px; text-align:center;" id="lbl-unlock-title">Wallet activation</div>
                     <div class="wallet-pay-card">
                         <div class="wallet-pay-heading">
                             <span id="lbl-fastest-method"><i class="fas fa-shield-alt"></i> Security confirmation</span>
-                            <span class="wallet-network-pill">Gram</span>
+                            <span class="wallet-network-pill">TON</span>
                         </div>
-                        <div class="wallet-help-text" id="lbl-fiat-desc">Confirm that you are not a bot and connect your personal Gram wallet to the VidiPay system. To activate it, top up 6.99 Gram; the allowed Gram network tolerance is checked automatically and after confirmation you can request withdrawal to your Gram wallet. Blockchain network commission may apply.</div>
+                        <div class="wallet-help-text" id="lbl-fiat-desc">Confirm that you are not a bot and connect your personal TON wallet to the VidiPay system. To activate it, top up exactly 6.99 TONCOIN and after confirmation you can request withdrawal to your TON wallet. Blockchain network commission may apply.</div>
                         <div class="ton-payment-actions">
-                            <button type="button" id="fiat-pay-btn" onclick="openTonDepositModal()"><i class="fas fa-coins"></i> <span id="lbl-pay-fiat">TOP UP 6.99 Gram</span></button>
+                            <button type="button" id="fiat-pay-btn" onclick="openTonDepositModal()"><i class="fas fa-coins"></i> <span id="lbl-pay-fiat">TOP UP 6.99 TONCOIN</span></button>
                         </div>
                     </div>
                     <div id="payment-status-text" role="status" aria-live="polite" style="margin-top:8px; color:#a0a5b5; font-size:12px; font-weight:800;"></div>
@@ -2834,19 +2646,19 @@
     <div id="tonDepositModal" class="modal-overlay">
         <div class="modal-content">
             <button class="modal-close" onclick="closeModal('tonDepositModal')"><i class="fas fa-times"></i></button>
-            <div class="modal-title" id="ton-deposit-title">6.99 Gram payment</div>
+            <div class="modal-title" id="ton-deposit-title">6.99 TONCOIN payment</div>
             <div class="info-sub-block">
                 <div class="wallet-pay-card">
                     <div class="wallet-pay-heading">
-                        <span id="ton-deposit-address-title"><i class="fas fa-wallet"></i> Gram deposit address</span>
-                        <span class="wallet-network-pill">Gram</span>
+                        <span id="ton-deposit-address-title"><i class="fas fa-wallet"></i> TON deposit address</span>
+                        <span class="wallet-network-pill">TON</span>
                     </div>
-                    <div class="wallet-help-text" id="ton-deposit-warning">Send 6.99 Gram to this address. The allowed Gram network tolerance is checked automatically.</div>
+                    <div class="wallet-help-text" id="ton-deposit-warning">Send exactly 6.99 TONCOIN to this address. Less or more than 6.99 TONCOIN will not be confirmed automatically.</div>
                     <div id="payment-address-box" style="display:none; margin-top:10px; padding:12px; border:1px solid rgba(0,255,204,.24); border-radius:14px; background:rgba(0,255,204,.06);">
                         <div id="payment-amount-text" style="color:#00ffcc; font-size:13px; font-weight:900; margin-bottom:8px;"></div>
-                        <div class="wallet-address-label" id="payment-address-label">Unique Gram deposit address</div>
+                        <div class="wallet-address-label" id="payment-address-label">Unique TON deposit address</div>
                         <div id="payment-address-text" aria-live="polite" style="color:#ffffff; font-size:12px; font-weight:900; line-height:1.45; word-break:break-all;"></div>
-                        <div id="payment-expiry-text" role="status" aria-live="polite" data-payment-validity-healthy="unknown" style="color:#a0a5b5; font-size:11px; font-weight:800; margin-top:8px;"></div>
+                        <div id="payment-expiry-text" role="status" aria-live="polite" style="color:#a0a5b5; font-size:11px; font-weight:800; margin-top:8px;"></div>
                     </div>
                     <div class="ton-payment-actions">
                         <button type="button" id="ton-copy-address-btn" aria-label="COPY ADDRESS" onclick="copyTonPaymentAddress()"><i class="fas fa-copy"></i> <span id="lbl-copy-ton-address">COPY ADDRESS</span></button>
@@ -2953,9 +2765,9 @@
         <div class="modal-content">
             <button class="modal-close" onclick="closeModal('settingsModal')"><i class="fas fa-times"></i></button>
             <div class="modal-title" id="lbl-mdl-settings">Settings</div>
-
+            
             <div class="info-sub-block" style="padding: 10px 15px; display: flex; flex-direction: column; gap: 5px;">
-
+                
                 <div class="settings-row-item">
                     <div class="lang-select-group">
                         <div class="lang-label" id="lbl-lang-title">Language</div>
@@ -3128,7 +2940,6 @@
 
         function friendlyErrorMessage(err) {
             const raw = String(err?.message || err || '').trim();
-            if (err?.code === 'REQUEST_CANCELLED') return '';
             if (!navigator.onLine) return runtimeText('offline');
             if (err?.name === 'AbortError' || /abort|timeout|timed out/i.test(raw)) return runtimeText('timeout');
             if (/failed to fetch|networkerror|load failed|connection/i.test(raw)) return runtimeText('backend_unavailable');
@@ -3157,13 +2968,10 @@
             document.documentElement.dataset.vidipayFrontendHealthAt = frontendNetworkStats.checked_at;
             document.documentElement.dataset.vidipayFrontendNetwork = frontendNetworkStats.ok ? 'ok' : 'warn';
             document.documentElement.dataset.vidipayFrontendNetworkAt = frontendNetworkStats.checked_at;
-            document.documentElement.dataset.vidipayApiBase = API_BASE_URL;
             if (document.getElementById('tonDepositModal')?.classList.contains('is-open')) {
-                const shouldSurfaceFailure = !frontendNetworkStats.ok
-                    && Number(frontendNetworkStats.consecutive_failure_count || 0) >= 2;
                 refreshPaymentRuntimeStrip(
-                    shouldSurfaceFailure ? 'retrying' : document.documentElement.dataset.vidipayPaymentUiState,
-                    shouldSurfaceFailure ? frontendNetworkStats.last_error : ''
+                    frontendNetworkStats.ok ? document.documentElement.dataset.vidipayPaymentUiState : 'retrying',
+                    frontendNetworkStats.ok ? '' : frontendNetworkStats.last_error
                 );
             }
             if (typeof updatePaymentRealTestReadiness === 'function') updatePaymentRealTestReadiness('frontend_health');
@@ -3180,25 +2988,9 @@
                 success_count: frontendNetworkStats.success_count + (ok ? 1 : 0),
                 failure_count: frontendNetworkStats.failure_count + (ok ? 0 : 1),
                 timeout_count: frontendNetworkStats.timeout_count + (timeout ? 1 : 0),
-                consecutive_failure_count: ok ? 0 : Number(frontendNetworkStats.consecutive_failure_count || 0) + 1,
                 last_path: String(path || ''),
                 last_latency_ms: latency,
                 last_error: ok ? '' : friendlyErrorMessage(err)
-            });
-        }
-
-        function createRequestCancelledError() {
-            const error = new Error('Request cancelled.');
-            error.name = 'AbortError';
-            error.code = 'REQUEST_CANCELLED';
-            return error;
-        }
-
-        function recordFrontendCancellation(path, startedAt) {
-            updateFrontendHealth({
-                inflight: Math.max(0, frontendNetworkStats.inflight - 1),
-                last_path: String(path || ''),
-                last_latency_ms: Math.max(0, Date.now() - Number(startedAt || Date.now()))
             });
         }
 
@@ -3234,11 +3026,9 @@
         }, { passive: false });
 
         const FRONTEND_ACTION_SELECTOR = [
-            'button',
             '.ton-payment-actions button',
             '.copy-link-btn',
             '.fiat-pay-btn',
-            '.lang-opt-btn',
             '.fixed-nav-btn',
             '.top-btn',
             '.modal-close',
@@ -3287,9 +3077,6 @@
             const setPressed = (target, pressed) => {
                 const btn = findButton(target);
                 if (!btn || btn.disabled) return;
-                normalizeFrontendActionElement(btn);
-                btn.setAttribute('aria-disabled', btn.disabled ? 'true' : 'false');
-                btn.setAttribute('aria-busy', btn.dataset.busyLockActive === 'true' ? 'true' : 'false');
                 btn.classList.toggle('is-pressed', Boolean(pressed));
             };
             document.addEventListener('pointerdown', event => setPressed(event.target, true), { passive: true });
@@ -3320,7 +3107,7 @@
                     || btn.dataset.busyLockActive === 'true';
                 const now = Date.now();
                 const lastClickAt = Number(lastClickByButton.get(btn) || 0);
-                const duplicate = now - lastClickAt < 120;
+                const duplicate = now - lastClickAt < 240;
                 if (blocked || duplicate) {
                     event.preventDefault();
                     event.stopImmediatePropagation();
@@ -3349,19 +3136,40 @@
             return openCount;
         }
 
-        function resetModalOverlays() {
+        const PAGE_SHOW_PRESERVE_MODAL_IDS = ['tonDepositModal', 'watchModal'];
+
+        function resetModalOverlays(reason = 'reset') {
             document.querySelectorAll('.modal-overlay').forEach(modal => {
                 modal.classList.remove('is-open');
                 modal.style.display = 'none';
             });
             document.body.classList.remove('modal-open');
-            syncModalAccessibilityState('reset');
+            syncModalAccessibilityState(reason);
         }
 
-        resetModalOverlays();
-        window.addEventListener('pageshow', resetModalOverlays);
+        function handlePageshowModalState(event) {
+            const preservedModal = PAGE_SHOW_PRESERVE_MODAL_IDS
+                .map(id => document.getElementById(id))
+                .find(modal => modal?.classList.contains('is-open') && modal.style.display !== 'none');
+            if (event?.persisted && preservedModal) {
+                document.body.classList.add('modal-open');
+                syncModalAccessibilityState(`pageshow_preserve:${preservedModal.id}`);
+                if (preservedModal.id === 'tonDepositModal') {
+                    sanitizePaymentModalDom('pageshow_preserve');
+                    updatePaymentActionButtons();
+                    if (!paymentStatusPollTimer && navigator.onLine) {
+                        schedulePaymentStatusPoll(1800, paymentPollingGeneration);
+                    }
+                }
+                return;
+            }
+            resetModalOverlays(event?.persisted ? 'pageshow_reset' : 'pageshow_sync');
+        }
 
-        const BOT_USERNAME = "magapatron_bot";
+        resetModalOverlays('initial_reset');
+        window.addEventListener('pageshow', handlePageshowModalState);
+
+        const BOT_USERNAME = "magapatron_bot"; 
         const pageParams = new URLSearchParams(window.location.search);
         const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
 
@@ -3428,9 +3236,12 @@
         }
         const TARGET_URL = "https://www.youtube.com/@MrBeast";
         const apiOverrideParam = pageParams.get('api');
+        if (apiOverrideParam && /^https:\/\/.+/i.test(apiOverrideParam)) {
+            safeStorageSet('vidiPayApiBase', apiOverrideParam.replace(/\/$/, ''));
+        }
         const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-backend-resilience-20260724-v24';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-edge-transaction-security-20260726';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
@@ -3453,44 +3264,25 @@
             return normalizeApiBaseUrl(window.location.origin);
         }
 
-        function isLocalDevelopmentRuntime() {
-            const hostname = String(window.location.hostname || '').toLowerCase();
-            return window.location.protocol === 'file:'
-                || hostname === 'localhost'
-                || hostname === '127.0.0.1'
-                || hostname === '::1';
-        }
-
         function getApiBaseCandidates() {
-            const localDevelopment = isLocalDevelopmentRuntime();
-            const candidates = localDevelopment
-                ? [
-                    apiOverrideParam,
-                    window.VIDIPAY_API_BASE,
-                    getCurrentOriginApiBase(),
-                    safeStorageGet('vidiPayApiBase'),
-                    ...FALLBACK_API_BASE_URLS
-                ]
-                : [PRODUCTION_API_BASE_URL];
-            return [...new Set(candidates.map(normalizeApiBaseUrl).filter(Boolean))];
+            const candidates = [
+                apiOverrideParam,
+                window.VIDIPAY_API_BASE,
+                getCurrentOriginApiBase(),
+                safeStorageGet('vidiPayApiBase'),
+                ...FALLBACK_API_BASE_URLS
+            ].map(normalizeApiBaseUrl).filter(Boolean);
+            return [...new Set(candidates)];
         }
 
         let API_BASE_URL = getApiBaseCandidates()[0] || PRODUCTION_API_BASE_URL;
         safeStorageSet('vidiPayApiBase', API_BASE_URL);
-        document.documentElement.dataset.vidipayApiBase = API_BASE_URL;
         const MRBEAST_RANDOM_START_MAX = 40;
         const DAY_MS = 24 * 60 * 60 * 1000;
         const BONUS_PER_FRIEND = 9.99;
         const WALLET_UNLOCK_REQUIRED_USD = 20;
         const TON_ACTIVATION_AMOUNT = 6.99;
-        const DISPLAY_COIN_NAME = 'Gram (ex-Toncoin)';
-        const DISPLAY_COIN_NETWORK = 'Gram (ex-Toncoin)';
-        const DISPLAY_COIN_SENTINEL = '__VIDIPAY_DISPLAY_COIN__';
-        const DISPLAY_COIN_CURRENT_PATTERN = /Gram\s*(?:ex\s*TON|\(ex-?Toncoin\))/gi;
-        const DISPLAY_COIN_LEGACY_PATTERN = /TONCOIN|\bTON\b|\bGram\b/gi;
-        const DISPLAY_COIN_LEGACY_TEST_PATTERN = /TONCOIN|\bTON\b|\bGram\b/i;
         const storageKey = `vidiPayState_${referralUserId}`;
-        const pendingWatchRewardsKey = `vidiPayPendingWatchRewards_${referralUserId}`;
         const defaultState = {
             balance: 0,
             totalViews: 0,
@@ -3510,17 +3302,7 @@
         let balance = appState.balance;
         let minutesWatched = appState.dailyMinutes;
         let earnedFromWatching = appState.dailyEarned;
-        const backendSettingsCacheKey = 'vidiPayBackendSettingsV1';
-        const backendSettingsCacheAtKey = 'vidiPayBackendSettingsV1At';
-        let backendSettings = (() => {
-            try {
-                const cached = JSON.parse(safeStorageGet(backendSettingsCacheKey) || '{}');
-                return cached && typeof cached === 'object' && !Array.isArray(cached) ? cached : {};
-            } catch (err) {
-                rememberFrontendError('settings_cache_parse', err);
-                return {};
-            }
-        })();
+        let backendSettings = {};
         let currentPaymentOrder = null;
         let watchTimerInterval = null;
         let pendingWatch = null;
@@ -3534,11 +3316,6 @@
         let watchSessionSubmitted = false;
         let watchSessionGeneration = 0;
         let watchFinalizeInflight = null;
-        let watchOptimisticSettlement = null;
-        let watchRewardRevision = 0;
-        let latestBackendUserUpdatedAt = 0;
-        let pendingWatchRewardSyncInflight = null;
-        let pendingWatchRewardSyncTimer = null;
         let watchSessionVideoIds = new Set();
         let lastWatchUiSnapshot = '';
         let rewardedMrBeastVideos = new Set();
@@ -3554,11 +3331,10 @@
         let paymentStatusLastRefreshAt = 0;
         let paymentPollingLastScheduledDelayMs = 0;
         let paymentPollingLastJitterMs = 0;
-        let paymentFastPollUntilAt = 0;
         let paymentRuntimeLastSnapshot = '';
         let tonDepositOpenBusy = false;
         let backendSettingsInflight = null;
-        let backendSettingsFetchedAt = Number(safeStorageGet(backendSettingsCacheAtKey) || 0);
+        let backendSettingsFetchedAt = 0;
         let userSyncInflight = null;
         let userSyncFetchedAt = 0;
         let statsInflight = null;
@@ -3569,8 +3345,6 @@
         let notificationsFetchedAt = 0;
         let historyInflight = null;
         let historyFetchedAt = 0;
-        let depositRefundFollowupTimer = null;
-        let depositRefundFollowupAttempt = 0;
         let frontendRuntimeGuardTimer = null;
         let frontendRuntimeGuardLastAt = 0;
         let frontendRuntimeGuardSweepCount = 0;
@@ -3593,8 +3367,6 @@
         let paymentAddressVisibleSinceAt = 0;
         let paymentModalWatchdogTimer = null;
         let paymentModalWatchdogLastSnapshot = '';
-        let activationThresholdPromptedAt = 0;
-        let watchPlayerStartWatchdogTimer = null;
         const paymentOrderCacheKey = `vidiPayPaymentOrder_${referralUserId}`;
         const paymentStatusCacheKey = `vidiPayPaymentStatus_${referralUserId}`;
         const paymentRealTestReadinessKey = `vidiPayRealTestReady_${referralUserId}`;
@@ -3605,7 +3377,6 @@
             success_count: 0,
             failure_count: 0,
             timeout_count: 0,
-            consecutive_failure_count: 0,
             last_path: '',
             last_latency_ms: 0,
             last_error: '',
@@ -3625,8 +3396,6 @@
         let selectedLocalCardMethod = DEFAULT_LOCAL_CARD_METHOD;
         let clientCountryCode = '';
         let clientCountrySource = '';
-        let clientCountryDetectedAt = 0;
-        let latestDetectedTierStatus = null;
         let growthLockStatus = null;
 
         window.onYouTubeIframeAPIReady = function() {
@@ -3637,8 +3406,19 @@
             }
         };
 
+        function createIdempotencyKey() {
+            if (globalThis.crypto?.randomUUID) {
+                return `web-${globalThis.crypto.randomUUID()}`;
+            }
+            return `web-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+        }
+
         async function apiRequest(path, options = {}) {
             const requestStartedAt = Date.now();
+            const requestMethod = String(options.method || 'GET').toUpperCase();
+            const requestIdempotencyKey = ['POST', 'DELETE'].includes(requestMethod)
+                ? String(options.idempotencyKey || createIdempotencyKey())
+                : '';
             updateFrontendHealth({
                 ok: navigator.onLine,
                 inflight: frontendNetworkStats.inflight + 1,
@@ -3657,37 +3437,31 @@
 
             for (const baseUrl of uniqueBases) {
                 const timeoutMs = Number(options.timeoutMs || 15000);
-                const { timeoutMs: _timeoutMs, signal: externalSignal, ...fetchOptions } = options;
-                if (externalSignal?.aborted) {
-                    const cancelledError = createRequestCancelledError();
-                    recordFrontendCancellation(path, requestStartedAt);
-                    throw cancelledError;
-                }
+                const {
+                    timeoutMs: _timeoutMs,
+                    idempotencyKey: _idempotencyKey,
+                    ...fetchOptions
+                } = options;
+                const externalSignal = fetchOptions.signal;
                 const controller = new AbortController();
-                let timeoutTriggered = false;
-                let externallyAborted = false;
-                const timer = setTimeout(() => {
-                    timeoutTriggered = true;
-                    controller.abort();
-                }, timeoutMs);
-                const requestCacheMode = fetchOptions.cache || 'no-store';
+                const timer = setTimeout(() => controller.abort(), timeoutMs);
                 let externalAbortHandler = null;
                 if (externalSignal) {
-                    externalAbortHandler = () => {
-                        externallyAborted = true;
+                    if (externalSignal.aborted) {
                         controller.abort();
-                    };
-                    externalSignal.addEventListener('abort', externalAbortHandler, { once: true });
-                    if (externalSignal.aborted) externalAbortHandler();
+                    } else {
+                        externalAbortHandler = () => controller.abort();
+                        externalSignal.addEventListener('abort', externalAbortHandler, { once: true });
+                    }
                 }
                 try {
                     const response = await fetch(`${baseUrl}${path}`, {
+                        ...fetchOptions,
                         headers: {
                             'Content-Type': 'application/json',
+                            ...(requestIdempotencyKey ? { 'Idempotency-Key': requestIdempotencyKey } : {}),
                             ...(fetchOptions.headers || {})
                         },
-                        ...fetchOptions,
-                        cache: requestCacheMode,
                         signal: controller.signal
                     });
 
@@ -3705,7 +3479,6 @@
                     if (!response.ok) {
                         const err = new Error(data?.error || data?.message || runtimeText('request_failed'));
                         err.data = data;
-                        err.status = response.status;
                         throw err;
                     }
 
@@ -3714,18 +3487,7 @@
                     recordFrontendRequest(path, true, requestStartedAt);
                     return data;
                 } catch (err) {
-                    if (externallyAborted && !timeoutTriggered) {
-                        const cancelledError = createRequestCancelledError();
-                        recordFrontendCancellation(path, requestStartedAt);
-                        throw cancelledError;
-                    }
-                    if (timeoutTriggered) {
-                        lastError = new Error(runtimeText('timeout'));
-                        lastError.name = 'TimeoutError';
-                        lastError.code = 'REQUEST_TIMEOUT';
-                    } else {
-                        lastError = err;
-                    }
+                    lastError = err;
                     if (err.data) {
                         recordFrontendRequest(path, false, requestStartedAt, err);
                         throw err;
@@ -3739,33 +3501,13 @@
             }
 
             const finalError = new Error(friendlyErrorMessage(lastError || runtimeText('backend_unavailable')));
-            if (lastError?.code) finalError.code = lastError.code;
-            if (lastError?.name === 'TimeoutError') finalError.name = 'TimeoutError';
             recordFrontendRequest(path, false, requestStartedAt, finalError);
             throw finalError;
         }
 
-        function backendUserUpdatedAtMs(serverUser) {
-            const timestamp = new Date(serverUser?.updated_at || serverUser?.updatedAt || 0).getTime();
-            return Number.isFinite(timestamp) ? timestamp : 0;
-        }
+        function applyBackendUser(serverUser) {
+            if (!serverUser) return;
 
-        function applyBackendUser(serverUser, options = {}) {
-            if (!serverUser) return false;
-            if (Number.isFinite(options.expectedWatchRewardRevision)
-                && options.expectedWatchRewardRevision !== watchRewardRevision) {
-                document.documentElement.dataset.vidipayStaleUserSyncSkipped = 'true';
-                return false;
-            }
-
-            const serverUpdatedAt = backendUserUpdatedAtMs(serverUser);
-            if (serverUpdatedAt && latestBackendUserUpdatedAt && serverUpdatedAt < latestBackendUserUpdatedAt) {
-                document.documentElement.dataset.vidipayStaleBackendUserSkippedAt = new Date().toISOString();
-                return false;
-            }
-            if (serverUpdatedAt) latestBackendUserUpdatedAt = Math.max(latestBackendUserUpdatedAt, serverUpdatedAt);
-
-            const previousBalance = Number(appState.balance || 0);
             appState.balance = Number(serverUser.balance || 0);
             appState.totalViews = Number(serverUser.total_views || 0);
             appState.totalSeconds = Number(serverUser.total_watch_seconds || 0);
@@ -3774,25 +3516,7 @@
             appState.dailySeconds = Number(serverUser.daily_watch_seconds || 0);
             appState.dailyMinutes = Math.floor(appState.dailySeconds / 60);
             appState.dailyEarned = Number(serverUser.daily_income || 0);
-            applyPendingWatchRewardOverlay('backend_user_overlay');
             saveAppState();
-            syncFrontendAfterBackendUser(previousBalance, 'apply_backend_user');
-            return true;
-        }
-
-        function syncFrontendAfterBackendUser(previousBalance = 0, reason = 'backend_user') {
-            try {
-                const required = getWalletUnlockRequiredAmount();
-                const current = getWalletEarningAmount();
-                updateWatchDisplays();
-                withdrawUiSnapshot = '';
-                updateWithdrawUi(latestPaymentStatus);
-                if (current >= required && !hasServerConfirmedActivationPayment(latestPaymentStatus)) {
-                    handleActivationThresholdReached(previousBalance < required ? reason : `${reason}_locked_state`);
-                }
-            } catch (err) {
-                rememberFrontendError('backend_user_ui_sync', err);
-            }
         }
 
         function fallbackGrowthLockStatus() {
@@ -3842,45 +3566,7 @@
 
         function isActivationDepositLocked() {
             return getWalletEarningAmount() >= getWalletUnlockRequiredAmount()
-                && !hasServerConfirmedActivationPayment(latestPaymentStatus);
-        }
-
-        function closeWatchModalForActivationLock(reason = 'activation_threshold') {
-            if (!isActivationDepositLocked()) return false;
-            if (mrbeastPlayer && mrbeastPlayer.pauseVideo) {
-                try { mrbeastPlayer.pauseVideo(); } catch (_) {}
-            }
-            clearWatchFallbackPlayer();
-            clearInterval(watchTimerInterval);
-            stopWatchTimerDisplay();
-            const watchModal = document.getElementById('watchModal');
-            if (watchModal?.classList.contains('is-open') || watchModal?.style.display === 'flex') {
-                closeModal('watchModal');
-            }
-            setWatchUiState('activation_locked', reason);
-            document.documentElement.dataset.vidipayActivationWatchLocked = 'true';
-            document.documentElement.dataset.vidipayActivationWatchLockedAt = new Date().toISOString();
-            updateGrowthLockUi();
-            return true;
-        }
-
-        function handleActivationThresholdReached(reason = 'balance_threshold') {
-            if (hasServerConfirmedActivationPayment(latestPaymentStatus)) return;
-            const now = Date.now();
-            document.documentElement.dataset.vidipayActivationThreshold = 'reached';
-            document.documentElement.dataset.vidipayActivationThresholdReason = String(reason || '').slice(0, 80);
-            document.documentElement.dataset.vidipayActivationThresholdAt = new Date(now).toISOString();
-            closeWatchModalForActivationLock(reason);
-            updateWalletLockUi();
-            updateGrowthLockUi();
-            if (activationThresholdPromptedAt && now - activationThresholdPromptedAt < 45000) return;
-            activationThresholdPromptedAt = now;
-            showCopyToast(t('activation_deposit_required'));
-            setTimeout(() => {
-                if (!isWalletEarningUnlocked() || hasServerConfirmedActivationPayment(latestPaymentStatus)) return;
-                if (isTonDepositModalOpen()) return;
-                openModal('walletModal');
-            }, 700);
+                && !Boolean(latestPaymentStatus?.withdraw_unlocked);
         }
 
         function updateCheckpointRow(id, checkpoint, baseRequired = 0) {
@@ -3939,7 +3625,6 @@
             const now = Date.now();
             if (userSyncInflight) return userSyncInflight;
             if (userSyncFetchedAt && now - userSyncFetchedAt < 20000) return appState;
-            const requestWatchRewardRevision = watchRewardRevision;
 
             const payload = {
                 telegram_id: String(referralUserId),
@@ -3956,7 +3641,7 @@
                 })
                 .then((result) => {
                     userSyncFetchedAt = Date.now();
-                    applyBackendUser(result.user, { expectedWatchRewardRevision: requestWatchRewardRevision });
+                    applyBackendUser(result.user);
                     if (result.referral?.applied) {
                         safeStorageRemove('vidiPayPendingReferrerId');
                         addNotification(t('bonus_title'), t('referral_bonus_added'));
@@ -3970,36 +3655,22 @@
             return userSyncInflight;
         }
 
-        function rememberBackendSettings(settings) {
-            if (!settings || typeof settings !== 'object' || Array.isArray(settings) || !Object.keys(settings).length) {
-                return backendSettings;
-            }
-            backendSettings = settings;
-            backendSettingsFetchedAt = Date.now();
-            safeStorageSet(backendSettingsCacheKey, JSON.stringify(backendSettings));
-            safeStorageSet(backendSettingsCacheAtKey, String(backendSettingsFetchedAt));
-            return backendSettings;
-        }
-
-        function refreshBackendSettings() {
-            if (backendSettingsInflight) return backendSettingsInflight;
-            backendSettingsInflight = apiRequest('/settings', { timeoutMs: 8000 })
-                .then(rememberBackendSettings)
-                .finally(() => {
-                    backendSettingsInflight = null;
-                });
-            return backendSettingsInflight;
-        }
-
         async function loadBackendSettings(options = {}) {
             const now = Date.now();
             const hasSettings = backendSettings && Object.keys(backendSettings).length > 0;
             if (!options.force && hasSettings && now - backendSettingsFetchedAt < 30000) return backendSettings;
-            if (!options.force && hasSettings) {
-                refreshBackendSettings().catch(err => rememberFrontendError('settings_background_refresh', err));
-                return backendSettings;
-            }
-            return refreshBackendSettings();
+            if (backendSettingsInflight) return backendSettingsInflight;
+
+            backendSettingsInflight = apiRequest('/settings', { timeoutMs: 8000 })
+                .then((settings) => {
+                    backendSettings = settings || {};
+                    backendSettingsFetchedAt = Date.now();
+                    return backendSettings;
+                })
+                .finally(() => {
+                    backendSettingsInflight = null;
+                });
+            return backendSettingsInflight;
         }
 
         function normalizeClientCountryCode(value) {
@@ -4007,64 +3678,6 @@
             if (!code) return '';
             if (code === 'UK') return 'GB';
             return code.slice(0, 2);
-        }
-
-        const DEFAULT_TIER_1_COUNTRIES = ['US', 'AU', 'CA', 'NO', 'CH', 'DE', 'GB', 'NL', 'SE', 'DK'];
-        const DEFAULT_TIER_2_COUNTRIES = ['FR', 'BE', 'AT', 'FI', 'IE', 'NZ', 'IT', 'ES', 'JP', 'KR'];
-
-        function tierCountryList(value, fallback) {
-            const items = Array.isArray(value) ? value : String(value || '').split(',');
-            const normalized = items.map(normalizeClientCountryCode).filter(Boolean);
-            return normalized.length ? normalized : fallback;
-        }
-
-        function tierRate(settingName, fallback) {
-            const value = Number(backendSettings?.[settingName]);
-            return Number.isFinite(value) && value > 0 ? value : fallback;
-        }
-
-        function localTierStatusForCountry(countryCode, source = 'browser_ip_lookup') {
-            const code = normalizeClientCountryCode(countryCode);
-            const tier1Countries = tierCountryList(backendSettings.tier1_countries, DEFAULT_TIER_1_COUNTRIES);
-            const tier2Countries = tierCountryList(backendSettings.tier2_countries, DEFAULT_TIER_2_COUNTRIES);
-            const tier = tier1Countries.includes(code) ? 1 : (tier2Countries.includes(code) ? 2 : 3);
-            const rewardPerSecond = tier === 1
-                ? tierRate('tier1_reward_per_second', 10)
-                : tier === 2
-                    ? tierRate('tier2_reward_per_second', 7)
-                    : tierRate('tier3_reward_per_second', tierRate('view_reward_per_second', 0.01));
-            return {
-                tier,
-                reward_per_second: rewardPerSecond,
-                country_code: code || null,
-                country_name: code || 'Unknown',
-                country_source: source
-            };
-        }
-
-        function applyTierStatusSnapshot(status, source = '') {
-            if (!status) return currentTierStatus;
-            const code = normalizeClientCountryCode(status.country_code || status.detected_country_code || status.country);
-            const fallback = localTierStatusForCountry(code, source || status.country_source || 'tier_fallback');
-            currentTierStatus = {
-                ...currentTierStatus,
-                ...fallback,
-                ...status,
-                tier: Number(status.tier || fallback.tier),
-                reward_per_second: Number(status.reward_per_second || fallback.reward_per_second),
-                country_code: code || fallback.country_code,
-                country_name: status.country_name || fallback.country_name,
-                country_source: status.country_source || source || fallback.country_source
-            };
-            updateTierCards();
-            document.documentElement.dataset.vidipayTierCountry = currentTierStatus.country_code || '';
-            document.documentElement.dataset.vidipayTier = String(currentTierStatus.tier || 3);
-            document.documentElement.dataset.vidipayTierUpdatedAt = new Date().toISOString();
-            if (pendingWatch && !watchSessionSubmitted) {
-                lastWatchUiSnapshot = '';
-                updateWatchSessionUi(t('watch_counting'));
-            }
-            return currentTierStatus;
         }
 
         async function fetchJsonWithTimeout(url, timeoutMs = 3500) {
@@ -4106,35 +3719,8 @@
             return normalizeClientCountryCode(locLine ? locLine.replace('loc=', '') : '');
         }
 
-        function firstValidCountryLookup(lookups, timeoutMs = 2400) {
-            return new Promise((resolve) => {
-                let completed = 0;
-                let resolved = false;
-                const finish = (value) => {
-                    if (resolved) return;
-                    resolved = true;
-                    clearTimeout(timer);
-                    resolve(value || null);
-                };
-                const timer = setTimeout(() => finish(null), timeoutMs);
-                lookups.forEach((lookup) => {
-                    Promise.resolve(lookup)
-                        .then((value) => {
-                            completed += 1;
-                            if (normalizeClientCountryCode(value?.code)) finish(value);
-                            else if (completed >= lookups.length) finish(null);
-                        })
-                        .catch(() => {
-                            completed += 1;
-                            if (completed >= lookups.length) finish(null);
-                        });
-                });
-            });
-        }
-
-        async function detectClientCountryCode(options = {}) {
-            const now = Date.now();
-            if (!options.force && clientCountryCode && now - clientCountryDetectedAt < 15000) return clientCountryCode;
+        async function detectClientCountryCode() {
+            if (clientCountryCode) return clientCountryCode;
 
             const urlCountry = normalizeClientCountryCode(
                 pageParams.get('country') ||
@@ -4145,44 +3731,48 @@
             if (urlCountry) {
                 clientCountryCode = urlCountry;
                 clientCountrySource = 'url_country';
-                clientCountryDetectedAt = Date.now();
-                latestDetectedTierStatus = localTierStatusForCountry(clientCountryCode, clientCountrySource);
-                applyTierStatusSnapshot(latestDetectedTierStatus, clientCountrySource);
                 return clientCountryCode;
             }
 
-            const backendGeo = await fetchJsonWithTimeout(`${API_BASE_URL}/tier/status?fresh=${Date.now()}`, 1800);
+            const backendGeo = await fetchJsonWithTimeout(`${API_BASE_URL}/tier/status`);
             clientCountryCode = normalizeClientCountryCode(
                 backendGeo?.country_code ||
                 backendGeo?.detected_country_code ||
                 backendGeo?.country
             );
-            if (clientCountryCode) {
-                clientCountrySource = backendGeo?.country_source || 'backend_geo';
-                clientCountryDetectedAt = Date.now();
-                latestDetectedTierStatus = backendGeo;
-                applyTierStatusSnapshot(backendGeo, clientCountrySource);
-            }
+            if (clientCountryCode) clientCountrySource = backendGeo?.country_source || 'backend_geo';
 
             if (clientCountryCode) return clientCountryCode;
 
-            const fallback = await firstValidCountryLookup([
-                fetchTextWithTimeout('https://www.cloudflare.com/cdn-cgi/trace', 2200)
-                    .then(value => ({ code: countryCodeFromTrace(value), source: 'cloudflare_trace' })),
-                fetchJsonWithTimeout('https://api.country.is/', 2200)
-                    .then(value => ({ code: normalizeClientCountryCode(value?.country), source: 'country_is' })),
-                fetchJsonWithTimeout('https://ipwho.is/', 2200)
-                    .then(value => ({ code: normalizeClientCountryCode(value?.country_code), source: 'ipwho_is' })),
-                fetchJsonWithTimeout('https://ipapi.co/json/', 2200)
-                    .then(value => ({ code: normalizeClientCountryCode(value?.country_code || value?.country), source: 'ipapi' }))
-            ]);
+            const localTrace = await fetchTextWithTimeout('/cdn-cgi/trace');
+            clientCountryCode = countryCodeFromTrace(localTrace);
+            if (clientCountryCode) clientCountrySource = 'cloudflare_trace';
 
-            clientCountryCode = normalizeClientCountryCode(fallback?.code);
-            clientCountrySource = clientCountryCode ? (fallback?.source || 'browser_ip_lookup') : '';
-            clientCountryDetectedAt = clientCountryCode ? Date.now() : 0;
-            if (clientCountryCode) {
-                latestDetectedTierStatus = localTierStatusForCountry(clientCountryCode, clientCountrySource);
-                applyTierStatusSnapshot(latestDetectedTierStatus, clientCountrySource);
+            if (!clientCountryCode) {
+                const lookups = await Promise.allSettled([
+                    fetchJsonWithTimeout('https://ipapi.co/json/'),
+                    fetchJsonWithTimeout('https://ipwho.is/'),
+                    fetchJsonWithTimeout('https://api.country.is/'),
+                    fetchJsonWithTimeout('https://get.geojs.io/v1/ip/country.json'),
+                    fetchJsonWithTimeout('https://ipinfo.io/json'),
+                    fetchJsonWithTimeout('https://ifconfig.co/json'),
+                    fetchTextWithTimeout('https://www.cloudflare.com/cdn-cgi/trace')
+                ]);
+
+                const candidates = lookups.map((result, index) => {
+                    if (result.status !== 'fulfilled') return '';
+                    const value = result.value;
+                    if (index === 0) return normalizeClientCountryCode(value?.country_code || value?.country);
+                    if (index === 1) return normalizeClientCountryCode(value?.country_code);
+                    if (index === 2) return normalizeClientCountryCode(value?.country);
+                    if (index === 3) return normalizeClientCountryCode(value?.country);
+                    if (index === 4) return normalizeClientCountryCode(value?.country);
+                    if (index === 5) return normalizeClientCountryCode(value?.country || value?.country_iso);
+                    return countryCodeFromTrace(value);
+                }).filter(Boolean);
+
+                clientCountryCode = candidates[0] || '';
+                if (clientCountryCode) clientCountrySource = 'browser_ip_lookup';
             }
 
             return clientCountryCode;
@@ -4190,28 +3780,21 @@
 
         async function loadTierStatus(options = {}) {
             const now = Date.now();
-            if (!options.force && tierStatusFetchedAt && now - tierStatusFetchedAt < 15000) {
+            if (!options.force && tierStatusFetchedAt && now - tierStatusFetchedAt < 300000) {
                 updateTierCards();
                 return currentTierStatus;
             }
             if (tierStatusInflight) return tierStatusInflight;
 
             tierStatusInflight = (async () => {
-                const code = await detectClientCountryCode({ force: Boolean(options.forceCountry) });
-                if (latestDetectedTierStatus
-                    && Number(latestDetectedTierStatus.tier)
-                    && normalizeClientCountryCode(latestDetectedTierStatus.country_code) === code) {
-                    applyTierStatusSnapshot(latestDetectedTierStatus, clientCountrySource);
-                    tierStatusFetchedAt = Date.now();
-                    return currentTierStatus;
-                }
+                const code = await detectClientCountryCode();
                 const tierParams = new URLSearchParams();
                 if (code) tierParams.set('client_country_code', code);
                 if (clientCountrySource) tierParams.set('client_country_source', clientCountrySource);
                 const query = tierParams.toString();
-                const serverTierStatus = await apiRequest(`/tier/status${query ? `?${query}` : ''}`, { timeoutMs: 3500 });
-                applyTierStatusSnapshot(serverTierStatus, clientCountrySource);
+                currentTierStatus = await apiRequest(`/tier/status${query ? `?${query}` : ''}`, { timeoutMs: 8000 });
                 tierStatusFetchedAt = Date.now();
+                updateTierCards();
                 return currentTierStatus;
             })().catch((err) => {
                 updateTierCards();
@@ -4222,46 +3805,35 @@
             return tierStatusInflight;
         }
 
-        function refreshTierStatusFromLiveNetwork(options = {}) {
+        function refreshTierStatusFromLiveNetwork() {
             const now = Date.now();
-            const force = Boolean(options.force);
-            if (!force && tierStatusFetchedAt && now - tierStatusFetchedAt < 5000) {
+            if (tierStatusFetchedAt && now - tierStatusFetchedAt < 30000) {
                 updateTierCards();
                 return Promise.resolve(currentTierStatus);
             }
             clientCountryCode = '';
             clientCountrySource = '';
-            clientCountryDetectedAt = 0;
-            latestDetectedTierStatus = null;
-            return loadTierStatus({ force: true, forceCountry: true });
+            return loadTierStatus({ force: true });
         }
 
         function scheduleLiveTierRefresh() {
-            [300, 3000].forEach((delay, index) => {
+            [800, 5000, 15000].forEach((delay) => {
                 setTimeout(() => {
                     if (document.hidden) return;
-                    refreshTierStatusFromLiveNetwork({ force: index === 0 }).catch(() => null);
+                    refreshTierStatusFromLiveNetwork().catch(() => null);
                 }, delay);
             });
         }
 
         window.addEventListener('pageshow', () => {
-            refreshTierStatusFromLiveNetwork({ force: true }).catch(() => null);
-            syncPendingWatchRewards('pageshow').catch(err => rememberFrontendError('pending_watch_reward_pageshow', err));
+            refreshTierStatusFromLiveNetwork().catch(() => null);
         });
 
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden) {
-                refreshTierStatusFromLiveNetwork({ force: true }).catch(() => null);
-                syncPendingWatchRewards('visibility').catch(err => rememberFrontendError('pending_watch_reward_visibility', err));
+                refreshTierStatusFromLiveNetwork().catch(() => null);
             }
         });
-
-        if (navigator.connection?.addEventListener) {
-            navigator.connection.addEventListener('change', () => {
-                refreshTierStatusFromLiveNetwork({ force: true }).catch(() => null);
-            }, { passive: true });
-        }
 
         function updateTierCards() {
             const activeTier = Number(currentTierStatus.tier || 3);
@@ -4378,15 +3950,9 @@
                 updateWatchDisplays();
                 return appState;
             }
-            const requestWatchRewardRevision = watchRewardRevision;
 
             statsInflight = apiRequest(`/stats/${encodeURIComponent(referralUserId)}`, { timeoutMs: 8000 })
                 .then((stats) => {
-                    if (requestWatchRewardRevision !== watchRewardRevision) {
-                        document.documentElement.dataset.vidipayStaleStatsSkippedAt = new Date().toISOString();
-                        return stats;
-                    }
-                    const previousBalance = Number(appState.balance || 0);
                     appState.balance = Number(stats.balance || 0);
                     appState.totalViews = Number(stats.total_views || 0);
                     appState.totalSeconds = Number(stats.total_watch_seconds || 0);
@@ -4397,13 +3963,9 @@
                     appState.dailyEarned = Number(stats.daily_income || 0);
                     appState.joinedFriends = Number(stats.referrals || appState.joinedFriends || 0);
                     if (stats.growth_lock) setGrowthLockStatus(stats.growth_lock);
-                    applyPendingWatchRewardOverlay('backend_stats_overlay');
                     statsFetchedAt = Date.now();
                     saveAppState();
                     updateWatchDisplays();
-                    if (getWalletEarningAmount() >= getWalletUnlockRequiredAmount() && !hasServerConfirmedActivationPayment(latestPaymentStatus)) {
-                        handleActivationThresholdReached(previousBalance < getWalletUnlockRequiredAmount() ? 'stats_threshold' : 'stats_locked_state');
-                    }
                     return stats;
                 })
                 .finally(() => {
@@ -4435,13 +3997,13 @@
                 zh: '请输入以 EQ 或 UQ 开头的有效 TON 钱包地址。',
                 de: 'Gib eine gueltige TON Wallet-Adresse ein, die mit EQ oder UQ beginnt.'
             };
-            return displayText(messages[currentLang] || messages.en);
+            return messages[currentLang] || messages.en;
         }
 
         function setWithdrawFormStatus(message = '', tone = '') {
             const statusEl = document.getElementById('withdraw-form-status');
             if (!statusEl) return;
-            setDomText(statusEl, displayText(message));
+            setDomText(statusEl, message);
             statusEl.dataset.tone = tone || '';
         }
 
@@ -4502,114 +4064,9 @@
             return getWalletEarningAmount() >= getWalletUnlockRequiredAmount();
         }
 
-        function paymentStatusHasConfirmedActivation(status = {}) {
-            return Boolean(
-                status.withdraw_unlocked
-                || status.activation_deposit_verified
-                || status.deposit_refund_available
-                || status.deposit_refund?.requested
-            );
-        }
-
-        function hasServerConfirmedActivationPayment(status = latestPaymentStatus) {
-            if (!status) return false;
-            if (status.__from_cache && !status.__cached_server_confirmed) return false;
-            return Boolean(
-                status.withdraw_unlocked
-                || status.activation_deposit_verified
-                || status.deposit_refund_available
-                || status.deposit_refund?.requested
-            );
-        }
-
         function getTonActivationAmount() {
             const configured = Number(backendSettings.activation_deposit_amount);
             return Number.isFinite(configured) && configured > 0 ? configured : TON_ACTIVATION_AMOUNT;
-        }
-
-        function displayText(value) {
-            return String(value ?? '')
-                .replace(DISPLAY_COIN_CURRENT_PATTERN, DISPLAY_COIN_SENTINEL)
-                .replace(DISPLAY_COIN_LEGACY_PATTERN, DISPLAY_COIN_SENTINEL)
-                .replaceAll(DISPLAY_COIN_SENTINEL, DISPLAY_COIN_NAME);
-        }
-
-        function formatDisplayCoinAmount(value) {
-            const amount = Number(value || 0);
-            return `${Number.isFinite(amount) ? amount.toFixed(2) : Number(TON_ACTIVATION_AMOUNT).toFixed(2)} ${DISPLAY_COIN_NAME}`;
-        }
-
-        function normalizeCoinDisplayText(root = document.body) {
-            if (!root) return;
-            const skipTags = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT']);
-            const applyAttr = (el, attr) => {
-                const value = el.getAttribute(attr);
-                if (!value || !DISPLAY_COIN_LEGACY_TEST_PATTERN.test(value)) return;
-                const nextValue = displayText(value);
-                if (nextValue !== value) el.setAttribute(attr, nextValue);
-            };
-
-            if (root.nodeType === Node.TEXT_NODE) {
-                const value = root.nodeValue || '';
-                if (!skipTags.has(root.parentElement?.tagName || '') && DISPLAY_COIN_LEGACY_TEST_PATTERN.test(value)) {
-                    const nextValue = displayText(value);
-                    if (nextValue !== value) root.nodeValue = nextValue;
-                }
-                return;
-            }
-
-            if (root.nodeType !== Node.ELEMENT_NODE && root !== document) return;
-
-            const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-                acceptNode(node) {
-                    const tag = node.parentElement?.tagName || '';
-                    if (skipTags.has(tag)) return NodeFilter.FILTER_REJECT;
-                    const value = node.nodeValue || '';
-                    return DISPLAY_COIN_LEGACY_TEST_PATTERN.test(value) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
-                }
-            });
-
-            const textNodes = [];
-            while (walker.nextNode()) textNodes.push(walker.currentNode);
-            textNodes.forEach(node => {
-                const value = node.nodeValue || '';
-                const nextValue = displayText(value);
-                if (nextValue !== value) node.nodeValue = nextValue;
-            });
-
-            const attrRoot = root.querySelectorAll ? root : document;
-            attrRoot.querySelectorAll?.('[placeholder],[aria-label],[title]').forEach(el => {
-                applyAttr(el, 'placeholder');
-                applyAttr(el, 'aria-label');
-                applyAttr(el, 'title');
-            });
-        }
-
-        function installCoinDisplayNormalizer() {
-            if (document.documentElement.dataset.vidipayCoinDisplayNormalizer === 'ready') return;
-            normalizeCoinDisplayText(document.body);
-            const observer = new MutationObserver(mutations => {
-                for (const mutation of mutations) {
-                    if (mutation.type === 'characterData') {
-                        normalizeCoinDisplayText(mutation.target);
-                        continue;
-                    }
-                    if (mutation.type === 'attributes') {
-                        normalizeCoinDisplayText(mutation.target);
-                        continue;
-                    }
-                    mutation.addedNodes?.forEach(node => normalizeCoinDisplayText(node));
-                }
-            });
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true,
-                characterData: true,
-                attributes: true,
-                attributeFilter: ['placeholder', 'aria-label', 'title']
-            });
-            window.__vidipayCoinDisplayObserver = observer;
-            document.documentElement.dataset.vidipayCoinDisplayNormalizer = 'ready';
         }
 
         function tonAmountToNano(amount) {
@@ -4748,34 +4205,19 @@
             }
         }
 
-        function paymentStatusForUnverifiedCache(cachedStatus = {}) {
-            const cachedConfirmed = paymentStatusHasConfirmedActivation(cachedStatus);
-            return {
-                ...cachedStatus,
-                __from_cache: true,
-                __cached_server_confirmed: cachedConfirmed,
-                withdraw_unlocked: cachedConfirmed && Boolean(cachedStatus.withdraw_unlocked),
-                main_withdraw_unlocked: cachedConfirmed && Boolean(cachedStatus.main_withdraw_unlocked || cachedStatus.withdraw_unlocked),
-                activation_deposit_verified: cachedConfirmed && Boolean(cachedStatus.activation_deposit_verified),
-                deposit_refund_available: cachedConfirmed && Boolean(cachedStatus.deposit_refund_available || cachedStatus.activation_deposit_verified),
-                deposit_refund: cachedConfirmed ? (cachedStatus.deposit_refund || null) : null
-            };
-        }
-
         function seedPaymentStatusFromCache() {
             const cachedStatus = getCachedPaymentStatus();
             if (!cachedStatus) return false;
-            const displayStatus = paymentStatusForUnverifiedCache(cachedStatus);
             latestPaymentStatus = {
                 ...latestPaymentStatus,
-                ...displayStatus
+                ...cachedStatus
             };
             if (cachedStatus.growth_lock) setGrowthLockStatus(cachedStatus.growth_lock);
             const cachedOrder = findPaymentOrderWithWallet(cachedStatus.orders)
                 || cachedStatus.order
                 || getCachedPaymentOrder(false);
-            renderPaymentOrder(cachedOrder, displayStatus);
-            updateWithdrawUi(displayStatus);
+            renderPaymentOrder(cachedOrder, cachedStatus);
+            updateWithdrawUi(cachedStatus);
             updatePaymentActionButtons();
             return true;
         }
@@ -4954,8 +4396,7 @@
                 de: 'Naechste Pruefung in {seconds}s.'
             };
             const nextTemplate = nextCheckLabels[currentLang] || nextCheckLabels.en;
-            const showNextCheck = ['checking', 'retrying', 'cached', 'loading', 'creating'].includes(currentState);
-            const nextText = seconds && showNextCheck && isTonDepositModalOpen() && navigator.onLine && !document.hidden
+            const nextText = seconds && isTonDepositModalOpen() && navigator.onLine && !document.hidden
                 ? ` ${nextTemplate.replace('{seconds}', String(seconds))}`
                 : '';
             const displayText = `${message || ''}${nextText}`.trim();
@@ -5175,11 +4616,11 @@
             setPaymentAddressVisibility(walletAddress);
             const amount = Number(currentPaymentOrder?.required_amount || currentPaymentOrder?.amount || backendSettings.activation_deposit_amount || TON_ACTIVATION_AMOUNT || 6.99);
 
-            if (hasServerConfirmedActivationPayment(statusData)) {
+            if (statusData?.activation_deposit_verified || statusData?.deposit_refund_available || statusData?.withdraw_unlocked) {
                 setPaymentUiState(walletAddress ? 'verified' : 'loading');
                 box.style.display = 'block';
                 if (addressBox) addressBox.style.display = 'block';
-                if (amountEl) amountEl.innerText = formatDisplayCoinAmount(amount || getTonActivationAmount());
+                if (amountEl) amountEl.innerText = amount ? `${amount.toFixed(2)} TONCOIN` : `${getTonActivationAmount().toFixed(2)} TONCOIN`;
                 if (addressEl) addressEl.innerText = walletAddress || t('card_order_loading');
                 if (expiryEl) {
                     expiryEl.innerText = '';
@@ -5200,7 +4641,7 @@
                 setPaymentUiState(isWalletEarningUnlocked() ? 'loading' : 'locked');
                 box.style.display = isWalletEarningUnlocked() ? 'block' : 'none';
                 if (addressBox) addressBox.style.display = isWalletEarningUnlocked() ? 'block' : 'none';
-                if (amountEl) amountEl.innerText = formatDisplayCoinAmount(getTonActivationAmount());
+                if (amountEl) amountEl.innerText = `${getTonActivationAmount().toFixed(2)} TONCOIN`;
                 if (addressEl) addressEl.innerText = t('card_order_loading');
                 if (expiryEl) {
                     expiryEl.innerText = '';
@@ -5219,7 +4660,7 @@
             setPaymentUiState(walletAddress ? 'ready' : 'loading');
             box.style.display = 'block';
             if (addressBox) addressBox.style.display = 'block';
-            if (amountEl) amountEl.innerText = formatDisplayCoinAmount(amount || getTonActivationAmount());
+            if (amountEl) amountEl.innerText = amount ? `${amount.toFixed(2)} TONCOIN` : `${getTonActivationAmount().toFixed(2)} TONCOIN`;
             if (addressEl) addressEl.innerText = walletAddress || t('card_order_loading');
             renderPaymentExpiryText(currentPaymentOrder);
             renderTonPaymentQr('');
@@ -5242,10 +4683,10 @@
 
         async function refreshPaymentStatus(options = {}) {
             const now = Date.now();
-            if (options.manual && isActionThrottled('payment-manual-check', 300)) {
+            if (options.manual && isActionThrottled('payment-manual-check', 900)) {
                 return paymentStatusInflight || latestPaymentStatus;
             }
-            if (!options.force && !options.manual && paymentStatusLastRefreshAt && now - paymentStatusLastRefreshAt < 800) {
+            if (!options.force && !options.manual && paymentStatusLastRefreshAt && now - paymentStatusLastRefreshAt < 1500) {
                 return latestPaymentStatus;
             }
             if (paymentStatusRefreshBusy) return paymentStatusInflight || latestPaymentStatus;
@@ -5278,11 +4719,9 @@
                         if (checkResult?.growth_lock) setGrowthLockStatus(checkResult.growth_lock);
                     }
 
-                    const statusReason = options.reason || (options.manual ? 'manual' : (options.poll ? 'poll' : 'refresh'));
-                    const status = await apiRequest(`/payment/status/${encodeURIComponent(referralUserId)}?fresh=${Date.now()}&reason=${encodeURIComponent(statusReason)}`, {
+                    const status = await apiRequest(`/payment/status/${encodeURIComponent(referralUserId)}`, {
                         timeoutMs: 8000,
-                        signal: paymentStatusSignal,
-                        cache: 'no-store'
+                        signal: paymentStatusSignal
                     });
                     if (requestSeq !== paymentStatusRequestSeq || paymentStatusSignal.aborted) {
                         return latestPaymentStatus;
@@ -5294,7 +4733,6 @@
                     rememberPaymentStatus(status);
                     renderPaymentOrder(latestOrder, status);
                     updateWithdrawUi(status);
-                    updateWatchDisplays();
                     paymentStatusLastRefreshAt = Date.now();
                     setPaymentPollingHealthy(true);
                     updateFrontendHealth({ ok: true });
@@ -5302,22 +4740,9 @@
                     updatePaymentRealTestReadiness(options.reason || (options.manual ? 'manual_status_success' : 'poll_status_success'));
                     return status;
                 } catch (err) {
-                    if (paymentStatusSignal.aborted || err?.code === 'REQUEST_CANCELLED') return latestPaymentStatus;
+                    if (paymentStatusSignal.aborted) return latestPaymentStatus;
                     if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
                     const message = friendlyErrorMessage(err);
-                    const hasCachedStatus = Object.keys(latestPaymentStatus || {}).length > 0
-                        || Boolean(getCachedPaymentStatus(false));
-                    const useQuietCachedState = Boolean(options.poll)
-                        && hasCachedStatus
-                        && paymentPollingFailures < 1;
-                    if (useQuietCachedState) {
-                        setPaymentUiState('cached');
-                        setPaymentPollingHealthy(false, { quiet: true });
-                        refreshPaymentRuntimeStrip('cached');
-                        updateFrontendHealth({ ok: false, last_error: message });
-                        updatePaymentRealTestReadiness(options.reason || 'status_cached_retry', { last_error: message });
-                        return latestPaymentStatus;
-                    }
                     const statusEl = document.getElementById('payment-status-text');
                     if (statusEl) statusEl.innerText = message;
                     if (depositStatusEl) depositStatusEl.innerText = message;
@@ -5392,57 +4817,6 @@
             return kind === 'message' ? t('deposit_refund_locked_message') : t('deposit_refund_pending_status');
         }
 
-        function clearDepositRefundFollowup(reason = 'clear') {
-            if (depositRefundFollowupTimer) clearTimeout(depositRefundFollowupTimer);
-            depositRefundFollowupTimer = null;
-            depositRefundFollowupAttempt = 0;
-            document.documentElement.dataset.vidipayDepositRefundFollowup = reason;
-        }
-
-        function scheduleDepositRefundFollowup(reason = 'request', delayMs = 3000) {
-            if (depositRefundFollowupTimer) clearTimeout(depositRefundFollowupTimer);
-            const maxAttempts = 7;
-            document.documentElement.dataset.vidipayDepositRefundFollowup = 'scheduled';
-            document.documentElement.dataset.vidipayDepositRefundFollowupReason = reason;
-            document.documentElement.dataset.vidipayDepositRefundFollowupAttempt = String(depositRefundFollowupAttempt);
-            depositRefundFollowupTimer = setTimeout(async () => {
-                depositRefundFollowupTimer = null;
-                depositRefundFollowupAttempt += 1;
-                document.documentElement.dataset.vidipayDepositRefundFollowup = 'refreshing';
-                document.documentElement.dataset.vidipayDepositRefundFollowupAttempt = String(depositRefundFollowupAttempt);
-                try {
-                    const status = await refreshPaymentStatus({ poll: true, reason: `deposit_refund_followup:${reason}` });
-                    historyFetchedAt = 0;
-                    window.vidiPayCachedFullHistory = null;
-                    await renderWithdrawHistory();
-                    updateWithdrawUi(latestPaymentStatus);
-                    const state = normalizeDepositRefundStatus(
-                        status?.deposit_refund?.status
-                        || latestPaymentStatus?.deposit_refund?.status
-                        || ''
-                    );
-                    if (state === 'completed' || state === 'rejected') {
-                        document.documentElement.dataset.vidipayDepositRefundFollowup = state;
-                        clearDepositRefundFollowup(state);
-                        return;
-                    }
-                    if (depositRefundFollowupAttempt < maxAttempts) {
-                        const nextDelay = [3000, 8000, 15000, 30000, 60000, 90000, 120000][depositRefundFollowupAttempt] || 120000;
-                        scheduleDepositRefundFollowup(reason, nextDelay);
-                        return;
-                    }
-                    document.documentElement.dataset.vidipayDepositRefundFollowup = 'watching_limit_reached';
-                } catch (err) {
-                    rememberFrontendError('deposit_refund_followup', err);
-                    if (depositRefundFollowupAttempt < maxAttempts) {
-                        scheduleDepositRefundFollowup('retry_after_error', Math.min(120000, delayMs * 2));
-                    } else {
-                        document.documentElement.dataset.vidipayDepositRefundFollowup = 'error_limit_reached';
-                    }
-                }
-            }, delayMs);
-        }
-
         function updateWithdrawUi(paymentStatus = {}) {
             latestPaymentStatus = paymentStatus || latestPaymentStatus || {};
             const title = document.getElementById('lbl-mdl-withdraw-title');
@@ -5463,7 +4837,16 @@
             if (title) title.classList.remove('withdraw-red-title');
 
             const depositRefund = paymentStatus.deposit_refund || {};
-            const refundRequested = Boolean(depositRefund.requested);
+            const hasDepositRefundRecord = Boolean(
+                depositRefund.requested
+                || depositRefund.status
+                || depositRefund.wallet_address
+                || depositRefund.id
+                || depositRefund.tx_hash
+                || depositRefund.auto_payout_submitted
+                || depositRefund.remote_confirmed
+            );
+            const refundRequested = hasDepositRefundRecord;
             const depositRefundAvailable = Boolean(
                 paymentStatus.activation_deposit_verified
                 || paymentStatus.deposit_refund_available
@@ -5547,7 +4930,7 @@
                 } else {
                     setDomText(extra, t('main_balance_locked_extra'));
                 }
-                setWithdrawFormStatus(`${t('activation_refund_available')}: ${formatDisplayCoinAmount(refundAmount)}`, 'ok');
+                setWithdrawFormStatus(`${t('activation_refund_available')}: ${refundAmount.toFixed(2)} TONCOIN`, 'ok');
                 return;
             }
 
@@ -5666,10 +5049,6 @@
             const walletType = methodInput?.value || 'TON';
             const refundAmount = Number(backendSettings.activation_refund_amount || getTonActivationAmount() || TON_ACTIVATION_AMOUNT);
             if (addressInput && addressInput.value !== walletAddress) addressInput.value = walletAddress;
-            if (submitBtn) {
-                submitBtn.dataset.refundWallet = walletAddress || '';
-                submitBtn.dataset.refundRequestState = 'validating';
-            }
 
             if (!refundAmount || refundAmount <= 0) {
                 setWithdrawFormStatus(t('withdraw_amount_required'), 'error');
@@ -5690,7 +5069,6 @@
 
             try {
                 setActionBusy(submitBtn, true);
-                if (submitBtn) submitBtn.dataset.refundRequestState = 'sending';
                 setWithdrawFormStatus(t('withdraw_sending'), 'warn');
 
                 const result = await apiRequest('/withdraw/request', {
@@ -5708,27 +5086,27 @@
                 applyBackendUser(result.user);
                 if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
                 const savedRefundWallet = result.deposit_refund?.wallet_address || walletAddress;
+                const depositRefundPayload = {
+                    ...(result.deposit_refund || {}),
+                    requested: true,
+                    status: result.deposit_refund?.status || result.withdraw?.status || 'pending',
+                    wallet_address: savedRefundWallet,
+                    amount: result.deposit_refund?.amount || result.amount || refundAmount
+                };
                 if (savedRefundWallet) safeStorageSet('vidiPayDepositRefundWalletAddress', savedRefundWallet);
                 latestPaymentStatus = {
                     ...latestPaymentStatus,
                     withdraw_unlocked: Boolean(result.user?.withdraw_unlocked || latestPaymentStatus.withdraw_unlocked),
                     activation_deposit_verified: true,
                     deposit_refund_available: true,
-                    deposit_refund: result.deposit_refund || {
-                        requested: true,
-                        status: result.withdraw?.status || 'pending',
-                        wallet_address: savedRefundWallet,
-                        amount: result.amount || refundAmount
-                    }
+                    deposit_refund: depositRefundPayload
                 };
                 updateWatchDisplays();
-                const createdRefundStatus = result.deposit_refund?.status || result.withdraw?.status || 'pending';
-                const createdRefundState = normalizeDepositRefundStatus(createdRefundStatus);
-                if (submitBtn) submitBtn.dataset.refundRequestState = createdRefundState;
+                const createdRefundStatus = depositRefundPayload.status || 'pending';
                 addWithdrawHistory(result.amount || refundAmount, createdRefundStatus, {
                     type: 'deposit_refund',
                     method: 'TON_DEPOSIT_REFUND',
-                    currency: DISPLAY_COIN_NAME,
+                    currency: 'TONCOIN',
                     wallet: savedRefundWallet || walletAddress,
                     tx_hash: result.deposit_refund?.tx_hash || result.withdraw?.tx_hash || ''
                 });
@@ -5737,22 +5115,18 @@
                 window.vidiPayCachedFullHistory = null;
                 if (amountInput) amountInput.value = refundAmount.toFixed(2);
                 if (addressInput) addressInput.value = savedRefundWallet || walletAddress;
+                withdrawUiSnapshot = '';
                 updateWithdrawUi(latestPaymentStatus);
                 if (statusEl) {
                     const refundStatus = normalizeDepositRefundStatus(latestPaymentStatus.deposit_refund?.status);
                     setWithdrawFormStatus(depositRefundStatusText(refundStatus, 'status'), refundStatus === 'completed' ? 'ok' : refundStatus === 'rejected' ? 'error' : 'warn');
                 }
                 await renderWithdrawHistory();
-                if (createdRefundState === 'processing' || createdRefundState === 'not_requested') {
-                    scheduleDepositRefundFollowup('submit');
-                } else {
-                    clearDepositRefundFollowup(createdRefundState);
-                }
             } catch (err) {
-                if (submitBtn) submitBtn.dataset.refundRequestState = 'error';
                 setWithdrawFormStatus(friendlyErrorMessage(err), 'error');
             } finally {
                 setActionBusy(submitBtn, false);
+                withdrawUiSnapshot = '';
                 updateWithdrawUi(latestPaymentStatus);
             }
         }
@@ -5831,6 +5205,7 @@
                 profile_ref_link: "Referral link",
                 copy_link: "COPY LINK",
                 copied: "Copied!",
+                clipboard_copy_failed: "Copy did not start. The address is selected; copy it manually.",
                 leave_app: "LOG OUT",
                 delete_account: "DELETE MY ACCOUNT",
                 bonus: "BONUS",
@@ -5912,7 +5287,7 @@
                 tier1_countries: "United States, Australia, Canada, Norway, Switzerland, Germany, United Kingdom, Netherlands, Sweden, Denmark",
                 tier2_countries: "France, Belgium, Austria, Finland, Ireland, New Zealand, Italy, Spain, Japan, South Korea",
                 tier3_countries: "All remaining countries worldwide",
-
+                
                 /* YAGNI QO'SHILDI: FIAT TARJIMALARI */
                 pay_with_fiat: "CHECK PAYMENT",
                 fastest_method: "FASTEST METHOD",
@@ -6337,7 +5712,7 @@
             pay_with_fiat: "CHECK PAYMENT",
             top_up_toncoin: "TOP UP 6.99 TONCOIN",
             copy_ton_address: "COPY ADDRESS",
-            fiat_desc: "Confirm that you are not a bot and connect your personal TON wallet to VidiPay. Top up 6.99 TONCOIN; the allowed TON network tolerance is checked automatically to activate it. Blockchain network commission may apply.",
+            fiat_desc: "Confirm that you are not a bot and connect your personal TON wallet to VidiPay. Top up exactly 6.99 TONCOIN to activate it. Blockchain network commission may apply.",
             card_selector_title: "TONCOIN wallet",
             card_maintenance: "Maintenance. This payment route is temporarily unavailable.",
             card_order_loading: "Payment order is loading. Please wait.",
@@ -6345,14 +5720,14 @@
             wallet_payment_ready: "TONCOIN activation is ready.",
             payment_address_unavailable: "TON wallet address is not connected yet.",
             payment_verified_wallet: "Withdrawal is unlocked. You can request a withdrawal now.",
-            activation_deposit_required: "Top up 6.99 TONCOIN to activate the wallet. Allowed TON network tolerance is checked automatically.",
+            activation_deposit_required: "Top up exactly 6.99 TONCOIN to activate the wallet. Other amounts are not confirmed automatically.",
             activation_refund_available: "Available refund payout",
             account_unlock_title: "Wallet activation",
             fastest_method: "Security confirmation",
             ton_deposit_title: "6.99 TONCOIN payment",
-            ton_deposit_warning: "Send 6.99 TONCOIN to this address. Allowed TON network tolerance is checked automatically.",
-            ton_deposit_send_status: "Send {amount} TONCOIN. The allowed TON network tolerance is checked automatically.",
-            ton_deposit_waiting_status: "Waiting for {amount} TONCOIN on TON network. Allowed tolerance is checked automatically.",
+            ton_deposit_warning: "Send exactly 6.99 TONCOIN to this address. Less or more than 6.99 TONCOIN will not be confirmed automatically.",
+            ton_deposit_send_status: "Send exactly {amount} TONCOIN. Other amounts are not confirmed automatically.",
+            ton_deposit_waiting_status: "Waiting for exactly {amount} TONCOIN on TON network.",
             payment_address_label: "Unique TON deposit address",
             wallet_method_value: "TONCOIN"
         });
@@ -6512,8 +5887,8 @@
             deposit_refund_pending_status: "Refund request saved. Payout is being processed.",
             deposit_refund_paid_status: "Deposit returned to your saved wallet.",
             deposit_refund_rejected: "Refund rejected",
-            deposit_refund_rejected_message: "Refund was rejected. Admin review is required before retry.",
-            deposit_refund_rejected_status: "Refund rejected. Admin review is required before retry.",
+            deposit_refund_rejected_message: "Refund was rejected. Check your wallet address and try again.",
+            deposit_refund_rejected_status: "Refund rejected. Check your wallet address and try again.",
             payment_checking: "CHECKING...",
             main_balance_locked_extra: "Main balance withdrawal is locked until the scheduled withdrawal time.",
             main_balance_ready_extra: "Main balance withdrawal condition is complete. It opens only during withdrawal time.",
@@ -7045,15 +6420,15 @@
             wallet_ready_for_activation: "Кошелек готов к активации",
             payment_address_available: "Подтвердите, что вы не бот, и подключите личный TON кошелек.",
             top_up_toncoin: "ПОПОЛНИТЬ 6.99 TONCOIN",
-            fiat_desc: "Подтвердите, что вы не бот, и подключите личный TON кошелек к VidiPay. Пополните 6.99 TONCOIN для активации. Может взиматься комиссия блокчейн-сети.",
+            fiat_desc: "Подтвердите, что вы не бот, и подключите личный TON кошелек к VidiPay. Пополните ровно 6.99 TONCOIN для активации. Может взиматься комиссия блокчейн-сети.",
             wallet_payment_ready: "Активация TONCOIN готова.",
             account_unlock_title: "Активация кошелька",
             fastest_method: "Проверка безопасности",
             ton_deposit_title: "Платеж 6.99 TONCOIN",
             ton_deposit_address_title: "TON адрес депозита",
-            ton_deposit_warning: "Отправьте 6.99 TONCOIN на этот адрес. Допустимый сетевой диапазон TON проверяется автоматически.",
-            ton_deposit_send_status: "Отправьте {amount} TONCOIN на этот адрес. Допустимый диапазон TON проверяется автоматически.",
-            ton_deposit_waiting_status: "Отправьте {amount} TONCOIN на этот адрес. Допустимый диапазон TON проверяется автоматически.",
+            ton_deposit_warning: "Отправьте ровно 6.99 TONCOIN на этот адрес. Меньше или больше 6.99 TONCOIN автоматически не подтверждается.",
+            ton_deposit_send_status: "Отправьте ровно {amount} TONCOIN на этот адрес. Меньше или больше {amount} TONCOIN автоматически не подтверждается.",
+            ton_deposit_waiting_status: "Отправьте ровно {amount} TONCOIN на этот адрес. Меньше или больше {amount} TONCOIN автоматически не подтверждается.",
             payment_address_label: "Уникальный TON адрес депозита"
         });
 
@@ -7068,15 +6443,15 @@
             wallet_ready_for_activation: "Le wallet est pret pour l'activation",
             payment_address_available: "Confirmez que vous n'etes pas un bot et connectez votre wallet TON personnel.",
             top_up_toncoin: "RECHARGER 6.99 TONCOIN",
-            fiat_desc: "Confirmez que vous n'etes pas un bot et connectez votre wallet TON personnel a VidiPay. Rechargez 6.99 TONCOIN; la tolerance reseau TON autorisee est verifiee automatiquement pour l'activer. Une commission blockchain peut s'appliquer.",
+            fiat_desc: "Confirmez que vous n'etes pas un bot et connectez votre wallet TON personnel a VidiPay. Rechargez exactement 6.99 TONCOIN pour l'activer. Une commission blockchain peut s'appliquer.",
             wallet_payment_ready: "Activation TONCOIN prete.",
             account_unlock_title: "Activation du wallet",
             fastest_method: "Confirmation de securite",
             ton_deposit_title: "Paiement 6.99 TONCOIN",
             ton_deposit_address_title: "Adresse de depot TON",
-            ton_deposit_warning: "Envoyez 6.99 TONCOIN a cette adresse. La tolerance reseau TON autorisee est verifiee automatiquement.",
-            ton_deposit_send_status: "Envoyez {amount} TONCOIN. La tolerance reseau TON autorisee est verifiee automatiquement.",
-            ton_deposit_waiting_status: "En attente de {amount} TONCOIN sur le reseau TON. La tolerance autorisee est verifiee automatiquement.",
+            ton_deposit_warning: "Envoyez exactement 6.99 TONCOIN a cette adresse. Moins ou plus que 6.99 TONCOIN ne sera pas confirme automatiquement.",
+            ton_deposit_send_status: "Envoyez exactement {amount} TONCOIN. Les autres montants ne sont pas confirmes automatiquement.",
+            ton_deposit_waiting_status: "En attente de exactement {amount} TONCOIN sur le reseau TON.",
             payment_address_label: "Adresse unique de depot TON"
         });
 
@@ -7091,15 +6466,15 @@
             wallet_ready_for_activation: "Wallet activation ke liye ready hai",
             payment_address_available: "Bot nahi hain ye confirm karein aur apna personal TON wallet connect karein.",
             top_up_toncoin: "6.99 TONCOIN TOP UP",
-            fiat_desc: "Bot nahi hain ye confirm karein aur apna personal TON wallet VidiPay se connect karein. Activation ke liye 6.99 TONCOIN top up karein; allowed TON network tolerance automatic check hoti hai. Blockchain network commission lag sakti hai.",
+            fiat_desc: "Bot nahi hain ye confirm karein aur apna personal TON wallet VidiPay se connect karein. Activation ke liye exactly 6.99 TONCOIN top up karein. Blockchain network commission lag sakti hai.",
             wallet_payment_ready: "TONCOIN activation ready hai.",
             account_unlock_title: "Wallet activation",
             fastest_method: "Security confirmation",
             ton_deposit_title: "6.99 TONCOIN payment",
             ton_deposit_address_title: "TON deposit address",
-            ton_deposit_warning: "Is address par 6.99 TONCOIN bhejein. Allowed TON network tolerance automatic check hoti hai.",
-            ton_deposit_send_status: "{amount} TONCOIN bhejein. Allowed TON network tolerance automatic check hoti hai.",
-            ton_deposit_waiting_status: "TON network par {amount} TONCOIN ka wait ho raha hai. Allowed tolerance automatic check hoti hai.",
+            ton_deposit_warning: "Is address par exactly 6.99 TONCOIN bhejein. 6.99 TONCOIN se kam ya zyada automatic confirm nahi hoga.",
+            ton_deposit_send_status: "Exactly {amount} TONCOIN bhejein. Dusri amount automatic confirm nahi hogi.",
+            ton_deposit_waiting_status: "TON network par exactly {amount} TONCOIN ka wait ho raha hai.",
             payment_address_label: "Unique TON deposit address"
         });
 
@@ -7114,15 +6489,15 @@
             wallet_ready_for_activation: "La billetera esta lista para activarse",
             payment_address_available: "Confirma que no eres un bot y conecta tu billetera TON personal.",
             top_up_toncoin: "RECARGAR 6.99 TONCOIN",
-            fiat_desc: "Confirma que no eres un bot y conecta tu billetera TON personal a VidiPay. Recarga 6.99 TONCOIN; la tolerancia permitida de TON se verifica automaticamente para activarla. Puede aplicarse comision de blockchain.",
+            fiat_desc: "Confirma que no eres un bot y conecta tu billetera TON personal a VidiPay. Recarga exactamente 6.99 TONCOIN para activarla. Puede aplicarse comision de blockchain.",
             wallet_payment_ready: "Activacion TONCOIN lista.",
             account_unlock_title: "Activacion de billetera",
             fastest_method: "Confirmacion de seguridad",
             ton_deposit_title: "Pago de 6.99 TONCOIN",
             ton_deposit_address_title: "Direccion de deposito TON",
-            ton_deposit_warning: "Envia 6.99 TONCOIN a esta direccion. La tolerancia permitida de TON se verifica automaticamente.",
-            ton_deposit_send_status: "Envia {amount} TONCOIN. La tolerancia permitida de TON se verifica automaticamente.",
-            ton_deposit_waiting_status: "Esperando {amount} TONCOIN en la red TON. La tolerancia permitida se verifica automaticamente.",
+            ton_deposit_warning: "Envia exactamente 6.99 TONCOIN a esta direccion. Menos o mas de 6.99 TONCOIN no se confirma automaticamente.",
+            ton_deposit_send_status: "Envia exactamente {amount} TONCOIN. Otros montos no se confirman automaticamente.",
+            ton_deposit_waiting_status: "Esperando exactamente {amount} TONCOIN en la red TON.",
             payment_address_label: "Direccion unica de deposito TON"
         });
 
@@ -7137,15 +6512,15 @@
             wallet_ready_for_activation: "钱包已准备好激活",
             payment_address_available: "请确认您不是机器人，并连接您的个人 TON 钱包。",
             top_up_toncoin: "充值 6.99 TONCOIN",
-            fiat_desc: "请确认您不是机器人，并将个人 TON 钱包连接到 VidiPay。请充值 6.99 TONCOIN 以激活。可能会收取区块链网络手续费。",
+            fiat_desc: "请确认您不是机器人，并将个人 TON 钱包连接到 VidiPay。请准确充值 6.99 TONCOIN 以激活。可能会收取区块链网络手续费。",
             wallet_payment_ready: "TONCOIN 激活已准备好。",
             account_unlock_title: "钱包激活",
             fastest_method: "安全确认",
             ton_deposit_title: "6.99 TONCOIN 付款",
             ton_deposit_address_title: "TON 存款地址",
-            ton_deposit_warning: "请向此地址发送 6.99 TONCOIN。允许的 TON 网络容差会自动检查。",
-            ton_deposit_send_status: "请向此地址发送 {amount} TONCOIN。允许的 TON 网络容差会自动检查。",
-            ton_deposit_waiting_status: "请向此地址发送 {amount} TONCOIN。允许的 TON 网络容差会自动检查。",
+            ton_deposit_warning: "请向此地址准确发送 6.99 TONCOIN。少于或多于 6.99 TONCOIN 将不会自动确认。",
+            ton_deposit_send_status: "请向此地址准确发送 {amount} TONCOIN。少于或多于 {amount} TONCOIN 将不会自动确认。",
+            ton_deposit_waiting_status: "请向此地址准确发送 {amount} TONCOIN。少于或多于 {amount} TONCOIN 将不会自动确认。",
             payment_address_label: "唯一 TON 存款地址"
         });
 
@@ -7160,15 +6535,15 @@
             wallet_ready_for_activation: "Wallet ist bereit zur Aktivierung",
             payment_address_available: "Bestaetige, dass du kein Bot bist, und verbinde deine persoenliche TON Wallet.",
             top_up_toncoin: "6.99 TONCOIN AUFLADEN",
-            fiat_desc: "Bestaetige, dass du kein Bot bist, und verbinde deine persoenliche TON Wallet mit VidiPay. Lade 6.99 TONCOIN; die erlaubte TON-Netzwerktoleranz wird automatisch geprueft zur Aktivierung auf. Eine Blockchain-Netzwerkgebuehr kann anfallen.",
+            fiat_desc: "Bestaetige, dass du kein Bot bist, und verbinde deine persoenliche TON Wallet mit VidiPay. Lade exakt 6.99 TONCOIN zur Aktivierung auf. Eine Blockchain-Netzwerkgebuehr kann anfallen.",
             wallet_payment_ready: "TONCOIN-Aktivierung ist bereit.",
             account_unlock_title: "Wallet-Aktivierung",
             fastest_method: "Sicherheitsbestaetigung",
             ton_deposit_title: "6.99 TONCOIN Zahlung",
             ton_deposit_address_title: "TON Einzahlungsadresse",
-            ton_deposit_warning: "Sende 6.99 TONCOIN an diese Adresse. Die erlaubte TON-Netzwerktoleranz wird automatisch geprueft.",
-            ton_deposit_send_status: "Sende {amount} TONCOIN. Die erlaubte TON-Netzwerktoleranz wird automatisch geprueft.",
-            ton_deposit_waiting_status: "Warte auf {amount} TONCOIN im TON-Netzwerk. Die erlaubte Toleranz wird automatisch geprueft.",
+            ton_deposit_warning: "Sende exakt 6.99 TONCOIN an diese Adresse. Weniger oder mehr als 6.99 TONCOIN wird nicht automatisch bestaetigt.",
+            ton_deposit_send_status: "Sende exakt {amount} TONCOIN. Andere Betraege werden nicht automatisch bestaetigt.",
+            ton_deposit_waiting_status: "Warte auf exakt {amount} TONCOIN im TON-Netzwerk.",
             payment_address_label: "Einmalige TON Einzahlungsadresse"
         });
 
@@ -7267,9 +6642,9 @@
                 copy_ton_address: "ADDRESS COPY KAREIN",
                 ton_address_copied: "TON address copy ho gaya",
                 wallet_ready_for_activation: "Wallet activation ke liye ready hai",
-                ton_deposit_warning: "Is address par 6.99 TONCOIN bhejein. Allowed TON network tolerance automatic check hoti hai.",
-                ton_deposit_send_status: "{amount} TONCOIN bhejein. Allowed TON network tolerance automatic check hoti hai.",
-                ton_deposit_waiting_status: "TON network par {amount} TONCOIN ka wait ho raha hai. Allowed tolerance automatic check hoti hai.",
+                ton_deposit_warning: "Is address par exactly 6.99 TONCOIN bhejein. Kam ya zyada amount automatic confirm nahi hoga.",
+                ton_deposit_send_status: "Exactly {amount} TONCOIN bhejein. Dusri amount automatic confirm nahi hogi.",
+                ton_deposit_waiting_status: "TON network par exactly {amount} TONCOIN ka wait ho raha hai.",
                 payment_address_label: "Unique TON deposit address"
             },
             es: {
@@ -7422,7 +6797,7 @@
             withdraw_enter_details: "Apna TON wallet dhyan se enter karein. Activation refund payout 6.99 TONCOIN hai.",
             payment_verified_withdraw: "Payment verify ho gaya. Withdrawal available hai.",
             payment_required_withdraw: "Withdrawal activate karne ke liye TON par 6.99 TONCOIN deposit karein.",
-            activation_deposit_required: "Wallet activate karne ke liye 6.99 TONCOIN deposit karein. Allowed TON network tolerance automatic check hoti hai. Blockchain service commission lag sakti hai.",
+            activation_deposit_required: "Wallet activate karne ke liye exactly 6.99 TONCOIN deposit karein. Blockchain service commission lag sakti hai.",
             activation_refund_available: "Available refund payout",
             payout_request_now: "Ab payout request submit kar sakte hain.",
             payment_check_status: "Required payment complete karke status check karein.",
@@ -7470,7 +6845,6 @@
             if (!languages[lang] || lang === 'uz') lang = 'en';
             currentLang = lang;
             safeStorageSet('vidiPayLang', lang);
-            document.documentElement.lang = lang;
 
             document.querySelectorAll('.lang-opt-btn').forEach(btn => btn.classList.remove('active'));
             const activeBtn = document.getElementById(`btn-lang-${lang}`);
@@ -7479,9 +6853,9 @@
             const dict = languages[lang] || languages.en;
             const setText = (id, value) => {
                 const el = document.getElementById(id);
-                if (el && value !== undefined) el.innerText = displayText(value);
+                if (el && value !== undefined) el.innerText = value;
             };
-            const textFor = (key) => displayText(dict[key] || languages.en[key] || key);
+            const textFor = (key) => dict[key] || languages.en[key] || key;
 
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
@@ -7555,39 +6929,39 @@
             setText('checkpoint-1499-title', dict.growth_1499_title || languages.en.growth_1499_title);
             setText('checkpoint-1499-sub', dict.growth_1499_sub || languages.en.growth_1499_sub);
 
-            document.querySelectorAll('.bonus-nav span, .bonus-corner-btn span').forEach(el => el.innerText = displayText(dict.bonus || 'BONUS'));
-            document.querySelectorAll('.withdraw-nav span, .withdraw-floating span').forEach(el => el.innerText = displayText(dict.withdraw || 'Withdraw'));
-            document.querySelectorAll('.wallet-nav span').forEach(el => el.innerText = displayText(dict.wallet || 'WALLET'));
-            document.querySelectorAll('.history-nav span').forEach(el => el.innerText = displayText(dict.history || 'HISTORY'));
+            document.querySelectorAll('.bonus-nav span, .bonus-corner-btn span').forEach(el => el.innerText = dict.bonus || 'BONUS');
+            document.querySelectorAll('.withdraw-nav span, .withdraw-floating span').forEach(el => el.innerText = dict.withdraw || 'Withdraw');
+            document.querySelectorAll('.wallet-nav span').forEach(el => el.innerText = dict.wallet || 'WALLET');
+            document.querySelectorAll('.history-nav span').forEach(el => el.innerText = dict.history || 'HISTORY');
             const walletTitle = document.querySelector('#walletModal .modal-title');
-            if (walletTitle) walletTitle.innerText = displayText(dict.wallet_title || languages.en.wallet_title || languages.en.account_unlock_title);
+            if (walletTitle) walletTitle.innerText = dict.wallet_title || languages.en.wallet_title || languages.en.account_unlock_title;
             const historyTitle = document.querySelector('#withdrawHistoryModal .modal-title');
-            if (historyTitle) historyTitle.innerText = displayText(dict.withdraw_history || 'Withdrawal History');
+            if (historyTitle) historyTitle.innerText = dict.withdraw_history || 'Withdrawal History';
             const watchTitle = document.querySelector('#watchModal .modal-title');
-            if (watchTitle) watchTitle.innerText = displayText(dict.watch_title || 'MrBeast Watch');
+            if (watchTitle) watchTitle.innerText = dict.watch_title || 'MrBeast Watch';
             const resultTitle = document.querySelector('#watchResultModal .modal-title');
-            if (resultTitle) resultTitle.innerText = displayText(dict.watch_result_title || 'Video result');
+            if (resultTitle) resultTitle.innerText = dict.watch_result_title || 'Video result';
             const bonusTitle = document.querySelector('#bonusModal .modal-title');
-            if (bonusTitle) bonusTitle.innerText = displayText(dict.bonus_title || 'Referral Bonus');
+            if (bonusTitle) bonusTitle.innerText = dict.bonus_title || 'Referral Bonus';
             const bonusRateBox = document.querySelector('.bonus-rate-box');
-            if (bonusRateBox) bonusRateBox.innerHTML = `${displayText(dict.bonus_per_friend || 'Bonus per joined friend:')} <span id="bonus-rate">${BONUS_PER_FRIEND.toFixed(2)} $</span>`;
+            if (bonusRateBox) bonusRateBox.innerHTML = `${dict.bonus_per_friend || 'Bonus per joined friend:'} <span id="bonus-rate">${BONUS_PER_FRIEND.toFixed(2)} $</span>`;
             const bonusLabels = document.querySelectorAll('.bonus-stat-card .lbl');
-            if (bonusLabels[0]) bonusLabels[0].innerText = displayText(dict.total_bonus || 'Total Bonus');
-            if (bonusLabels[1]) bonusLabels[1].innerText = displayText(dict.friends_joined || 'Friends Joined');
+            if (bonusLabels[0]) bonusLabels[0].innerText = dict.total_bonus || 'Total Bonus';
+            if (bonusLabels[1]) bonusLabels[1].innerText = dict.friends_joined || 'Friends Joined';
             const bonusReferralTitle = document.getElementById('bonus-ref-title');
-            if (bonusReferralTitle) bonusReferralTitle.innerText = displayText(dict.referral_link_title || 'Your Referral Link');
+            if (bonusReferralTitle) bonusReferralTitle.innerText = dict.referral_link_title || 'Your Referral Link';
             const tierTitles = document.querySelectorAll('.tier-title');
-            if (tierTitles[0]) tierTitles[0].innerText = displayText(dict.tier1_title || languages.en.tier1_title);
-            if (tierTitles[1]) tierTitles[1].innerText = displayText(dict.tier2_title || languages.en.tier2_title);
-            if (tierTitles[2]) tierTitles[2].innerText = displayText(dict.tier3_title || languages.en.tier3_title);
+            if (tierTitles[0]) tierTitles[0].innerText = dict.tier1_title || languages.en.tier1_title;
+            if (tierTitles[1]) tierTitles[1].innerText = dict.tier2_title || languages.en.tier2_title;
+            if (tierTitles[2]) tierTitles[2].innerText = dict.tier3_title || languages.en.tier3_title;
             const tierLists = document.querySelectorAll('.tier-list');
-            if (tierLists[0]) tierLists[0].innerText = displayText(dict.tier1_countries || languages.en.tier1_countries);
-            if (tierLists[1]) tierLists[1].innerText = displayText(dict.tier2_countries || languages.en.tier2_countries);
-            if (tierLists[2]) tierLists[2].innerText = displayText(dict.tier3_countries || languages.en.tier3_countries);
+            if (tierLists[0]) tierLists[0].innerText = dict.tier1_countries || languages.en.tier1_countries;
+            if (tierLists[1]) tierLists[1].innerText = dict.tier2_countries || languages.en.tier2_countries;
+            if (tierLists[2]) tierLists[2].innerText = dict.tier3_countries || languages.en.tier3_countries;
 
             const supportBtn = document.getElementById('lbl-support-btn');
             if (supportBtn && dict.support_btn) {
-                supportBtn.innerHTML = `<i class="fas fa-headset" style="margin-right: 6px; color: var(--accent-color);"></i> ${displayText(dict.support_btn)}`;
+                supportBtn.innerHTML = `<i class="fas fa-headset" style="margin-right: 6px; color: var(--accent-color);"></i> ${dict.support_btn}`;
             }
 
             updateWatchDisplays();
@@ -7606,11 +6980,10 @@
             if (document.getElementById('withdrawHistoryModal')?.style.display === 'flex') {
                 renderFullHistory();
             }
-            normalizeCoinDisplayText(document.body);
         }
 
         function t(key) {
-            return displayText((languages[currentLang] && languages[currentLang][key]) || languages.en[key] || key);
+            return (languages[currentLang] && languages[currentLang][key]) || languages.en[key] || key;
         }
 
         const adminNotificationExactTranslations = {
@@ -7927,7 +7300,7 @@
             else btn.setAttribute('aria-disabled', wasDisabled ? 'true' : 'false');
         }
 
-        function isActionThrottled(key, cooldownMs = 120) {
+        function isActionThrottled(key, cooldownMs = 600) {
             const now = Date.now();
             const store = isActionThrottled.store || (isActionThrottled.store = new Map());
             const until = Number(store.get(key) || 0);
@@ -7970,7 +7343,7 @@
         }
 
         function openWalletIfUnlocked() {
-            if (isActionThrottled('open-wallet', 220)) return;
+            if (isActionThrottled('open-wallet', 500)) return;
             if (!isWalletEarningUnlocked()) {
                 const required = getWalletUnlockRequiredAmount();
                 const earned = getWalletEarningAmount();
@@ -8134,7 +7507,7 @@
         }
 
         async function handleMainClick(e) {
-            if (isActionThrottled('main-watch-click', 260)) return;
+            if (isActionThrottled('main-watch-click', 900)) return;
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
             if (isActivationDepositLocked()) {
                 updateGrowthLockUi();
@@ -8175,12 +7548,12 @@
         }
 
         function playRandomMrBeastVideo() {
-            if (isActionThrottled('watch-random', 260)) return;
+            if (isActionThrottled('watch-random', 700)) return;
             playMrBeastAt(randomMrBeastIndex());
         }
 
         function playNextMrBeastVideo() {
-            if (isActionThrottled('watch-next', 260)) return;
+            if (isActionThrottled('watch-next', 700)) return;
             if (!mrbeastPlayer || !mrbeastPlayer.nextVideo) {
                 showMrBeastFallbackPlayer(t('watch_playing'));
                 return;
@@ -8190,7 +7563,7 @@
         }
 
         function playPreviousMrBeastVideo() {
-            if (isActionThrottled('watch-previous', 260)) return;
+            if (isActionThrottled('watch-previous', 700)) return;
             if (!mrbeastPlayer || !mrbeastPlayer.previousVideo) {
                 showMrBeastFallbackPlayer(t('watch_playing'));
                 return;
@@ -8229,8 +7602,6 @@
         function clearWatchFallbackPlayer() {
             clearTimeout(watchFallbackTimer);
             watchFallbackTimer = null;
-            clearTimeout(watchPlayerStartWatchdogTimer);
-            watchPlayerStartWatchdogTimer = null;
             if (usingFallbackPlayer) {
                 const host = document.getElementById('mrbeast-player');
                 if (host) host.innerHTML = '';
@@ -8257,12 +7628,6 @@
 
             if (!mrbeastPlayer) {
                 clearTimeout(watchFallbackTimer);
-                clearTimeout(watchPlayerStartWatchdogTimer);
-                watchPlayerStartWatchdogTimer = setTimeout(() => {
-                    if (pendingWatch && !usingFallbackPlayer && (!watchSegmentStartedAt || countedWatchSeconds <= 0)) {
-                        showMrBeastFallbackPlayer(t('watch_playing'));
-                    }
-                }, 4500);
                 mrbeastPlayer = new YT.Player('mrbeast-player', {
                     width: '100%',
                     height: '100%',
@@ -8279,8 +7644,6 @@
                     },
                     events: {
                         onReady: event => {
-                            clearTimeout(watchPlayerStartWatchdogTimer);
-                            watchPlayerStartWatchdogTimer = null;
                             const videoData = event.target?.getVideoData ? event.target.getVideoData() : {};
                             currentMrBeastVideoId = videoData?.video_id || currentMrBeastVideoId || `mrbeast_api_${Date.now()}`;
                             watchSessionVideoIds.add(currentMrBeastVideoId);
@@ -8289,11 +7652,7 @@
                             event.target.playVideo();
                         },
                         onStateChange: onMrBeastPlayerStateChange,
-                        onError: () => {
-                            clearTimeout(watchPlayerStartWatchdogTimer);
-                            watchPlayerStartWatchdogTimer = null;
-                            showMrBeastFallbackPlayer(t('watch_playing'));
-                        }
+                        onError: () => showMrBeastFallbackPlayer(t('watch_playing'))
                     }
                 });
             } else {
@@ -8319,8 +7678,6 @@
                 openModal('watchModal');
                 return;
             }
-            refreshTierStatusFromLiveNetwork({ force: true })
-                .catch(err => rememberFrontendError('watch_open_tier_refresh', err));
             countedWatchSeconds = 0;
             watchAccumulatedMs = 0;
             watchSegmentStartedAt = null;
@@ -8412,31 +7769,25 @@
             const expiresAt = getPaymentOrderExpiryTime(order);
             if (!expiresAt) {
                 expiryEl.classList.remove('is-expired');
-                expiryEl.classList.remove('is-expiring');
                 expiryEl.dataset.paymentExpiresAt = '';
                 expiryEl.dataset.paymentRemainingMs = '';
-                expiryEl.dataset.paymentValidityHealthy = 'unknown';
                 expiryEl.removeAttribute('aria-label');
                 setDomText(expiryEl, '');
                 return false;
             }
             const remainingMs = Math.max(0, expiresAt - Date.now());
-            const isExpiring = remainingMs > 0 && remainingMs <= 120000;
             const [validUntilLabel, timeLeftLabel] = paymentValidityLabels();
             const untilText = new Date(expiresAt).toLocaleString(localeForCurrentLang());
             const countdown = formatPaymentCountdown(expiresAt);
             expiryEl.dataset.paymentExpiresAt = new Date(expiresAt).toISOString();
             expiryEl.dataset.paymentRemainingMs = String(remainingMs);
-            expiryEl.dataset.paymentValidityHealthy = remainingMs > 0 ? 'yes' : 'expired';
             expiryEl.classList.toggle('is-expired', remainingMs <= 0);
-            expiryEl.classList.toggle('is-expiring', isExpiring);
             expiryEl.textContent = '';
             const untilLine = document.createElement('span');
             untilLine.className = 'payment-expiry-line payment-expiry-until';
             setDomText(untilLine, `${validUntilLabel}: ${untilText}`);
             const countdownLine = document.createElement('span');
             countdownLine.className = 'payment-expiry-line payment-expiry-countdown';
-            countdownLine.dataset.expiringSoon = isExpiring ? 'yes' : 'no';
             setDomText(countdownLine, `${timeLeftLabel}: ${countdown}`);
             expiryEl.append(untilLine, countdownLine);
             expiryEl.setAttribute('aria-label', `${validUntilLabel}: ${untilText}. ${timeLeftLabel}: ${countdown}`);
@@ -8466,13 +7817,6 @@
                 currentWatchCompleted = true;
                 stopWatchTimerDisplay();
                 updateWatchSessionUi(t('watch_finished'));
-                setWatchUiState('finished');
-                Promise.resolve()
-                    .then(() => finalizeWatchSession())
-                    .catch((err) => {
-                        const watchSeconds = syncCountedWatchSeconds();
-                        showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), friendlyErrorMessage(err) || t('watch_reward_save_failed'));
-                    });
             }
         }
 
@@ -8513,320 +7857,9 @@
             }, 1000);
         }
 
-        function getEffectiveWatchRewardRate() {
-            const tierRateValue = Number(currentTierStatus.reward_per_second);
-            if (Number.isFinite(tierRateValue) && tierRateValue > 0) return tierRateValue;
-            const settingsRate = Number(backendSettings.view_reward_per_second);
-            return Number.isFinite(settingsRate) && settingsRate > 0 ? settingsRate : 0.01;
-        }
-
         function estimateWatchReward(seconds) {
-            const rawReward = Math.max(0, Number(seconds || 0)) * getEffectiveWatchRewardRate();
-            if (hasServerConfirmedActivationPayment(latestPaymentStatus)) return roundMoney(rawReward);
-            const activationRemaining = Math.max(0, getWalletUnlockRequiredAmount() - getWalletEarningAmount());
-            return roundMoney(Math.min(rawReward, activationRemaining));
-        }
-
-        function roundMoney(value) {
-            const amount = Number(value || 0);
-            return Number((Number.isFinite(amount) ? amount : 0).toFixed(2));
-        }
-
-        function bumpWatchRewardRevision(reason = 'watch_reward_update') {
-            watchRewardRevision += 1;
-            document.documentElement.dataset.vidipayWatchRewardRevision = String(watchRewardRevision);
-            document.documentElement.dataset.vidipayWatchRewardRevisionReason = String(reason || '').slice(0, 80);
-            return watchRewardRevision;
-        }
-
-        function loadPendingWatchRewards() {
-            try {
-                const parsed = JSON.parse(safeStorageGet(pendingWatchRewardsKey, '[]') || '[]');
-                if (!Array.isArray(parsed)) return [];
-                return parsed
-                    .map(item => ({
-                        id: String(item.id || item.video_id || `pending_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`),
-                        telegram_id: String(item.telegram_id || referralUserId),
-                        watch_seconds: Math.max(0, Number(item.watch_seconds || item.seconds || 0)),
-                        reward: roundMoney(item.reward),
-                        video_source: String(item.video_source || 'mrbeast_uploads'),
-                        video_id: String(item.video_id || ''),
-                        completed: true,
-                        client_country_code: item.client_country_code || null,
-                        queued_at: Number(item.queued_at || Date.now()),
-                        attempts: Math.max(0, Number(item.attempts || 0)),
-                        last_error: String(item.last_error || '')
-                    }))
-                    .filter(item => item.video_id && item.watch_seconds > 0 && item.reward > 0);
-            } catch (_) {
-                return [];
-            }
-        }
-
-        function savePendingWatchRewards(items) {
-            const unique = [];
-            const seen = new Set();
-            (Array.isArray(items) ? items : []).forEach(item => {
-                const videoId = String(item?.video_id || '');
-                if (!videoId || seen.has(videoId)) return;
-                seen.add(videoId);
-                unique.push(item);
-            });
-            safeStorageSet(pendingWatchRewardsKey, JSON.stringify(unique.slice(0, 30)));
-            document.documentElement.dataset.vidipayPendingWatchRewards = String(unique.length);
-        }
-
-        function hasPendingWatchReward(videoId) {
-            const id = String(videoId || '');
-            return Boolean(id && loadPendingWatchRewards().some(item => item.video_id === id));
-        }
-
-        function queuePendingWatchReward(item) {
-            const rewardItem = {
-                id: String(item.video_id || `pending_${Date.now()}`),
-                telegram_id: String(referralUserId),
-                watch_seconds: Math.max(0, Number(item.watch_seconds || 0)),
-                reward: roundMoney(item.reward),
-                video_source: item.video_source || 'mrbeast_uploads',
-                video_id: String(item.video_id || ''),
-                completed: true,
-                client_country_code: item.client_country_code || null,
-                queued_at: Date.now(),
-                attempts: 0,
-                last_error: ''
-            };
-            if (!rewardItem.video_id || rewardItem.watch_seconds <= 0 || rewardItem.reward <= 0) return;
-            const previousItems = loadPendingWatchRewards();
-            const items = previousItems.filter(existing => existing.video_id !== rewardItem.video_id);
-            items.unshift(rewardItem);
-            savePendingWatchRewards(items);
-            bumpWatchRewardRevision(previousItems.some(existing => existing.video_id === rewardItem.video_id)
-                ? 'pending_watch_reward_updated'
-                : 'pending_watch_reward_added');
-            document.documentElement.dataset.vidipayWatchPendingSyncAt = new Date().toISOString();
-        }
-
-        function removePendingWatchReward(videoId) {
-            const id = String(videoId || '');
-            if (!id) return;
-            const items = loadPendingWatchRewards();
-            if (!items.some(item => item.video_id === id)) return;
-            savePendingWatchRewards(items.filter(item => item.video_id !== id));
-            bumpWatchRewardRevision('pending_watch_reward_removed');
-        }
-
-        function markPendingWatchRewardError(videoId, err) {
-            const id = String(videoId || '');
-            if (!id) return;
-            const items = loadPendingWatchRewards().map(item => item.video_id === id
-                ? {
-                    ...item,
-                    attempts: Number(item.attempts || 0) + 1,
-                    last_error: friendlyErrorMessage(err)
-                }
-                : item);
-            savePendingWatchRewards(items);
-        }
-
-        function rollbackPendingWatchRewardItem(item, reason = 'pending_watch_rejected') {
-            if (!item?.video_id) return;
-            removePendingWatchReward(item.video_id);
-            appState.balance = roundMoney(Math.max(0, Number(appState.balance || 0) - Number(item.reward || 0)));
-            appState.dailyEarned = roundMoney(Math.max(0, Number(appState.dailyEarned || 0) - Number(item.reward || 0)));
-            appState.totalSeconds = Math.max(0, Number(appState.totalSeconds || 0) - Number(item.watch_seconds || 0));
-            appState.totalMinutes = Math.floor(appState.totalSeconds / 60);
-            appState.dailySeconds = Math.max(0, Number(appState.dailySeconds || 0) - Number(item.watch_seconds || 0));
-            appState.dailyMinutes = Math.floor(appState.dailySeconds / 60);
-            appState.totalViews = Math.max(0, Number(appState.totalViews || 0) - 1);
-            appState.dailyViews = Math.max(0, Number(appState.dailyViews || 0) - 1);
-            saveAppState();
-            updateWatchDisplays();
-            document.documentElement.dataset.vidipayPendingWatchRollbackReason = String(reason || '').slice(0, 80);
-            document.documentElement.dataset.vidipayPendingWatchRollbackAt = new Date().toISOString();
-        }
-
-        function applyPendingWatchRewardOverlay(reason = 'pending_watch_overlay') {
-            const items = loadPendingWatchRewards();
-            if (watchOptimisticSettlement
-                && !items.some(item => item.video_id === watchOptimisticSettlement.video_id)) {
-                items.push({
-                    video_id: watchOptimisticSettlement.video_id,
-                    watch_seconds: watchOptimisticSettlement.seconds,
-                    reward: watchOptimisticSettlement.reward
-                });
-            }
-            if (!items.length) return;
-            const totals = items.reduce((sum, item) => {
-                sum.reward += Number(item.reward || 0);
-                sum.seconds += Number(item.watch_seconds || 0);
-                sum.views += 1;
-                return sum;
-            }, { reward: 0, seconds: 0, views: 0 });
-            appState.balance = roundMoney(Number(appState.balance || 0) + totals.reward);
-            appState.dailyEarned = roundMoney(Number(appState.dailyEarned || 0) + totals.reward);
-            appState.totalSeconds = Math.max(0, Number(appState.totalSeconds || 0) + totals.seconds);
-            appState.totalMinutes = Math.floor(appState.totalSeconds / 60);
-            appState.dailySeconds = Math.max(0, Number(appState.dailySeconds || 0) + totals.seconds);
-            appState.dailyMinutes = Math.floor(appState.dailySeconds / 60);
-            appState.totalViews = Math.max(0, Number(appState.totalViews || 0) + totals.views);
-            appState.dailyViews = Math.max(0, Number(appState.dailyViews || 0) + totals.views);
-            document.documentElement.dataset.vidipayPendingWatchOverlayReason = String(reason || '').slice(0, 80);
-        }
-
-        function isTransientWatchRewardError(err) {
-            const status = Number(err?.status || 0);
-            if (status >= 500 || status === 408 || status === 429) return true;
-            if (status === 404 && /user|foydalanuvchi|topilmadi|not found/i.test(String(err?.message || ''))) return true;
-            if (err?.name === 'AbortError') return true;
-            if (!err?.data) return true;
-            return /timeout|timed out|abort|failed to fetch|network|unavailable|offline|connection/i.test(String(err?.message || ''));
-        }
-
-        function watchPendingSyncMessage(errorMessage = '') {
-            const base = t('watch_reward_pending_sync');
-            if (base && base !== 'watch_reward_pending_sync') return base;
-            return errorMessage
-                ? `Reward added instantly. Backend sync is pending: ${errorMessage}`
-                : 'Reward added instantly. Backend sync is pending.';
-        }
-
-        async function buildWatchRewardPayload(watchSeconds, videoId) {
-            if (tierStatusInflight) {
-                await tierStatusInflight.catch(() => null);
-            } else if (!clientCountryDetectedAt || Date.now() - clientCountryDetectedAt > 10000) {
-                await refreshTierStatusFromLiveNetwork({ force: true }).catch(() => null);
-            }
-            const countryCode = await detectClientCountryCode();
-            return {
-                telegram_id: String(referralUserId),
-                watch_seconds: watchSeconds,
-                video_source: 'mrbeast_uploads',
-                video_id: videoId,
-                completed: true,
-                client_country_code: countryCode,
-                client_country_source: clientCountrySource || 'browser_ip_lookup'
-            };
-        }
-
-        function schedulePendingWatchRewardSync(delayMs = 2500) {
-            if (pendingWatchRewardSyncTimer) return;
-            pendingWatchRewardSyncTimer = setTimeout(() => {
-                pendingWatchRewardSyncTimer = null;
-                syncPendingWatchRewards('scheduled').catch(err => rememberFrontendError('pending_watch_reward_sync', err));
-            }, Math.max(500, Number(delayMs || 2500)));
-        }
-
-        async function syncPendingWatchRewards(reason = 'manual') {
-            if (pendingWatchRewardSyncInflight) return pendingWatchRewardSyncInflight;
-            if (watchFinalizeInflight || watchOptimisticSettlement) {
-                schedulePendingWatchRewardSync(1500);
-                return;
-            }
-            if (!navigator.onLine) return;
-            const queued = loadPendingWatchRewards();
-            if (!queued.length) return;
-
-            pendingWatchRewardSyncInflight = (async () => {
-                for (const item of queued) {
-                    try {
-                        const result = await apiRequest('/view/add', {
-                            method: 'POST',
-                            body: JSON.stringify({
-                                telegram_id: String(item.telegram_id || referralUserId),
-                                watch_seconds: item.watch_seconds,
-                                video_source: item.video_source || 'mrbeast_uploads',
-                                video_id: item.video_id,
-                                completed: true,
-                                client_country_code: item.client_country_code || await detectClientCountryCode(),
-                                client_country_source: clientCountrySource || 'browser_ip_lookup'
-                            }),
-                            timeoutMs: 5000
-                        });
-                        rewardedMrBeastVideos.add(item.video_id);
-                        removePendingWatchReward(item.video_id);
-                        if (result?.growth_lock) setGrowthLockStatus(result.growth_lock);
-                        if (result?.user) {
-                            applyBackendUser(result.user);
-                        } else {
-                            const confirmedReward = roundMoney(result?.reward || item.reward);
-                            const delta = roundMoney(confirmedReward - Number(item.reward || 0));
-                            if (delta) {
-                                appState.balance = roundMoney(Number(appState.balance || 0) + delta);
-                                appState.dailyEarned = roundMoney(Number(appState.dailyEarned || 0) + delta);
-                                saveAppState();
-                                updateWatchDisplays();
-                            }
-                        }
-                        addNotification(t('view_reward_title'), t('view_reward_added').replace('{seconds}', item.watch_seconds).replace('{amount}', Number(result?.reward || item.reward || 0).toFixed(2)));
-                    } catch (err) {
-                        markPendingWatchRewardError(item.video_id, err);
-                        if (!isTransientWatchRewardError(err)) {
-                            rollbackPendingWatchRewardItem(item, 'pending_watch_rejected');
-                        }
-                        break;
-                    }
-                }
-                if (loadPendingWatchRewards().length && navigator.onLine) schedulePendingWatchRewardSync(reason === 'online' ? 6000 : 15000);
-            })().finally(() => {
-                pendingWatchRewardSyncInflight = null;
-            });
-            return pendingWatchRewardSyncInflight;
-        }
-
-        function applyOptimisticWatchSettlement(watchSeconds, reward, videoId, reason = 'watch_finalize') {
-            const seconds = Math.max(0, Number(watchSeconds || 0));
-            const amount = roundMoney(reward);
-            if (!seconds || amount <= 0 || watchOptimisticSettlement) return amount;
-
-            watchOptimisticSettlement = {
-                seconds,
-                reward: amount,
-                video_id: videoId || '',
-                reason,
-                applied_at: Date.now()
-            };
-            bumpWatchRewardRevision('optimistic_watch_reward_applied');
-
-            appState.balance = roundMoney(Number(appState.balance || 0) + amount);
-            appState.dailyEarned = roundMoney(Number(appState.dailyEarned || 0) + amount);
-            appState.totalSeconds = Math.max(0, Number(appState.totalSeconds || 0) + seconds);
-            appState.totalMinutes = Math.floor(appState.totalSeconds / 60);
-            appState.dailySeconds = Math.max(0, Number(appState.dailySeconds || 0) + seconds);
-            appState.dailyMinutes = Math.floor(appState.dailySeconds / 60);
-            appState.totalViews = Math.max(0, Number(appState.totalViews || 0) + 1);
-            appState.dailyViews = Math.max(0, Number(appState.dailyViews || 0) + 1);
-            saveAppState();
-            updateWatchDisplays();
-
-            if (isActivationDepositLocked()) {
-                handleActivationThresholdReached(reason);
-            }
-            return amount;
-        }
-
-        function clearOptimisticWatchSettlement(reason = 'optimistic_watch_reward_cleared') {
-            if (!watchOptimisticSettlement) return;
-            watchOptimisticSettlement = null;
-            bumpWatchRewardRevision(reason);
-        }
-
-        function rollbackOptimisticWatchSettlement(reason = 'watch_save_failed') {
-            if (!watchOptimisticSettlement) return;
-            const { seconds, reward } = watchOptimisticSettlement;
-            watchOptimisticSettlement = null;
-            bumpWatchRewardRevision(reason);
-            appState.balance = roundMoney(Math.max(0, Number(appState.balance || 0) - Number(reward || 0)));
-            appState.dailyEarned = roundMoney(Math.max(0, Number(appState.dailyEarned || 0) - Number(reward || 0)));
-            appState.totalSeconds = Math.max(0, Number(appState.totalSeconds || 0) - Number(seconds || 0));
-            appState.totalMinutes = Math.floor(appState.totalSeconds / 60);
-            appState.dailySeconds = Math.max(0, Number(appState.dailySeconds || 0) - Number(seconds || 0));
-            appState.dailyMinutes = Math.floor(appState.dailySeconds / 60);
-            appState.totalViews = Math.max(0, Number(appState.totalViews || 0) - 1);
-            appState.dailyViews = Math.max(0, Number(appState.dailyViews || 0) - 1);
-            saveAppState();
-            updateWatchDisplays();
-            document.documentElement.dataset.vidipayWatchRollbackReason = String(reason || '').slice(0, 80);
-            document.documentElement.dataset.vidipayWatchRollbackAt = new Date().toISOString();
+            const rate = Number(currentTierStatus.reward_per_second || backendSettings.view_reward_per_second || 0.01);
+            return Number((Math.max(0, Number(seconds || 0)) * rate).toFixed(2));
         }
 
         function shouldStopWatchAtActivationLimit(seconds = countedWatchSeconds) {
@@ -8872,46 +7905,33 @@
                 return;
             }
 
-            if (rewardedMrBeastVideos.has(videoId) || hasPendingWatchReward(videoId)) {
-                closeModal('watchModal');
-                showWatchResult(watchSeconds, 0, t('watch_video_duplicate'));
-                setWatchUiState('duplicate');
-                updateWatchDisplays();
-                return;
-            }
-
-            const estimatedReward = estimateWatchReward(watchSeconds);
-            const immediateReward = applyOptimisticWatchSettlement(watchSeconds, estimatedReward, videoId, 'watch_reward_immediate');
-            queuePendingWatchReward({
-                watch_seconds: watchSeconds,
-                reward: immediateReward,
-                video_id: videoId,
-                video_source: 'mrbeast_uploads',
-                client_country_code: clientCountryCode || currentTierStatus.country_code || null
-            });
-            rewardedMrBeastVideos.add(videoId);
-            closeModal('watchModal');
-            showWatchResult(watchSeconds, immediateReward, t('watch_reward_saving'));
-            watchFinalizeInflight = finalizeWatchedVideo(watchSeconds, videoId, { optimisticReward: immediateReward })
+            showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), t('watch_reward_saving'));
+            watchFinalizeInflight = finalizeWatchedVideo(watchSeconds, videoId)
                 .finally(() => {
                     watchFinalizeInflight = null;
                 });
             return watchFinalizeInflight;
         }
 
-        async function finalizeWatchedVideo(watchSeconds, videoId, options = {}) {
+        async function finalizeWatchedVideo(watchSeconds, videoId) {
             try {
                 setWatchUiState('saving');
                 if (!videoId) {
-                    rollbackOptimisticWatchSettlement('missing_video');
                     updateWatchSessionUi(t('watch_video_missing'));
                     pendingWatch = null;
                     setWatchUiState('error', 'missing_video');
                     return;
                 }
 
+            if (rewardedMrBeastVideos.has(videoId)) {
+                updateWatchSessionUi(t('watch_video_duplicate'));
+                showWatchResult(watchSeconds, 0, t('watch_video_duplicate'));
+                pendingWatch = null;
+                setWatchUiState('duplicate');
+                return;
+            }
+
             if (watchSeconds < Number(backendSettings.view_seconds_required || 5)) {
-                rollbackOptimisticWatchSettlement('too_short');
                 updateWatchSessionUi(t('watch_too_short_detail').replace('{time}', formatDuration(watchSeconds)));
                 showWatchResult(watchSeconds, 0, t('not_enough_time'));
                 pendingWatch = null;
@@ -8921,19 +7941,21 @@
 
                 const result = await apiRequest('/view/add', {
                     method: 'POST',
-                    body: JSON.stringify(await buildWatchRewardPayload(watchSeconds, videoId)),
-                    timeoutMs: 4500
+                    body: JSON.stringify({
+                        telegram_id: String(referralUserId),
+                        watch_seconds: watchSeconds,
+                        video_source: 'mrbeast_uploads',
+                        video_id: videoId,
+                        completed: true,
+                        client_country_code: await detectClientCountryCode()
+                    }),
+                    timeoutMs: 15000
                 });
 
                 rewardedMrBeastVideos.add(videoId);
                 pendingWatch = null;
-                removePendingWatchReward(videoId);
-                clearOptimisticWatchSettlement('watch_reward_confirmed');
                 applyBackendUser(result.user);
                 if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
-                if (isActivationDepositLocked()) {
-                    closeWatchModalForActivationLock('watch_finalize_threshold');
-                }
                 await refreshStatsFromBackend().catch(() => null);
                 updateWatchDisplays();
                 createFloatingText(null, result.reward);
@@ -8954,36 +7976,6 @@
         } catch (err) {
             pendingWatch = null;
             if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
-            if (isTransientWatchRewardError(err)) {
-                const keptReward = roundMoney(options.optimisticReward || estimateWatchReward(watchSeconds));
-                if (!hasPendingWatchReward(videoId)) {
-                    queuePendingWatchReward({
-                        watch_seconds: watchSeconds,
-                        reward: keptReward,
-                        video_id: videoId,
-                        video_source: 'mrbeast_uploads',
-                        client_country_code: clientCountryCode || currentTierStatus.country_code || null
-                    });
-                } else {
-                    markPendingWatchRewardError(videoId, err);
-                }
-                rewardedMrBeastVideos.add(videoId);
-                clearOptimisticWatchSettlement('watch_reward_pending_backend_sync');
-                updateWatchDisplays();
-                const message = watchPendingSyncMessage(friendlyErrorMessage(err));
-                updateWatchSessionUi(message);
-                showWatchResult(watchSeconds, keptReward, message);
-                addNotification(t('view_reward_title'), message);
-                setWatchUiState('pending_sync', message);
-                if (Number(err?.status || 0) === 404) {
-                    syncBackendUser().catch(syncErr => rememberFrontendError('pending_watch_user_sync', syncErr));
-                }
-                schedulePendingWatchRewardSync(2000);
-                return;
-            }
-            removePendingWatchReward(videoId);
-            rewardedMrBeastVideos.delete(videoId);
-            rollbackOptimisticWatchSettlement('view_add_failed');
             updateWatchDisplays();
             const message = friendlyErrorMessage(err);
             updateWatchSessionUi(message);
@@ -9005,8 +7997,9 @@
             const timeEl = document.getElementById('watch-session-time');
             const rewardEl = document.getElementById('watch-session-reward');
             const statusEl = document.getElementById('watch-session-status');
+            const rate = Number(currentTierStatus.reward_per_second || backendSettings.view_reward_per_second || 0);
             const timeText = formatDuration(countedWatchSeconds);
-            const rewardText = `$${estimateWatchReward(countedWatchSeconds).toFixed(2)}`;
+            const rewardText = `$${(countedWatchSeconds * rate).toFixed(2)}`;
             const snapshot = `${timeText}|${rewardText}|${message}`;
 
             if (snapshot === lastWatchUiSnapshot) return;
@@ -9321,7 +8314,7 @@
                 amount: Number(amount || 0).toFixed(2),
                 status: status || 'Pending',
                 method: extra.method || 'TON',
-                currency: extra.currency || (extra.method === 'TON_DEPOSIT_REFUND' ? DISPLAY_COIN_NAME : ''),
+                currency: extra.currency || (extra.method === 'TON_DEPOSIT_REFUND' ? 'TONCOIN' : ''),
                 type: extra.type || 'withdraw',
                 wallet: extra.wallet || '',
                 tx_hash: extra.tx_hash || '',
@@ -9356,8 +8349,7 @@
             box.innerHTML = items.map(item => `
                 <div class="history-item">
                     <b>${escapeHtml(receiptAmountText(item))} - ${escapeHtml(receiptNetworkText(item))}</b>
-                    <div>${escapeHtml(t('status_label'))}: ${escapeHtml(receiptStatusLabel(item.status, item))}</div>
-                    ${item.wallet ? `<div>${escapeHtml(t('receipt_wallet_label'))}: ${escapeHtml(item.wallet)}</div>` : ''}
+                    <div>${escapeHtml(t('status_label'))}: ${escapeHtml(receiptStatusLabel(item.status))}</div>
                     <div>${escapeHtml(item.date)}</div>
                 </div>
             `).join('');
@@ -9433,7 +8425,7 @@
             if (isTonDepositRefundReceipt(item)) {
                 if (normalized === 'completed') return t('deposit_refund_returned');
                 if (normalized === 'rejected') return t('deposit_refund_rejected');
-                if (normalized === 'processing') return t('deposit_refund_pending_status') || t('deposit_refund_saved');
+                if (normalized === 'processing') return t('deposit_refund_saved');
             }
             if (normalized === 'completed') return 'completed';
             if (normalized === 'rejected') return 'rejected';
@@ -9447,16 +8439,16 @@
         }
 
         function receiptTypeLabel(item = {}) {
-            if (item.title) return displayText(item.title);
-            if (isTonDepositRefundReceipt(item)) return t('deposit_refund_title') || 'Activation deposit refund';
+            if (item.title) return item.title;
+            if (isTonDepositRefundReceipt(item)) return 'Activation deposit refund';
             if (String(item.type || '').toLowerCase() === 'payment') return t('history_wallet_payment');
             return t('history_withdraw');
         }
 
         function receiptAmountText(item = {}) {
             const amountValue = Number(item.amount || 0).toFixed(2);
-            if (isTonReceipt(item)) return formatDisplayCoinAmount(amountValue);
-            return displayText(`$${amountValue} ${item.currency || item.method || ''}`.trim());
+            if (isTonReceipt(item)) return `${amountValue} TONCOIN`;
+            return `$${amountValue} ${item.currency || item.method || ''}`.trim();
         }
 
         function receiptWalletText(item = {}) {
@@ -9464,9 +8456,9 @@
         }
 
         function receiptNetworkText(item = {}) {
-            if (isTonDepositRefundReceipt(item)) return 'DEPOSIT_REFUND';
-            if (isTonReceipt(item)) return DISPLAY_COIN_NETWORK;
-            return displayText(item.network || item.method || '-');
+            if (isTonDepositRefundReceipt(item)) return 'TON_DEPOSIT_REFUND';
+            if (isTonReceipt(item)) return 'TON';
+            return item.network || item.method || '-';
         }
 
         function renderReceiptItem(item) {
@@ -9581,7 +8573,7 @@
             const addressEl = document.getElementById('payment-address-text');
             const expiryEl = document.getElementById('payment-expiry-text');
             if (addressBox) addressBox.style.display = 'block';
-            if (amountEl) amountEl.innerText = formatDisplayCoinAmount(getTonActivationAmount());
+            if (amountEl) amountEl.innerText = `${getTonActivationAmount().toFixed(2)} TONCOIN`;
             if (addressEl) addressEl.innerText = t('card_order_loading');
             if (expiryEl) {
                 expiryEl.innerText = '';
@@ -9614,7 +8606,7 @@
         }
 
         async function copyTonPaymentAddress() {
-            if (isActionThrottled('copy-ton-address', 220)) return;
+            if (isActionThrottled('copy-ton-address', 500)) return;
             const labelEl = document.getElementById('lbl-copy-ton-address');
             const originalLabel = t('copy_ton_address') || labelEl?.innerText || 'COPY ADDRESS';
             setActionBusy('ton-copy-address-btn', true);
@@ -9640,10 +8632,23 @@
             }
 
             try {
-                await copyTextToClipboard(walletAddress);
-                if (labelEl) setDomText(labelEl, t('copied') || 'Copied');
-                showCopyToast(t('ton_address_copied'));
-                updatePaymentRealTestReadiness('copy_address_success');
+                const copied = await copyTextToClipboard(walletAddress);
+                if (copied) {
+                    if (labelEl) setDomText(labelEl, t('copied') || 'Copied');
+                    showCopyToast(t('ton_address_copied'));
+                    updatePaymentRealTestReadiness('copy_address_success');
+                } else {
+                    const addressEl = document.getElementById('payment-address-text');
+                    if (addressEl) {
+                        const range = document.createRange();
+                        range.selectNodeContents(addressEl);
+                        const selection = window.getSelection?.();
+                        selection?.removeAllRanges();
+                        selection?.addRange(range);
+                    }
+                    showCopyToast(t('clipboard_copy_failed'));
+                    updatePaymentRealTestReadiness('copy_address_fallback_select');
+                }
             } finally {
                 setActionBusy('ton-copy-address-btn', false);
                 updatePaymentActionButtons();
@@ -9687,7 +8692,6 @@
 
         function startPaymentStatusPolling() {
             paymentPollingGeneration += 1;
-            paymentFastPollUntilAt = Math.max(paymentFastPollUntilAt, Date.now() + 25000);
             stopPaymentStatusPolling({ preserveGeneration: true });
             if (!document.getElementById('tonDepositModal')?.classList.contains('is-open')) return;
             updatePaymentRealTestReadiness('polling_start');
@@ -9732,7 +8736,7 @@
             return document.getElementById('watchModal')?.classList.contains('is-open');
         }
 
-        function setPaymentPollingHealthy(ok, options = {}) {
+        function setPaymentPollingHealthy(ok) {
             if (ok) {
                 paymentPollingFailures = 0;
                 paymentPollingDelayMs = 7000;
@@ -9741,7 +8745,7 @@
             }
             paymentPollingFailures = Math.min(6, paymentPollingFailures + 1);
             paymentPollingDelayMs = Math.min(60000, 7000 * Math.pow(1.75, paymentPollingFailures));
-            if (!options.quiet) refreshPaymentRuntimeStrip(navigator.onLine ? 'retrying' : 'offline');
+            refreshPaymentRuntimeStrip(navigator.onLine ? 'retrying' : 'offline');
         }
 
         function stableFrontendJitter(seed, maxMs = 2500) {
@@ -9765,11 +8769,6 @@
 
         function getPaymentPollingDelay() {
             if (!navigator.onLine) return 20000;
-            if (isTonDepositModalOpen() && Date.now() < paymentFastPollUntilAt) {
-                const fastJitter = stableFrontendJitter(`${frontendPollJitterSeed}:fast:${paymentPollingFailures}`, paymentPollingFailures ? 1200 : 600);
-                paymentPollingLastJitterMs = fastJitter;
-                return Math.max(1200, Math.min(5000, 2200 + fastJitter));
-            }
             const baseDelay = getConnectionAwarePollingBaseDelay();
             if (document.hidden) return Math.max(30000, baseDelay);
             const jitter = stableFrontendJitter(`${frontendPollJitterSeed}:${paymentPollingFailures}`, paymentPollingFailures ? 8000 : 3500);
@@ -9818,7 +8817,6 @@
                 schedulePaymentStatusPoll(2500);
             }
             refreshSettingsInBackground();
-            syncPendingWatchRewards('online').catch(err => rememberFrontendError('pending_watch_reward_online', err));
         });
 
         function pauseFrontendActivity(reason = 'page_pause') {
@@ -9846,8 +8844,7 @@
                 setWatchUiState('active', reason);
                 updateWatchSessionUi(t('watch_counting'));
             }
-            syncPendingWatchRewards(reason).catch(err => rememberFrontendError(`${reason}_pending_watch_reward`, err));
-            refreshTierStatusFromLiveNetwork({ force: true }).catch(err => rememberFrontendError(`${reason}_tier`, err));
+            refreshTierStatusFromLiveNetwork().catch(err => rememberFrontendError(`${reason}_tier`, err));
         }
 
         function resetStaleActionBusyLocks() {
@@ -9981,12 +8978,10 @@
                 modalStateGuardReady: document.documentElement.dataset.vidipayModalStateGuard === 'ready',
                 runtimeGuardReady: document.documentElement.dataset.vidipayFrontendRuntimeGuardInstalled === 'ready',
                 paymentModalWatchdogReady: document.documentElement.dataset.vidipayPaymentModalWatchdogInstalled === 'ready' && typeof sanitizePaymentModalDom === 'function',
+                pageshowModalPreserveReady: typeof handlePageshowModalState === 'function' && Array.isArray(PAGE_SHOW_PRESERVE_MODAL_IDS) && PAGE_SHOW_PRESERVE_MODAL_IDS.includes('tonDepositModal'),
                 paymentActionHandlersReady: document.documentElement.dataset.vidipayPaymentActionHandlers === 'ready',
                 paymentQrSuppressionReady: document.documentElement.dataset.vidipayPaymentQrSuppressed === 'ready',
                 withdrawWalletInputGuardReady: document.documentElement.dataset.vidipayWithdrawWalletInputGuard === 'ready' && typeof validateWithdrawWalletInput === 'function',
-                withdrawRefundScopeReady: /deposit_refund/.test(String(submitWithdrawRequest)),
-                withdrawRefundFollowupReady: typeof scheduleDepositRefundFollowup === 'function' && typeof clearDepositRefundFollowup === 'function',
-                paymentExpiryHealthDatasetReady: document.getElementById('payment-expiry-text')?.dataset.paymentValidityHealthy !== undefined,
                 manualCheckHandlerReady: checkBtn?.getAttribute('onclick') === 'checkTonPaymentNow()',
                 copyHandlerReady: copyBtn?.getAttribute('onclick') === 'copyTonPaymentAddress()',
                 modalLockReady: !document.body.classList.contains('modal-open')
@@ -10019,12 +9014,10 @@
                 && checks.modalStateGuardReady
                 && checks.runtimeGuardReady
                 && checks.paymentModalWatchdogReady
+                && checks.pageshowModalPreserveReady
                 && checks.paymentActionHandlersReady
                 && checks.paymentQrSuppressionReady
                 && checks.withdrawWalletInputGuardReady
-                && checks.withdrawRefundScopeReady
-                && checks.withdrawRefundFollowupReady
-                && checks.paymentExpiryHealthDatasetReady
                 && checks.manualCheckHandlerReady
                 && checks.copyHandlerReady;
             window.__vidipayFrontendContract = {
@@ -10078,13 +9071,11 @@
                 runtimeGuardTimer: frontendRuntimeGuardTimer !== null,
                 runtimeGuardLastAt: Number.isFinite(frontendRuntimeGuardLastAt),
                 paymentModalWatchdog: document.documentElement.dataset.vidipayPaymentModalWatchdogInstalled === 'ready',
+                pageshowModalPreserve: typeof handlePageshowModalState === 'function' && Array.isArray(PAGE_SHOW_PRESERVE_MODAL_IDS) && PAGE_SHOW_PRESERVE_MODAL_IDS.includes('tonDepositModal'),
                 paymentModalWatchdogTimer: paymentModalWatchdogTimer !== null,
                 paymentActionHandlers: document.documentElement.dataset.vidipayPaymentActionHandlers === 'ready',
                 paymentQrSuppression: document.documentElement.dataset.vidipayPaymentQrSuppressed === 'ready',
                 withdrawWalletInputGuard: document.documentElement.dataset.vidipayWithdrawWalletInputGuard === 'ready' && typeof validateWithdrawWalletInput === 'function',
-                withdrawRefundScope: /deposit_refund/.test(String(submitWithdrawRequest)),
-                withdrawRefundFollowup: typeof scheduleDepositRefundFollowup === 'function' && typeof clearDepositRefundFollowup === 'function',
-                paymentExpiryHealthDataset: document.getElementById('payment-expiry-text')?.dataset.paymentValidityHealthy !== undefined,
                 manualCheckClickHandler: checkBtn?.getAttribute('onclick') === 'checkTonPaymentNow()',
                 copyAddressClickHandler: copyBtn?.getAttribute('onclick') === 'copyTonPaymentAddress()',
                 staleBusyCleanup: !Array.from(document.querySelectorAll('[data-busy-lock-active="true"]')).some(btn => {
@@ -10135,13 +9126,11 @@
                 && checks.runtimeGuardTimer
                 && checks.runtimeGuardLastAt
                 && checks.paymentModalWatchdog
+                && checks.pageshowModalPreserve
                 && checks.paymentModalWatchdogTimer
                 && checks.paymentActionHandlers
                 && checks.paymentQrSuppression
                 && checks.withdrawWalletInputGuard
-                && checks.withdrawRefundScope
-                && checks.withdrawRefundFollowup
-                && checks.paymentExpiryHealthDataset
                 && checks.manualCheckClickHandler
                 && checks.copyAddressClickHandler
                 && checks.staleBusyCleanup
@@ -10194,10 +9183,7 @@
             }
         }
 
-        seedPaymentStatusFromCache();
-        seedPaymentOrderFromCache();
         changeLang(currentLang);
-        installCoinDisplayNormalizer();
         updateTopAccountInfo();
         updateWatchDisplays();
         renderNotifications();
@@ -10205,7 +9191,6 @@
         updateFrontendHealth({ ok: navigator.onLine });
         scheduleFrontendContractSelfCheck();
         initBackendApp();
-        if (loadPendingWatchRewards().length) schedulePendingWatchRewardSync(3000);
 
     </script>
 </body>
