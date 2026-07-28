@@ -8,12 +8,18 @@ const expectedBuild = "frontend-watch-reward-security-20260727";
 
 const expectedFiles = [
   "admin.html",
+  "vidipay-admin.css",
+  "vidipay-admin.js",
   "app-v3.html",
   "app-v4.html",
   "app-v5.html",
   "app-v6.html",
   "config.js",
-  "index.html"
+  "index.html",
+  "vidipay-app.css",
+  "vidipay-app.js",
+  "_headers",
+  "_worker.js"
 ];
 
 const forbiddenVisiblePatterns = [
@@ -108,13 +114,20 @@ function checkForbiddenStrings() {
   }
 }
 
-function checkRequiredPatterns(file, rules) {
-  const text = readText(file);
+function checkRequiredPatterns(file, rules, source = readText(file)) {
   for (const rule of rules) {
-    if (!rule.pattern.test(text)) {
+    if (!rule.pattern.test(source)) {
       fail(`${file} is missing required marker: ${rule.name}`);
     }
   }
+}
+
+function readAppBundle(file) {
+  return [readText(file), readText("vidipay-app.js"), readText("vidipay-app.css")].join("\n");
+}
+
+function readAdminBundle() {
+  return [readText("admin.html"), readText("vidipay-admin.js"), readText("vidipay-admin.css")].join("\n");
 }
 
 function checkCorsSafeRequestHeaders() {
@@ -144,6 +157,46 @@ function checkInlineScripts(file) {
   }
 }
 
+function checkExternalScriptSyntax() {
+  for (const file of ["vidipay-app.js", "vidipay-admin.js"]) {
+    try {
+      new vm.Script(readText(file), { filename: file });
+    } catch (error) {
+      fail(`${file} syntax error: ${error.message}`);
+    }
+  }
+}
+
+function checkCspHardening() {
+  const appFiles = ["app-v3.html", "app-v4.html", "app-v5.html", "app-v6.html", "index.html"];
+  for (const file of appFiles) {
+    const html = readText(file);
+    if (!html.includes("Content-Security-Policy")) fail(`${file} is missing CSP meta`);
+    if (!html.includes("script-src-attr 'none'")) fail(`${file} must block script attributes`);
+    if (!html.includes("./vidipay-app.js?v=csp-20260729")) fail(`${file} must load external app JS`);
+    if (!html.includes("./vidipay-app.css?v=csp-20260729")) fail(`${file} must load external app CSS`);
+    if (/<script\b(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/i.test(html)) fail(`${file} contains inline script`);
+    if (/<style\b/i.test(html)) fail(`${file} contains inline style block`);
+    if (/\son[a-z]+\s*=/i.test(html)) fail(`${file} contains inline event handler`);
+  }
+
+  const adminHtml = readText("admin.html");
+  if (!adminHtml.includes("script-src-attr 'none'")) fail("admin.html must block script attributes");
+  if (!adminHtml.includes("./vidipay-admin.js?v=csp-20260729")) fail("admin.html must load external admin JS");
+  if (!adminHtml.includes("./vidipay-admin.css?v=csp-20260729")) fail("admin.html must load external admin CSS");
+  if (/\son[a-z]+\s*=/i.test(adminHtml)) fail("admin.html contains inline event handler");
+
+  const scripts = `${readText("vidipay-app.js")}\n${readText("vidipay-admin.js")}`;
+  if (/setAttribute\(\s*['"]onclick/i.test(scripts)) fail("external scripts contain dynamic onclick attributes");
+  if (/\son[a-z]+\s*=/i.test(scripts)) fail("external scripts contain inline handler templates");
+  for (const origin of ["ipapi.co", "ipwho.is", "api.country.is", "get.geojs.io", "ipinfo.io", "ifconfig.co"]) {
+    if (scripts.includes(origin)) fail(`frontend contains third-party IP lookup: ${origin}`);
+  }
+
+  const headers = readText("_headers");
+  if (!headers.includes("Content-Security-Policy:")) fail("_headers is missing CSP");
+  if (!headers.includes("X-Frame-Options: DENY")) fail("admin frame protection is missing");
+}
 function checkAppEntryParity() {
   const appFiles = ["app-v3.html", "app-v4.html", "app-v5.html", "app-v6.html", "index.html"];
   const expectedHash = sha256(readText(appFiles[0]));
@@ -169,11 +222,13 @@ function main() {
   checkFilesExist();
   checkConfig();
   checkForbiddenStrings();
-  checkRequiredPatterns("app-v6.html", appRequiredPatterns);
-  checkRequiredPatterns("index.html", appRequiredPatterns);
-  checkRequiredPatterns("admin.html", adminRequiredPatterns);
+  checkRequiredPatterns("app-v6.html", appRequiredPatterns, readAppBundle("app-v6.html"));
+  checkRequiredPatterns("index.html", appRequiredPatterns, readAppBundle("index.html"));
+  checkRequiredPatterns("admin.html", adminRequiredPatterns, readAdminBundle());
   checkCorsSafeRequestHeaders();
   checkAppEntryParity();
+  checkExternalScriptSyntax();
+  checkCspHardening();
   for (const file of ["app-v3.html", "app-v4.html", "app-v5.html", "app-v6.html", "index.html"]) {
     if (!readText(file).includes(expectedBuild)) {
       fail(`${file} is missing current build marker: ${expectedBuild}`);

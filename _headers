@@ -2,13 +2,27 @@
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
   Pragma: no-cache
   Expires: 0
-  X-VidiPay-Frontend-Build: frontend-admin-readiness-20260711-v11
-  X-Frame-Options: SAMEORIGIN
+  X-VidiPay-Frontend-Build: frontend-watch-reward-security-20260727-csp
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://telegram.org https://www.youtube.com; script-src-attr 'none'; style-src 'self' https://cdnjs.cloudflare.com; style-src-attr 'unsafe-inline'; font-src 'self' data: https://cdnjs.cloudflare.com; img-src 'self' data: blob: https://upload.wikimedia.org https://i.ytimg.com https://img.youtube.com; connect-src 'self' https://vidipay-backend-1.onrender.com; frame-src https://www.youtube.com https://www.youtube-nocookie.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'; upgrade-insecure-requests; frame-ancestors 'self' https://web.telegram.org https://*.telegram.org
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+/admin.html
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  Content-Security-Policy: default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://vidipay-backend-1.onrender.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'; upgrade-insecure-requests; frame-ancestors 'none'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
   Permissions-Policy: camera=(), microphone=(), geolocation=()
 
 /config.js
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
   Pragma: no-cache
   Expires: 0
+
+/vidipay-app.js
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/vidipay-admin.js
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
