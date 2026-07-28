@@ -44,6 +44,8 @@ const appRequiredPatterns = [
   { name: "deposit_refund_withdrawal", pattern: /submitWithdrawRequest[\s\S]*withdraw_scope:\s*['"]deposit_refund['"]/ },
   { name: "deposit_refund_payload_lock", pattern: /depositRefundPayload[\s\S]*requested:\s*true[\s\S]*withdrawUiSnapshot\s*=\s*['"]/ },
   { name: "idempotency_header", pattern: /createIdempotencyKey[\s\S]*['"]Idempotency-Key['"]/ },
+  { name: "telegram_user_auth_header", pattern: /resolveTelegramInitData[\s\S]*['"]X-Telegram-Init-Data['"]/ },
+  { name: "telegram_auth_trusted_backend_only", pattern: /telegramAuthHeadersFor[\s\S]*getApiBaseCandidates/ },
   { name: "admin_notification_translation", pattern: /translateAdminNotificationText/ },
   { name: "notification_list_layout", pattern: /notification-list/ },
   { name: "growth_lock_status", pattern: /currentGrowthLockStatus/ }
