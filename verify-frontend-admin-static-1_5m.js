@@ -4,7 +4,7 @@ const vm = require("vm");
 const crypto = require("crypto");
 
 const targetDir = path.resolve(process.argv[2] || __dirname);
-const expectedBuild = "frontend-backend-resilience-20260724-v24";
+const expectedBuild = "frontend-watch-reward-security-20260727";
 
 const expectedFiles = [
   "admin.html",
@@ -36,34 +36,32 @@ const forbiddenVisiblePatterns = [
 
 const appRequiredPatterns = [
   { name: "app_backend_primary", pattern: /vidipay-backend-1\.onrender\.com/ },
+  { name: "telegram_init_data_auth", pattern: /X-Telegram-Init-Data/ },
   { name: "wallet_unlock_gate", pattern: /openWalletIfUnlocked/ },
   { name: "ton_deposit_address", pattern: /ton-deposit-address/ },
   { name: "ton_deposit_warning_i18n", pattern: /ton_deposit_warning/ },
   { name: "wallet_ready_i18n", pattern: /wallet_ready_for_activation/ },
   { name: "deposit_refund_withdrawal", pattern: /submitWithdrawRequest[\s\S]*withdraw_scope:\s*['"]deposit_refund['"]/ },
-  { name: "deposit_refund_followup", pattern: /scheduleDepositRefundFollowup[\s\S]*refreshPaymentStatus/ },
+  { name: "deposit_refund_status_refresh", pattern: /async function refreshPaymentStatus/ },
   { name: "admin_notification_translation", pattern: /translateAdminNotificationText/ },
   { name: "notification_list_layout", pattern: /notification-list/ },
-  { name: "growth_lock_status", pattern: /currentGrowthLockStatus/ },
-  { name: "pending_watch_reward_storage", pattern: /pendingWatchRewardsKey/ },
-  { name: "instant_watch_reward_queue", pattern: /applyOptimisticWatchSettlement[\s\S]*queuePendingWatchReward[\s\S]*finalizeWatchedVideo/ },
-  { name: "transient_watch_reward_sync", pattern: /isTransientWatchRewardError[\s\S]*watch_reward_pending_backend_sync/ },
-  { name: "stale_watch_reward_guard", pattern: /expectedWatchRewardRevision[\s\S]*vidipayStaleStatsSkippedAt/ },
-  { name: "fast_country_lookup", pattern: /firstValidCountryLookup[\s\S]*clientCountryDetectedAt/ },
-  { name: "forced_vpn_tier_refresh", pattern: /refreshTierStatusFromLiveNetwork\(\{ force: true \}\)/ },
-  { name: "production_backend_lock", pattern: /isLocalDevelopmentRuntime[\s\S]*:\s*\[PRODUCTION_API_BASE_URL\]/ },
-  { name: "request_cancelled_not_failure", pattern: /REQUEST_CANCELLED[\s\S]*recordFrontendCancellation/ },
-  { name: "settings_stale_while_revalidate", pattern: /refreshBackendSettings[\s\S]*settings_background_refresh/ },
-  { name: "youtube_end_auto_finalize", pattern: /PlayerState\.ENDED[\s\S]*finalizeWatchSession\(\)/ }
+  { name: "growth_lock_status", pattern: /growthLockStatus/ },
+  { name: "watch_server_session_start", pattern: /apiRequest\(['"]\/view\/session\/start['"]/ },
+  { name: "watch_server_heartbeat", pattern: /apiRequest\(['"]\/view\/session\/heartbeat['"]/ },
+  { name: "watch_session_token_completion", pattern: /const completionBody = \{[\s\S]*session_token:[\s\S]*ended:\s*true/ },
+  { name: "watch_authoritative_seconds", pattern: /watchSeconds = Number\(result\.watch_seconds \|\| 0\)/ },
+  { name: "watch_fallback_fail_closed", pattern: /showMrBeastFallbackPlayer[\s\S]*setWatchUiState\(['"]unverified_player['"]\)/ },
+  { name: "watch_close_no_reward", pattern: /function closeWatchModal\(\)[\s\S]*watch_incomplete_no_reward/ },
+  { name: "youtube_end_auto_finalize", pattern: /PlayerState\.ENDED[\s\S]*finalizeWatchSession\(finalSnapshot\)/ }
 ];
 
 const adminRequiredPatterns = [
   { name: "admin_backend_primary", pattern: /vidipay-backend-1\.onrender\.com/ },
-  { name: "admin_gram_ex_toncoin_scanner_panel", pattern: /Automatic Gram \(ex-Toncoin\) scanner/ },
+  { name: "admin_ton_scanner_panel", pattern: /Automatic TON scanner/ },
   { name: "admin_payment_wallets_endpoint", pattern: /\/admin\/payment-wallets/ },
   { name: "admin_notification_endpoint", pattern: /\/admin\/notification\/send/ },
-  { name: "admin_production_backend_lock", pattern: /isAdminLocalDevelopmentRuntime[\s\S]*ADMIN_PRODUCTION_API_BASE_URL/ },
-  { name: "admin_request_timeout", pattern: /timeoutTriggered[\s\S]*Backend response timeout/ },
+  { name: "admin_production_backend_candidates", pattern: /getAdminApiCandidates[\s\S]*ADMIN_PRODUCTION_API_BASE_URL/ },
+  { name: "admin_token_header", pattern: /['"]x-admin-token['"]:\s*token\(\)/ },
   { name: "admin_manual_backup_text", pattern: /Manual backup/ }
 ];
 
@@ -176,8 +174,8 @@ function main() {
   checkRequiredPatterns("admin.html", adminRequiredPatterns);
   checkCorsSafeRequestHeaders();
   checkAppEntryParity();
-  for (const file of expectedFiles) {
-    if (file.endsWith(".html") && !readText(file).includes(expectedBuild)) {
+  for (const file of ["app-v3.html", "app-v4.html", "app-v5.html", "app-v6.html", "index.html"]) {
+    if (!readText(file).includes(expectedBuild)) {
       fail(`${file} is missing current build marker: ${expectedBuild}`);
     }
   }

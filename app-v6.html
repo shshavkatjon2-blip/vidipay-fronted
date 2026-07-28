@@ -9,11 +9,11 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="frontend-edge-transaction-security-20260726">
+    <meta name="vidipay-build" content="frontend-watch-reward-security-20260727">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=frontend-edge-transaction-security-20260726"></script>
+    <script src="./config.js?v=frontend-watch-reward-security-20260727"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -21,7 +21,7 @@
             --text-muted: #a0a5b5;
             --card-bg: rgba(17, 26, 30, 0.75);
             --panel-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
-            
+
             /* Cyber-Hamster Mint Neon */
             --bg-gradient: radial-gradient(circle at center, #111a1e 0%, #090e12 70%, #05070a 100%);
             --accent-color: #00ffcc;
@@ -525,11 +525,11 @@
             transition: all 0.2s ease;
         }
 
-        .top-btn:active { 
-            transform: scale(0.9); 
+        .top-btn:active {
+            transform: scale(0.9);
             background: rgba(0, 255, 204, 0.1);
         }
-        
+
         .badge {
             position: absolute;
             top: -2px; right: -2px;
@@ -813,10 +813,10 @@
         .modal-close {
             position: absolute;
             top: 16px; right: 16px;
-            background: rgba(255,255,255,0.04); 
+            background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.08);
-            color: #ffffff; 
-            font-size: 14px; 
+            color: #ffffff;
+            font-size: 14px;
             cursor: pointer;
             width: 32px;
             height: 32px;
@@ -964,7 +964,7 @@
             font-family: monospace;
             margin-top: 10px;
         }
-    
+
         .tier-panel{
             width:100%;
             margin-top:20px;
@@ -2380,7 +2380,7 @@
             </button>
             <button class="top-btn top-invite-btn" onclick="triggerInvite()" aria-label="Add Friend"><i class="fas fa-user-plus"></i></button>
         </div>
-        
+
         <div class="nav-center">
             <div class="app-title">VIDIPAY</div>
         </div>
@@ -2395,7 +2395,7 @@
     </div>
 
     <div class="main-container">
-        
+
         <div class="balance-bonus-row">
             <div class="balance-card">
                 <div class="balance-label" id="lbl-total-balance">TOTAL BALANCE</div>
@@ -2425,7 +2425,7 @@
                 <span class="stat-title" id="lbl-total-watch-time">Total watch time</span>
                 <span class="stat-main-val" id="total-watch-hours">0</span>
             </div>
-            
+
             <div class="stat-card-row glow-cyan">
                 <span class="stat-title" id="lbl-time-spent">Daily watch time</span>
                 <span class="stat-main-val" id="video-time">0</span>
@@ -2486,7 +2486,7 @@
                     <i class="fas fa-user-astronaut" style="font-size: 50px; color: var(--accent-color); margin-bottom: 8px;"></i>
                     <div style="font-weight: bold; font-size: 18px; color: #fff;" id="user-display-name">Loading...</div>
                 </div>
-                
+
                 <div class="profile-data-field">
                     <span class="profile-data-label" id="lbl-prof-account-id">Account ID:</span>
                     <span class="profile-data-value" id="user-display-id">00000000</span>
@@ -2624,7 +2624,7 @@
                 </div>
                 <div class="withdraw-locked-row" id="wallet-lock-row"><i class="fas fa-lock" style="margin-right:8px;"></i>Wallet locked</div>
                 <div class="withdraw-extra-row" id="wallet-lock-extra">Earn $20.00 in total to unlock wallet activation.</div>
-                
+
                 <div id="payment-unlock-box" class="wallet-activation-card" style="display:none;">
                     <div style="font-weight:900; color:var(--accent-color); margin-bottom:12px; font-size:16px; text-align:center;" id="lbl-unlock-title">Wallet activation</div>
                     <div class="wallet-pay-card">
@@ -2765,9 +2765,9 @@
         <div class="modal-content">
             <button class="modal-close" onclick="closeModal('settingsModal')"><i class="fas fa-times"></i></button>
             <div class="modal-title" id="lbl-mdl-settings">Settings</div>
-            
+
             <div class="info-sub-block" style="padding: 10px 15px; display: flex; flex-direction: column; gap: 5px;">
-                
+
                 <div class="settings-row-item">
                     <div class="lang-select-group">
                         <div class="lang-label" id="lbl-lang-title">Language</div>
@@ -2815,6 +2815,7 @@
 
     <script>
         const tg = window.Telegram?.WebApp || {
+            initData: '',
             initDataUnsafe: {},
             expand() {},
             HapticFeedback: null,
@@ -3169,9 +3170,21 @@
         resetModalOverlays('initial_reset');
         window.addEventListener('pageshow', handlePageshowModalState);
 
-        const BOT_USERNAME = "magapatron_bot"; 
+        const BOT_USERNAME = "magapatron_bot";
         const pageParams = new URLSearchParams(window.location.search);
         const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+
+        function resolveTelegramInitData() {
+            return String(
+                tg.initData ||
+                hashParams.get('tgWebAppData') ||
+                pageParams.get('tgWebAppData') ||
+                ''
+            ).trim();
+        }
+
+        const telegramInitData = resolveTelegramInitData();
+        document.documentElement.dataset.vidipayTelegramAuth = telegramInitData ? 'present' : 'missing';
 
         function parseTelegramUserFromWebAppData(rawWebAppData) {
             if (!rawWebAppData) return null;
@@ -3208,24 +3221,8 @@
         const referralUserId = user?.id ? String(user.id) : (safeStorageGet('vidiPayGuestId') || ('guest_' + Math.random().toString(36).slice(2, 10)));
         if (!user?.id && !safeStorageGet('vidiPayGuestId')) safeStorageSet('vidiPayGuestId', referralUserId);
         const referralLink = `https://t.me/${BOT_USERNAME}?start=ref_${referralUserId}`;
-        const referralStartParam =
-            pageParams.get('ref') ||
-            pageParams.get('start') ||
-            pageParams.get('startapp') ||
-            pageParams.get('tgWebAppStartParam') ||
-            hashParams.get('ref') ||
-            tg.initDataUnsafe?.start_param ||
-            '';
-        const parsedReferrerId = String(referralStartParam || '').startsWith('ref_')
-            ? String(referralStartParam).slice(4)
-            : String(referralStartParam || '');
-        if (parsedReferrerId && String(parsedReferrerId) !== String(referralUserId)) {
-            safeStorageSet('vidiPayPendingReferrerId', parsedReferrerId);
-        }
-        const storedReferrerId = safeStorageGet('vidiPayPendingReferrerId') || '';
-        const referrerId = storedReferrerId && String(storedReferrerId) !== String(referralUserId)
-            ? storedReferrerId
-            : '';
+        const referralToken = pageParams.get('ref_token') || hashParams.get('ref_token') || safeStorageGet('vidiPayPendingReferralToken') || '';
+        if (referralToken) safeStorageSet('vidiPayPendingReferralToken', referralToken);
         const refLinkEl = document.getElementById('ref-link');
         if (refLinkEl) refLinkEl.innerText = referralLink;
 
@@ -3235,13 +3232,9 @@
             safeStorageSet('vidiPayLang', 'en');
         }
         const TARGET_URL = "https://www.youtube.com/@MrBeast";
-        const apiOverrideParam = pageParams.get('api');
-        if (apiOverrideParam && /^https:\/\/.+/i.test(apiOverrideParam)) {
-            safeStorageSet('vidiPayApiBase', apiOverrideParam.replace(/\/$/, ''));
-        }
         const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-edge-transaction-security-20260726';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-watch-reward-security-20260727';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
@@ -3265,14 +3258,31 @@
         }
 
         function getApiBaseCandidates() {
-            const candidates = [
-                apiOverrideParam,
+            const trustedCandidates = [
                 window.VIDIPAY_API_BASE,
                 getCurrentOriginApiBase(),
+            ].map(normalizeApiBaseUrl).filter(Boolean);
+            const trustedOrigins = new Set([
+                ...trustedCandidates,
+                ...FALLBACK_API_BASE_URLS.map(normalizeApiBaseUrl).filter(Boolean)
+            ].map(value => new URL(value).origin));
+            const candidates = [
+                ...trustedCandidates,
                 safeStorageGet('vidiPayApiBase'),
                 ...FALLBACK_API_BASE_URLS
-            ].map(normalizeApiBaseUrl).filter(Boolean);
+            ].map(normalizeApiBaseUrl).filter(value => {
+                if (!value) return false;
+                return trustedOrigins.has(new URL(value).origin);
+            });
             return [...new Set(candidates)];
+        }
+
+        function telegramAuthHeadersFor(baseUrl) {
+            if (!telegramInitData) return {};
+            const trusted = getApiBaseCandidates().some(candidate => {
+                return new URL(candidate).origin === new URL(baseUrl).origin;
+            });
+            return trusted ? { 'X-Telegram-Init-Data': telegramInitData } : {};
         }
 
         let API_BASE_URL = getApiBaseCandidates()[0] || PRODUCTION_API_BASE_URL;
@@ -3316,6 +3326,11 @@
         let watchSessionSubmitted = false;
         let watchSessionGeneration = 0;
         let watchFinalizeInflight = null;
+        let watchServerSession = null;
+        let watchSessionStartInflight = null;
+        let watchHeartbeatInterval = null;
+        let watchHeartbeatQueue = Promise.resolve();
+        let watchLastPlayerState = null;
         let watchSessionVideoIds = new Set();
         let lastWatchUiSnapshot = '';
         let rewardedMrBeastVideos = new Set();
@@ -3402,6 +3417,7 @@
             youtubeApiReady = true;
             if (shouldStartMrBeastWhenApiReady) {
                 shouldStartMrBeastWhenApiReady = false;
+                if (usingFallbackPlayer) clearWatchFallbackPlayer();
                 startMrBeastPlayer();
             }
         };
@@ -3459,6 +3475,7 @@
                         ...fetchOptions,
                         headers: {
                             'Content-Type': 'application/json',
+                            ...telegramAuthHeadersFor(baseUrl),
                             ...(requestIdempotencyKey ? { 'Idempotency-Key': requestIdempotencyKey } : {}),
                             ...(fetchOptions.headers || {})
                         },
@@ -3631,7 +3648,7 @@
                 username: user?.username || null,
                 first_name: user?.first_name || null,
                 last_name: user?.last_name || null,
-                referrer_id: referrerId && String(referrerId) !== String(referralUserId) ? String(referrerId) : null
+                referral_token: referralToken || null
             };
 
             userSyncInflight = apiRequest('/user/sync', {
@@ -3643,7 +3660,7 @@
                     userSyncFetchedAt = Date.now();
                     applyBackendUser(result.user);
                     if (result.referral?.applied) {
-                        safeStorageRemove('vidiPayPendingReferrerId');
+                        safeStorageRemove('vidiPayPendingReferralToken');
                         addNotification(t('bonus_title'), t('referral_bonus_added'));
                     }
                     updateWatchDisplays();
@@ -5228,16 +5245,16 @@
                 watch_title: "MrBeast Watch",
                 watched_time: "Watched time:",
                 pending_reward: "Pending reward:",
-                watch_wait: "MrBeast videos are counting. Reward is added when you leave this screen.",
+                watch_wait: "Start a MrBeast video. Reward is added only after server-verified completion.",
                 watch_loading: "YouTube player is loading. MrBeast video will open automatically.",
-                watch_playing: "MrBeast video is playing. Time continues across videos.",
-                watch_counting: "Watching... reward will be added when you leave this screen.",
-                watch_finished: "Video finished. Next MrBeast video can continue the same session.",
+                watch_playing: "MrBeast video is playing. This video must finish to qualify.",
+                watch_counting: "Watching... server verification is active.",
+                watch_finished: "Video finished. Verifying and saving reward.",
                 watch_result_title: "Video result",
                 watched_result: "Watched time:",
                 earned_result: "Earned:",
                 not_enough_time: "Watched time is not enough. No money was added.",
-                watch_added: "You left the logo screen. Watched time and earned money were added to the main page.",
+                watch_added: "Video completion verified. The reward was added to your balance.",
                 wallet_locked: "Wallet locked until withdrawal time",
                 wallet_locked_extra: "Wallet address will appear when the withdrawal window opens.",
                 account_deleted: "Account deletion request completed. This account is now blocked.",
@@ -5287,7 +5304,7 @@
                 tier1_countries: "United States, Australia, Canada, Norway, Switzerland, Germany, United Kingdom, Netherlands, Sweden, Denmark",
                 tier2_countries: "France, Belgium, Austria, Finland, Ireland, New Zealand, Italy, Spain, Japan, South Korea",
                 tier3_countries: "All remaining countries worldwide",
-                
+
                 /* YAGNI QO'SHILDI: FIAT TARJIMALARI */
                 pay_with_fiat: "CHECK PAYMENT",
                 fastest_method: "FASTEST METHOD",
@@ -5923,8 +5940,15 @@
             fullscreen_unavailable: "Fullscreen mode is not available on this device.",
             watch_reward_save_failed: "Reward could not be saved.",
             watch_reward_saving: "Saving reward...",
+            watch_verifying: "Starting secure watch verification...",
+            watch_verified: "Secure watch verification is active.",
+            watch_verified_player_required: "This player cannot verify completion. No reward will be added here.",
+            watch_verified_session_required: "No verified watch session was found. No reward was added.",
+            watch_incomplete_no_reward: "The video was closed before verified completion. No reward was added.",
+            watch_paused: "Video is paused. Press play to continue secure verification.",
+            watch_session_invalid: "The secure watch session response was invalid.",
             watch_video_missing: "Video id was not detected. Please start the MrBeast video again.",
-            watch_video_duplicate: "This video was already counted in this session. Choose another MrBeast video.",
+            watch_video_duplicate: "This video was already rewarded. Choose another MrBeast video.",
             watch_too_short_detail: "Video ended, but watched time is too short: {time}.",
             watch_reward_added_detail: "Reward added after {time}: ${amount}",
             watch_reward_backend_failed: "Reward was not saved to the backend.",
@@ -7532,15 +7556,28 @@
         }
 
         function resetWatchVideoState(message = t('watch_playing')) {
+            clearInterval(watchHeartbeatInterval);
+            watchHeartbeatInterval = null;
+            clearInterval(watchTimerInterval);
+            watchTimerInterval = null;
+            watchServerSession = null;
+            watchSessionSubmitted = false;
+            countedWatchSeconds = 0;
+            watchAccumulatedMs = 0;
+            watchSegmentStartedAt = null;
             currentWatchCompleted = false;
             currentMrBeastVideoId = null;
+            watchLastPlayerState = null;
+            watchSessionGeneration += 1;
+            if (pendingWatch) pendingWatch.generation = watchSessionGeneration;
             lastWatchUiSnapshot = '';
             updateWatchSessionUi(message);
         }
 
         function playMrBeastAt(index) {
+            if (watchFinalizeInflight || watchSessionSubmitted) return;
             if (!mrbeastPlayer || !mrbeastPlayer.playVideoAt) {
-                showMrBeastFallbackPlayer(t('watch_playing'), index);
+                showMrBeastFallbackPlayer(t('watch_verified_player_required'), index);
                 return;
             }
             resetWatchVideoState(t('watch_playing'));
@@ -7554,8 +7591,9 @@
 
         function playNextMrBeastVideo() {
             if (isActionThrottled('watch-next', 700)) return;
+            if (watchFinalizeInflight || watchSessionSubmitted) return;
             if (!mrbeastPlayer || !mrbeastPlayer.nextVideo) {
-                showMrBeastFallbackPlayer(t('watch_playing'));
+                showMrBeastFallbackPlayer(t('watch_verified_player_required'));
                 return;
             }
             resetWatchVideoState(t('watch_playing'));
@@ -7564,8 +7602,9 @@
 
         function playPreviousMrBeastVideo() {
             if (isActionThrottled('watch-previous', 700)) return;
+            if (watchFinalizeInflight || watchSessionSubmitted) return;
             if (!mrbeastPlayer || !mrbeastPlayer.previousVideo) {
-                showMrBeastFallbackPlayer(t('watch_playing'));
+                showMrBeastFallbackPlayer(t('watch_verified_player_required'));
                 return;
             }
             resetWatchVideoState(t('watch_playing'));
@@ -7586,17 +7625,16 @@
             return `https://www.youtube.com/embed/videoseries?${params.toString()}`;
         }
 
-        function showMrBeastFallbackPlayer(message = t('watch_playing'), index = randomMrBeastIndex()) {
+        function showMrBeastFallbackPlayer(message = t('watch_verified_player_required'), index = randomMrBeastIndex()) {
             const host = document.getElementById('mrbeast-player');
             if (!host || !pendingWatch) return;
 
+            resetWatchVideoState(message);
             mrbeastPlayer = null;
             usingFallbackPlayer = true;
-            currentMrBeastVideoId = currentMrBeastVideoId || `mrbeast_fallback_${Date.now()}`;
-            watchSessionVideoIds.add(currentMrBeastVideoId);
             host.innerHTML = `<iframe src="${buildMrBeastEmbedUrl(index)}" title="MrBeast video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="width:100%;height:100%;border:0;display:block;background:#05070a;"></iframe>`;
             updateWatchSessionUi(message);
-            startWatchTimerDisplay();
+            setWatchUiState('unverified_player');
         }
 
         function clearWatchFallbackPlayer() {
@@ -7609,6 +7647,192 @@
             }
         }
 
+        function readVerifiedWatchPlayerSnapshot() {
+            if (usingFallbackPlayer || !mrbeastPlayer) return null;
+            try {
+                const videoData = mrbeastPlayer.getVideoData ? mrbeastPlayer.getVideoData() : {};
+                const videoId = String(videoData?.video_id || '').trim();
+                const duration = Number(mrbeastPlayer.getDuration ? mrbeastPlayer.getDuration() : 0);
+                const position = Number(mrbeastPlayer.getCurrentTime ? mrbeastPlayer.getCurrentTime() : 0);
+                if (!/^[A-Za-z0-9_-]{11}$/.test(videoId)) return null;
+                if (!Number.isFinite(duration) || duration < 5 || duration > 43200) return null;
+                if (!Number.isFinite(position) || position < 0 || position > duration + 15) return null;
+                return { videoId, duration, position };
+            } catch (_) {
+                return null;
+            }
+        }
+
+        function clearWatchHeartbeatSchedule() {
+            clearInterval(watchHeartbeatInterval);
+            watchHeartbeatInterval = null;
+        }
+
+        function startWatchHeartbeatSchedule() {
+            clearWatchHeartbeatSchedule();
+            if (!watchServerSession) return;
+            const intervalMs = Math.max(
+                3250,
+                Number(watchServerSession.heartbeatIntervalSeconds || 5) * 1000 + 250
+            );
+            watchHeartbeatInterval = setInterval(() => {
+                if (
+                    !watchServerSession ||
+                    watchSessionSubmitted ||
+                    document.hidden ||
+                    watchLastPlayerState !== YT.PlayerState.PLAYING
+                ) return;
+                queueWatchHeartbeat({
+                    intervalPlaying: true,
+                    intervalVisible: true,
+                    ended: false
+                }).catch(handleWatchHeartbeatFailure);
+            }, intervalMs);
+        }
+
+        function queueWatchHeartbeat(options = {}) {
+            const targetSession = watchServerSession;
+            if (!targetSession) return Promise.resolve(null);
+
+            const operation = watchHeartbeatQueue
+                .catch(() => null)
+                .then(async () => {
+                    if (watchServerSession !== targetSession) return null;
+                    const snapshot = readVerifiedWatchPlayerSnapshot();
+                    if (!snapshot || snapshot.videoId !== targetSession.videoId) return null;
+
+                    const result = await apiRequest('/view/session/heartbeat', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            session_id: targetSession.sessionId,
+                            session_token: targetSession.sessionToken,
+                            sequence: targetSession.nextSequence,
+                            player_position_seconds: snapshot.position,
+                            video_duration_seconds: snapshot.duration,
+                            interval_playing: options.intervalPlaying === true,
+                            interval_visible: options.intervalVisible === true,
+                            ended: options.ended === true
+                        }),
+                        timeoutMs: 12000
+                    });
+
+                    if (watchServerSession === targetSession) {
+                        targetSession.nextSequence = Number(result.next_sequence || targetSession.nextSequence);
+                        targetSession.observedWatchSeconds = Number(
+                            result.observed_watch_seconds || targetSession.observedWatchSeconds || 0
+                        );
+                    }
+                    return result;
+                });
+
+            watchHeartbeatQueue = operation.catch(() => null);
+            return operation;
+        }
+
+        function handleWatchHeartbeatFailure(err) {
+            clearWatchHeartbeatSchedule();
+            stopWatchTimerDisplay();
+            setWatchUiState('verification_error', err?.data?.code || 'heartbeat_failed');
+            updateWatchSessionUi(friendlyErrorMessage(err) || t('watch_reward_backend_failed'));
+            try {
+                if (mrbeastPlayer?.pauseVideo) mrbeastPlayer.pauseVideo();
+            } catch (_) {}
+        }
+
+        async function ensureWatchServerSession(snapshot = readVerifiedWatchPlayerSnapshot()) {
+            if (!pendingWatch || watchSessionSubmitted || usingFallbackPlayer || !snapshot) return null;
+            if (
+                watchServerSession &&
+                watchServerSession.videoId === snapshot.videoId &&
+                watchServerSession.generation === pendingWatch.generation
+            ) return watchServerSession;
+
+            if (watchSessionStartInflight) {
+                await watchSessionStartInflight.catch(() => null);
+                const freshSnapshot = readVerifiedWatchPlayerSnapshot();
+                if (
+                    pendingWatch &&
+                    !watchSessionSubmitted &&
+                    watchLastPlayerState === YT.PlayerState.PLAYING &&
+                    freshSnapshot
+                ) return ensureWatchServerSession(freshSnapshot);
+                return null;
+            }
+
+            const generation = pendingWatch.generation;
+            const requestedVideoId = snapshot.videoId;
+            setWatchUiState('verifying');
+            updateWatchSessionUi(t('watch_verifying'));
+
+            const request = apiRequest('/view/session/start', {
+                method: 'POST',
+                body: JSON.stringify({
+                    video_source: 'mrbeast_uploads',
+                    video_id: requestedVideoId,
+                    video_duration_seconds: snapshot.duration,
+                    player_position_seconds: snapshot.position
+                }),
+                timeoutMs: 15000
+            });
+            watchSessionStartInflight = request;
+
+            try {
+                const result = await request;
+                if (
+                    !pendingWatch ||
+                    pendingWatch.generation !== generation ||
+                    currentMrBeastVideoId !== requestedVideoId
+                ) return null;
+
+                if (result?.already_counted) {
+                    rewardedMrBeastVideos.add(requestedVideoId);
+                    clearWatchHeartbeatSchedule();
+                    stopWatchTimerDisplay();
+                    updateWatchSessionUi(t('watch_video_duplicate'));
+                    setWatchUiState('duplicate');
+                    try {
+                        if (mrbeastPlayer?.pauseVideo) mrbeastPlayer.pauseVideo();
+                    } catch (_) {}
+                    return null;
+                }
+
+                if (!result?.session_id || !result?.session_token) {
+                    throw new Error(t('watch_session_invalid'));
+                }
+
+                watchServerSession = {
+                    sessionId: String(result.session_id),
+                    sessionToken: String(result.session_token),
+                    nextSequence: Number(result.next_sequence || 1),
+                    heartbeatIntervalSeconds: Number(result.heartbeat_interval_seconds || 5),
+                    observedWatchSeconds: 0,
+                    videoId: requestedVideoId,
+                    duration: Number(result.video_duration_seconds || snapshot.duration),
+                    generation
+                };
+                setWatchUiState('verified');
+                startWatchTimerDisplay();
+                startWatchHeartbeatSchedule();
+                updateWatchSessionUi(t('watch_verified'));
+                return watchServerSession;
+            } catch (err) {
+                if (pendingWatch?.generation === generation) {
+                    watchServerSession = null;
+                    clearWatchHeartbeatSchedule();
+                    stopWatchTimerDisplay();
+                    setWatchUiState('verification_error', err?.data?.code || 'session_start_failed');
+                    updateWatchSessionUi(friendlyErrorMessage(err) || t('watch_reward_backend_failed'));
+                    try {
+                        if (mrbeastPlayer?.pauseVideo) mrbeastPlayer.pauseVideo();
+                        if (mrbeastPlayer?.seekTo) mrbeastPlayer.seekTo(0, true);
+                    } catch (_) {}
+                }
+                throw err;
+            } finally {
+                if (watchSessionStartInflight === request) watchSessionStartInflight = null;
+            }
+        }
+
         function startMrBeastPlayer() {
             if (!youtubeApiReady || !window.YT || !window.YT.Player) {
                 shouldStartMrBeastWhenApiReady = true;
@@ -7616,9 +7840,9 @@
                 clearTimeout(watchFallbackTimer);
                 watchFallbackTimer = setTimeout(() => {
                     if (pendingWatch && !usingFallbackPlayer && !mrbeastPlayer) {
-                        showMrBeastFallbackPlayer(t('watch_playing'));
+                        showMrBeastFallbackPlayer(t('watch_verified_player_required'));
                     }
-                }, 1200);
+                }, 5000);
                 return;
             }
 
@@ -7645,14 +7869,13 @@
                     events: {
                         onReady: event => {
                             const videoData = event.target?.getVideoData ? event.target.getVideoData() : {};
-                            currentMrBeastVideoId = videoData?.video_id || currentMrBeastVideoId || `mrbeast_api_${Date.now()}`;
-                            watchSessionVideoIds.add(currentMrBeastVideoId);
-                            updateWatchSessionUi(t('watch_playing'));
-                            startWatchTimerDisplay();
+                            currentMrBeastVideoId = videoData?.video_id || currentMrBeastVideoId || null;
+                            if (currentMrBeastVideoId) watchSessionVideoIds.add(currentMrBeastVideoId);
+                            updateWatchSessionUi(t('watch_verifying'));
                             event.target.playVideo();
                         },
                         onStateChange: onMrBeastPlayerStateChange,
-                        onError: () => showMrBeastFallbackPlayer(t('watch_playing'))
+                        onError: () => showMrBeastFallbackPlayer(t('watch_verified_player_required'))
                     }
                 });
             } else {
@@ -7685,6 +7908,9 @@
             currentMrBeastVideoId = null;
             watchSessionSubmitted = false;
             watchFinalizeInflight = null;
+            watchServerSession = null;
+            clearWatchHeartbeatSchedule();
+            watchLastPlayerState = null;
             watchSessionGeneration += 1;
             watchSessionVideoIds = new Set();
             lastWatchUiSnapshot = '';
@@ -7702,16 +7928,28 @@
 
         function closeWatchModal() {
             setWatchUiState('closing');
+            if (watchFinalizeInflight) {
+                closeModal('watchModal');
+                return;
+            }
+
+            const watchSeconds = syncCountedWatchSeconds();
+            watchSessionSubmitted = true;
+            watchSessionGeneration += 1;
             if (mrbeastPlayer && mrbeastPlayer.pauseVideo) {
                 mrbeastPlayer.pauseVideo();
             }
             clearWatchFallbackPlayer();
+            clearWatchHeartbeatSchedule();
             clearInterval(watchTimerInterval);
+            watchServerSession = null;
+            pendingWatch = null;
             closeModal('watchModal');
-            finalizeWatchSession().catch(err => {
-                const watchSeconds = syncCountedWatchSeconds();
-                showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), friendlyErrorMessage(err) || t('watch_reward_save_failed'));
-            });
+            if (watchSeconds > 0) {
+                showWatchResult(watchSeconds, 0, t('watch_incomplete_no_reward'));
+            } else {
+                setWatchUiState('idle');
+            }
         }
 
         function localeForCurrentLang() {
@@ -7795,28 +8033,74 @@
         }
 
         function onMrBeastPlayerStateChange(event) {
-            if (event.data === YT.PlayerState.PLAYING) {
-                const videoData = mrbeastPlayer?.getVideoData ? mrbeastPlayer.getVideoData() : {};
-                const videoId = videoData?.video_id || null;
+            const previousState = watchLastPlayerState;
+            watchLastPlayerState = event.data;
 
-                if (videoId && videoId !== currentMrBeastVideoId) {
-                    currentMrBeastVideoId = videoId;
-                    currentWatchCompleted = false;
-                    watchSessionVideoIds.add(videoId);
-                    updateWatchSessionUi(t('watch_playing'));
+            if (watchSessionSubmitted && event.data === YT.PlayerState.PLAYING) {
+                try {
+                    if (mrbeastPlayer?.pauseVideo) mrbeastPlayer.pauseVideo();
+                } catch (_) {}
+                return;
+            }
+
+            if (event.data === YT.PlayerState.PLAYING) {
+                const snapshot = readVerifiedWatchPlayerSnapshot();
+                if (!snapshot) {
+                    stopWatchTimerDisplay();
+                    clearWatchHeartbeatSchedule();
+                    updateWatchSessionUi(t('watch_verified_player_required'));
+                    setWatchUiState('unverified_player');
+                    return;
                 }
 
-                startWatchTimerDisplay();
+                if (snapshot.videoId !== currentMrBeastVideoId) {
+                    resetWatchVideoState(t('watch_verifying'));
+                    watchLastPlayerState = YT.PlayerState.PLAYING;
+                    currentMrBeastVideoId = snapshot.videoId;
+                    watchSessionVideoIds.add(snapshot.videoId);
+                }
+
+                ensureWatchServerSession(snapshot).catch(() => null);
+                if (watchServerSession?.videoId === snapshot.videoId) {
+                    startWatchTimerDisplay();
+                    startWatchHeartbeatSchedule();
+                }
             }
 
             if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.BUFFERING) {
                 stopWatchTimerDisplay();
+                clearWatchHeartbeatSchedule();
+                if (
+                    previousState === YT.PlayerState.PLAYING &&
+                    watchServerSession &&
+                    !watchSessionSubmitted
+                ) {
+                    queueWatchHeartbeat({
+                        intervalPlaying: true,
+                        intervalVisible: !document.hidden,
+                        ended: false
+                    }).catch(handleWatchHeartbeatFailure);
+                }
             }
 
-            if (event.data === YT.PlayerState.ENDED && !currentWatchCompleted) {
+            if (
+                event.data === YT.PlayerState.ENDED &&
+                !currentWatchCompleted &&
+                !watchSessionSubmitted
+            ) {
+                const finalSnapshot = readVerifiedWatchPlayerSnapshot();
                 currentWatchCompleted = true;
                 stopWatchTimerDisplay();
+                clearWatchHeartbeatSchedule();
                 updateWatchSessionUi(t('watch_finished'));
+                finalizeWatchSession(finalSnapshot).catch(err => {
+                    const watchSeconds = Number(err?.data?.observed_watch_seconds || syncCountedWatchSeconds());
+                    showWatchResult(
+                        watchSeconds,
+                        0,
+                        friendlyErrorMessage(err) || t('watch_reward_save_failed')
+                    );
+                });
             }
         }
 
@@ -7826,17 +8110,24 @@
             return countedWatchSeconds;
         }
 
-        function stopWatchTimerDisplay() {
+        function stopWatchTimerDisplay(message = '') {
             if (watchSegmentStartedAt) {
                 watchAccumulatedMs += Date.now() - watchSegmentStartedAt;
                 watchSegmentStartedAt = null;
             }
             syncCountedWatchSeconds();
-            updateWatchSessionUi(t('watch_counting'));
-                clearInterval(watchTimerInterval);
+            if (message) updateWatchSessionUi(message);
+            clearInterval(watchTimerInterval);
+            watchTimerInterval = null;
         }
 
         function startWatchTimerDisplay() {
+            if (
+                !pendingWatch ||
+                !watchServerSession ||
+                watchSessionSubmitted ||
+                watchLastPlayerState !== YT.PlayerState.PLAYING
+            ) return;
             if (!watchSegmentStartedAt) watchSegmentStartedAt = Date.now();
 
             clearInterval(watchTimerInterval);
@@ -7849,10 +8140,6 @@
                 }
 
                 syncCountedWatchSeconds();
-                if (shouldStopWatchAtActivationLimit(countedWatchSeconds)) {
-                    stopWatchAtActivationLimit();
-                    return;
-                }
                 updateWatchSessionUi(t('watch_counting'));
             }, 1000);
         }
@@ -7862,128 +8149,126 @@
             return Number((Math.max(0, Number(seconds || 0)) * rate).toFixed(2));
         }
 
-        function shouldStopWatchAtActivationLimit(seconds = countedWatchSeconds) {
-            const watchedSeconds = Math.max(0, Number(seconds || 0));
-            const requiredSeconds = Number(backendSettings.view_seconds_required || 5);
-            const requiredAmount = getWalletUnlockRequiredAmount();
-            const currentAmount = getWalletEarningAmount();
-            if (currentAmount >= requiredAmount) return true;
-            if (watchedSeconds < requiredSeconds) return false;
-            return currentAmount + estimateWatchReward(watchedSeconds) >= requiredAmount;
-        }
-
-        async function stopWatchAtActivationLimit() {
-            if (!pendingWatch || watchSessionSubmitted) return;
-            updateWatchSessionUi(t('activation_deposit_required'));
-            if (mrbeastPlayer && mrbeastPlayer.pauseVideo) {
-                try { mrbeastPlayer.pauseVideo(); } catch (_) {}
-            }
-            clearWatchFallbackPlayer();
-            clearInterval(watchTimerInterval);
-            await finalizeWatchSession().catch(err => {
-                const watchSeconds = syncCountedWatchSeconds();
-                showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), friendlyErrorMessage(err) || t('watch_reward_save_failed'));
-            });
-            updateGrowthLockUi();
-        }
-
-        async function finalizeWatchSession() {
+        async function finalizeWatchSession(finalSnapshot = readVerifiedWatchPlayerSnapshot()) {
             if (watchFinalizeInflight) return watchFinalizeInflight;
             if (watchSessionSubmitted) return;
+
+            const targetSession = watchServerSession;
             watchSessionSubmitted = true;
             setWatchUiState('finalizing');
             stopWatchTimerDisplay();
-            pendingWatch = null;
+            clearWatchHeartbeatSchedule();
 
-            const watchSeconds = syncCountedWatchSeconds();
-            const videoId = currentMrBeastVideoId || Array.from(watchSessionVideoIds)[0] || `mrbeast_session_${Date.now()}`;
-
-            if (watchSeconds < Number(backendSettings.view_seconds_required || 5)) {
+            if (
+                !targetSession ||
+                !finalSnapshot ||
+                finalSnapshot.videoId !== targetSession.videoId
+            ) {
+                const watchSeconds = syncCountedWatchSeconds();
+                watchServerSession = null;
+                pendingWatch = null;
                 closeModal('watchModal');
-                showWatchResult(watchSeconds, 0, t('not_enough_time'));
+                showWatchResult(watchSeconds, 0, t('watch_verified_session_required'));
                 updateWatchDisplays();
                 return;
             }
 
-            showWatchResult(watchSeconds, estimateWatchReward(watchSeconds), t('watch_reward_saving'));
-            watchFinalizeInflight = finalizeWatchedVideo(watchSeconds, videoId)
+            updateWatchSessionUi(t('watch_reward_saving'));
+            watchFinalizeInflight = watchHeartbeatQueue
+                .catch(() => null)
+                .then(() => finalizeWatchedVideo(targetSession, finalSnapshot))
                 .finally(() => {
                     watchFinalizeInflight = null;
                 });
             return watchFinalizeInflight;
         }
 
-        async function finalizeWatchedVideo(watchSeconds, videoId) {
+        async function finalizeWatchedVideo(targetSession, finalSnapshot) {
+            let watchSeconds = syncCountedWatchSeconds();
             try {
                 setWatchUiState('saving');
-                if (!videoId) {
-                    updateWatchSessionUi(t('watch_video_missing'));
-                    pendingWatch = null;
-                    setWatchUiState('error', 'missing_video');
-                    return;
+                const completionBody = {
+                    session_id: targetSession.sessionId,
+                    session_token: targetSession.sessionToken,
+                    sequence: targetSession.nextSequence,
+                    player_position_seconds: finalSnapshot.position,
+                    video_duration_seconds: finalSnapshot.duration,
+                    interval_playing: true,
+                    interval_visible: !document.hidden,
+                    ended: true
+                };
+                const completionOptions = {
+                    method: 'POST',
+                    body: JSON.stringify(completionBody),
+                    idempotencyKey: `watch-${targetSession.sessionId}-${targetSession.nextSequence}`,
+                    timeoutMs: 20000
+                };
+
+                let result;
+                try {
+                    result = await apiRequest('/view/add', completionOptions);
+                } catch (err) {
+                    if (err?.data) throw err;
+                    result = await apiRequest('/view/add', completionOptions);
                 }
 
-            if (rewardedMrBeastVideos.has(videoId)) {
-                updateWatchSessionUi(t('watch_video_duplicate'));
-                showWatchResult(watchSeconds, 0, t('watch_video_duplicate'));
+                watchSeconds = Number(result.watch_seconds || 0);
+                rewardedMrBeastVideos.add(targetSession.videoId);
+                watchServerSession = null;
                 pendingWatch = null;
-                setWatchUiState('duplicate');
-                return;
-            }
-
-            if (watchSeconds < Number(backendSettings.view_seconds_required || 5)) {
-                updateWatchSessionUi(t('watch_too_short_detail').replace('{time}', formatDuration(watchSeconds)));
-                showWatchResult(watchSeconds, 0, t('not_enough_time'));
-                pendingWatch = null;
-                setWatchUiState('too_short');
-                return;
-            }
-
-                const result = await apiRequest('/view/add', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        telegram_id: String(referralUserId),
-                        watch_seconds: watchSeconds,
-                        video_source: 'mrbeast_uploads',
-                        video_id: videoId,
-                        completed: true,
-                        client_country_code: await detectClientCountryCode()
-                    }),
-                    timeoutMs: 15000
-                });
-
-                rewardedMrBeastVideos.add(videoId);
-                pendingWatch = null;
+                watchSessionGeneration += 1;
                 applyBackendUser(result.user);
                 if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
                 await refreshStatsFromBackend().catch(() => null);
                 updateWatchDisplays();
+
+                if (result.tier) {
+                    currentTierStatus = {
+                        ...currentTierStatus,
+                        tier: result.tier,
+                        reward_per_second: result.reward_per_second,
+                        country_code: result.country_code || currentTierStatus.country_code,
+                        country_name: result.country_name || currentTierStatus.country_name
+                    };
+                    updateTierCards();
+                }
+
+                if (result.already_counted) {
+                    updateWatchSessionUi(t('watch_video_duplicate'));
+                    showWatchResult(watchSeconds, 0, t('watch_video_duplicate'));
+                    setWatchUiState('duplicate');
+                    return;
+                }
+
                 createFloatingText(null, result.reward);
-            if (result.tier) {
-                currentTierStatus = {
-                    ...currentTierStatus,
-                    tier: result.tier,
-                    reward_per_second: result.reward_per_second,
-                    country_code: result.country_code,
-                    country_name: result.country_name
-                };
-                updateTierCards();
+                updateWatchSessionUi(
+                    t('watch_reward_added_detail')
+                        .replace('{time}', formatDuration(watchSeconds))
+                        .replace('{amount}', Number(result.reward || 0).toFixed(2))
+                );
+                showWatchResult(watchSeconds, result.reward, t('watch_added'));
+                addNotification(
+                    t('view_reward_title'),
+                    t('view_reward_added')
+                        .replace('{seconds}', watchSeconds)
+                        .replace('{amount}', Number(result.reward || 0).toFixed(2))
+                );
+                setWatchUiState('saved');
+            } catch (err) {
+                watchSeconds = Number(err?.data?.observed_watch_seconds || watchSeconds || 0);
+                watchServerSession = null;
+                pendingWatch = null;
+                watchSessionGeneration += 1;
+                if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
+                await refreshStatsFromBackend().catch(() => null);
+                updateWatchDisplays();
+                const message = friendlyErrorMessage(err);
+                updateWatchSessionUi(message);
+                showWatchResult(watchSeconds, 0, `${message}. ${t('watch_reward_backend_failed')}`);
+                addNotification(t('view_reward_title'), message);
+                setWatchUiState('error', err?.data?.code || message);
             }
-            updateWatchSessionUi(t('watch_reward_added_detail').replace('{time}', formatDuration(watchSeconds)).replace('{amount}', Number(result.reward || 0).toFixed(2)));
-            showWatchResult(watchSeconds, result.reward, t('watch_added'));
-            addNotification(t('view_reward_title'), t('view_reward_added').replace('{seconds}', watchSeconds).replace('{amount}', Number(result.reward || 0).toFixed(2)));
-            setWatchUiState('saved');
-        } catch (err) {
-            pendingWatch = null;
-            if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
-            updateWatchDisplays();
-            const message = friendlyErrorMessage(err);
-            updateWatchSessionUi(message);
-            showWatchResult(watchSeconds, 0, `${message}. ${t('watch_reward_backend_failed')}`);
-            addNotification(t('view_reward_title'), message);
-            setWatchUiState('error', message);
         }
-    }
 
         function showWatchResult(seconds, reward, message) {
             setDomText(document.getElementById('watch-result-time'), formatDuration(seconds));
@@ -8828,6 +9113,7 @@
                     if (mrbeastPlayer && mrbeastPlayer.pauseVideo) mrbeastPlayer.pauseVideo();
                 } catch (_) {}
                 stopWatchTimerDisplay();
+                clearWatchHeartbeatSchedule();
                 setWatchUiState('paused', reason);
             }
         }
@@ -8842,7 +9128,7 @@
             }
             if (pendingWatch && isWatchModalOpen() && !watchSessionSubmitted) {
                 setWatchUiState('active', reason);
-                updateWatchSessionUi(t('watch_counting'));
+                updateWatchSessionUi(t('watch_paused'));
             }
             refreshTierStatusFromLiveNetwork().catch(err => rememberFrontendError(`${reason}_tier`, err));
         }
@@ -8923,6 +9209,13 @@
             window.addEventListener('online', () => sweep('online'), { passive: true });
         }
 
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                pauseFrontendActivity('visibility_hidden');
+            } else {
+                resumeFrontendActivity('visibility_visible');
+            }
+        }, { passive: true });
         window.addEventListener('pagehide', () => pauseFrontendActivity('pagehide'));
         window.addEventListener('pageshow', event => {
             resumeFrontendActivity(event.persisted ? 'pageshow_bfcache' : 'pageshow');
