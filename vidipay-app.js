@@ -416,9 +416,9 @@
             safeStorageSet('vidiPayLang', 'en');
         }
         const TARGET_URL = "https://www.youtube.com/@MrBeast";
-        const PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
+        const PRODUCTION_API_BASE_URL = 'https://vidipay-origin-proxy.shshavkatjon2.workers.dev';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-watch-reward-security-20260727';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-origin-proxy-20260729';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
