@@ -1,2 +1,2 @@
-window.VIDIPAY_API_BASE = "https://vidipay-backend-1.onrender.com";
-window.VIDIPAY_FRONTEND_BUILD = "frontend-watch-reward-security-20260727";
+window.VIDIPAY_API_BASE = "https://vidipay-origin-proxy.shshavkatjon2.workers.dev";
+window.VIDIPAY_FRONTEND_BUILD = "frontend-origin-proxy-20260729";
