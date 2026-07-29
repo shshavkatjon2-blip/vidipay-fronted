@@ -4,7 +4,7 @@ const vm = require("vm");
 const crypto = require("crypto");
 
 const targetDir = path.resolve(process.argv[2] || __dirname);
-const expectedBuild = "frontend-watch-reward-security-20260727";
+const expectedBuild = "frontend-origin-proxy-20260729";
 
 const expectedFiles = [
   "admin.html",
@@ -93,7 +93,7 @@ function checkFilesExist() {
 
 function checkConfig() {
   const config = readText("config.js").trim();
-  const expectedApi = 'window.VIDIPAY_API_BASE = "https://vidipay-backend-1.onrender.com";';
+  const expectedApi = 'window.VIDIPAY_API_BASE = "https://vidipay-origin-proxy.shshavkatjon2.workers.dev";';
   const expectedBuildLine = `window.VIDIPAY_FRONTEND_BUILD = "${expectedBuild}";`;
   if (!config.includes(expectedApi)) {
     fail(`config.js must include: ${expectedApi}`);
@@ -173,7 +173,7 @@ function checkCspHardening() {
     const html = readText(file);
     if (!html.includes("Content-Security-Policy")) fail(`${file} is missing CSP meta`);
     if (!html.includes("script-src-attr 'none'")) fail(`${file} must block script attributes`);
-    if (!html.includes("./vidipay-app.js?v=csp-20260729")) fail(`${file} must load external app JS`);
+    if (!html.includes("./vidipay-app.js?v=origin-proxy-20260729")) fail(`${file} must load external app JS`);
     if (!html.includes("./vidipay-app.css?v=csp-20260729")) fail(`${file} must load external app CSS`);
     if (/<script\b(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/i.test(html)) fail(`${file} contains inline script`);
     if (/<style\b/i.test(html)) fail(`${file} contains inline style block`);
@@ -182,7 +182,7 @@ function checkCspHardening() {
 
   const adminHtml = readText("admin.html");
   if (!adminHtml.includes("script-src-attr 'none'")) fail("admin.html must block script attributes");
-  if (!adminHtml.includes("./vidipay-admin.js?v=csp-20260729")) fail("admin.html must load external admin JS");
+  if (!adminHtml.includes("./vidipay-admin.js?v=origin-proxy-20260729")) fail("admin.html must load external admin JS");
   if (!adminHtml.includes("./vidipay-admin.css?v=csp-20260729")) fail("admin.html must load external admin CSS");
   if (/\son[a-z]+\s*=/i.test(adminHtml)) fail("admin.html contains inline event handler");
 
