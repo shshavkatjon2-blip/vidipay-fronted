@@ -1,5 +1,5 @@
-const PUBLIC_CSP = "default-src 'self'; script-src 'self' https://telegram.org https://www.youtube.com; script-src-attr 'none'; style-src 'self' https://cdnjs.cloudflare.com; style-src-attr 'unsafe-inline'; font-src 'self' data: https://cdnjs.cloudflare.com; img-src 'self' data: blob: https://upload.wikimedia.org https://i.ytimg.com https://img.youtube.com; connect-src 'self' https://vidipay-backend-1.onrender.com; frame-src https://www.youtube.com https://www.youtube-nocookie.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'; upgrade-insecure-requests; frame-ancestors 'self' https://web.telegram.org https://*.telegram.org";
-const ADMIN_CSP = "default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://vidipay-backend-1.onrender.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'; upgrade-insecure-requests; frame-ancestors 'none'";
+const PUBLIC_CSP = "default-src 'self'; script-src 'self' https://telegram.org https://www.youtube.com; script-src-attr 'none'; style-src 'self' https://cdnjs.cloudflare.com; style-src-attr 'unsafe-inline'; font-src 'self' data: https://cdnjs.cloudflare.com; img-src 'self' data: blob: https://upload.wikimedia.org https://i.ytimg.com https://img.youtube.com; connect-src 'self' https://vidipay-origin-proxy.shshavkatjon2.workers.dev; frame-src https://www.youtube.com https://www.youtube-nocookie.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'; upgrade-insecure-requests; frame-ancestors 'self' https://web.telegram.org https://*.telegram.org";
+const ADMIN_CSP = "default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://vidipay-origin-proxy.shshavkatjon2.workers.dev; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'; upgrade-insecure-requests; frame-ancestors 'none'";
 
 function applySecurityHeaders(response, pathname) {
   const headers = new Headers(response.headers);
@@ -16,7 +16,7 @@ function applySecurityHeaders(response, pathname) {
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("Referrer-Policy", isAdmin ? "no-referrer" : "strict-origin-when-cross-origin");
   headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-  headers.set("X-VidiPay-Frontend-Build", "frontend-watch-reward-security-20260727-csp");
+  headers.set("X-VidiPay-Frontend-Build", "frontend-origin-proxy-20260729-csp");
   if (isAdmin) headers.set("X-Frame-Options", "DENY");
   else headers.delete("X-Frame-Options");
 
