@@ -1,4 +1,4 @@
-    const ADMIN_PRODUCTION_API_BASE_URL = 'https://vidipay-backend-1.onrender.com';
+    const ADMIN_PRODUCTION_API_BASE_URL = 'https://vidipay-origin-proxy.shshavkatjon2.workers.dev';
     const ADMIN_API_FALLBACKS = [ADMIN_PRODUCTION_API_BASE_URL];
 
     function normalizeApiBaseUrl(value) {
