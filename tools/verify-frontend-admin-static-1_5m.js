@@ -88,8 +88,8 @@ function checkConfig() {
   } catch (error) {
     fail(`config.js syntax error: ${error.message}`);
   }
-  if (context.VIDIPAY_API_BASE !== "https://vidipay-backend-1.onrender.com") {
-    fail("config.js must set VIDIPAY_API_BASE to https://vidipay-backend-1.onrender.com");
+  if (context.VIDIPAY_API_BASE !== "https://vidipay-origin-proxy.shshavkatjon2.workers.dev") {
+    fail("config.js must set VIDIPAY_API_BASE to https://vidipay-origin-proxy.shshavkatjon2.workers.dev");
   }
   if (typeof context.VIDIPAY_FRONTEND_BUILD !== "string" || !context.VIDIPAY_FRONTEND_BUILD.trim()) {
     fail("config.js must set non-empty VIDIPAY_FRONTEND_BUILD");
