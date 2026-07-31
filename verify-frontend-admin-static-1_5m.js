@@ -4,7 +4,7 @@ const vm = require("vm");
 const crypto = require("crypto");
 
 const targetDir = path.resolve(process.argv[2] || __dirname);
-const expectedBuild = "frontend-origin-proxy-20260729";
+const expectedBuild = "frontend-referral-bonus-security-20260731";
 
 const expectedFiles = [
   "admin.html",
@@ -41,7 +41,7 @@ const forbiddenVisiblePatterns = [
 ];
 
 const appRequiredPatterns = [
-  { name: "app_backend_primary", pattern: /vidipay-backend-1\.onrender\.com/ },
+  { name: "app_backend_primary", pattern: /vidipay-origin-proxy\.shshavkatjon2\.workers\.dev/ },
   { name: "telegram_init_data_auth", pattern: /X-Telegram-Init-Data/ },
   { name: "wallet_unlock_gate", pattern: /openWalletIfUnlocked/ },
   { name: "ton_deposit_address", pattern: /ton-deposit-address/ },
@@ -62,7 +62,7 @@ const appRequiredPatterns = [
 ];
 
 const adminRequiredPatterns = [
-  { name: "admin_backend_primary", pattern: /vidipay-backend-1\.onrender\.com/ },
+  { name: "admin_backend_primary", pattern: /vidipay-origin-proxy\.shshavkatjon2\.workers\.dev/ },
   { name: "admin_ton_scanner_panel", pattern: /Automatic TON scanner/ },
   { name: "admin_payment_wallets_endpoint", pattern: /\/admin\/payment-wallets/ },
   { name: "admin_notification_endpoint", pattern: /\/admin\/notification\/send/ },
@@ -173,7 +173,7 @@ function checkCspHardening() {
     const html = readText(file);
     if (!html.includes("Content-Security-Policy")) fail(`${file} is missing CSP meta`);
     if (!html.includes("script-src-attr 'none'")) fail(`${file} must block script attributes`);
-    if (!html.includes("./vidipay-app.js?v=origin-proxy-20260729")) fail(`${file} must load external app JS`);
+    if (!html.includes("./vidipay-app.js?v=referral-bonus-security-20260731")) fail(`${file} must load external app JS`);
     if (!html.includes("./vidipay-app.css?v=csp-20260729")) fail(`${file} must load external app CSS`);
     if (/<script\b(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/i.test(html)) fail(`${file} contains inline script`);
     if (/<style\b/i.test(html)) fail(`${file} contains inline style block`);
