@@ -1433,9 +1433,15 @@
         .chat-msg { border-radius: 14px; padding: 10px 12px; font-size: 13px; line-height: 1.45; }
         .chat-msg.user { align-self:flex-end; background: rgba(0,255,204,.14); color:#fff; border:1px solid rgba(0,255,204,.2); }
         .chat-msg.support { align-self:flex-start; background: rgba(255,255,255,.055); color:#cbd5e1; border:1px solid rgba(255,255,255,.08); }
+        .chat-msg span { display:block; white-space:pre-wrap; overflow-wrap:anywhere; }
+        .support-message-time { display:block; margin-top:5px; color:#82909a; font-size:10px; line-height:1.2; }
+        .chat-msg.user .support-message-time { color:rgba(255,255,255,.62); text-align:right; }
         .support-input-row { display:flex; gap:8px; }
         .support-input-row input { flex:1; background:#05070a; color:#fff; border:1px solid rgba(0,255,204,.18); border-radius:12px; padding:12px; outline:none; }
         .support-input-row button { width:48px; border-radius:12px; border:1px solid rgba(0,255,204,.3); background:rgba(0,255,204,.12); color:var(--accent-color); cursor:pointer; }
+        .support-chat-status { min-height:18px; margin-top:8px; color:var(--text-muted); font-size:11px; line-height:1.4; }
+        .support-chat-status[data-status="error"] { color:#fca5a5; }
+        .support-chat-status[data-status="ok"] { color:#86efac; }
         .support-link-btn { width: 100%; box-sizing: border-box; }
         .bonus-stat-grid { display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin: 12px 0; }
         .bonus-stat-card { background:rgba(0,0,0,.3); border:1px solid rgba(255,204,0,.18); border-radius:14px; padding:12px; text-align:center; }

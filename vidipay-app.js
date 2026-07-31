@@ -10,6 +10,25 @@
 
         const storageFallback = new Map();
         window.__vidipayScriptErrors = window.__vidipayScriptErrors || [];
+        const SUPPORTED_LANGUAGE_CODES = Object.freeze(['en', 'ru', 'fr', 'hi', 'es', 'zh', 'de']);
+        const LANGUAGE_CODE_ALIASES = Object.freeze({
+            cn: 'zh',
+            'zh-cn': 'zh',
+            'zh-hans': 'zh',
+            'zh-hant': 'zh',
+            'zh-hk': 'zh',
+            'zh-sg': 'zh',
+            'zh-tw': 'zh'
+        });
+
+        function normalizeLanguageCode(value, fallback = 'en') {
+            const raw = String(value || '').trim().toLowerCase().replace(/_/g, '-');
+            if (!raw) return fallback;
+            if (SUPPORTED_LANGUAGE_CODES.includes(raw)) return raw;
+            if (LANGUAGE_CODE_ALIASES[raw]) return LANGUAGE_CODE_ALIASES[raw];
+            const base = raw.split('-')[0];
+            return SUPPORTED_LANGUAGE_CODES.includes(base) ? base : fallback;
+        }
 
         function rememberFrontendError(label, err) {
             try {
@@ -119,7 +138,7 @@
         };
 
         function runtimeText(key) {
-            const lang = safeStorageGet('vidiPayLang', 'en') || 'en';
+            const lang = normalizeLanguageCode(safeStorageGet('vidiPayLang', 'en'));
             return runtimeMessages[lang]?.[key] || runtimeMessages.en[key] || key;
         }
 
@@ -410,15 +429,13 @@
         const refLinkEl = document.getElementById('ref-link');
         if (refLinkEl) refLinkEl.innerText = referralLink;
 
-        let currentLang = safeStorageGet('vidiPayLang') || 'en';
-        if (currentLang === 'uz' || !['en','ru','fr','hi','es','zh','de'].includes(currentLang)) {
-            currentLang = 'en';
-            safeStorageSet('vidiPayLang', 'en');
-        }
+        const storedLanguage = normalizeLanguageCode(safeStorageGet('vidiPayLang'), null);
+        const telegramLanguage = normalizeLanguageCode(user?.language_code, 'en');
+        let currentLang = storedLanguage || telegramLanguage;
         const TARGET_URL = "https://www.youtube.com/@MrBeast";
         const PRODUCTION_API_BASE_URL = 'https://vidipay-origin-proxy.shshavkatjon2.workers.dev';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-referral-bonus-security-20260731';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-language-support-gram-live-watch-20260731';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
@@ -539,6 +556,9 @@
         let backendSettingsFetchedAt = 0;
         let userSyncInflight = null;
         let userSyncFetchedAt = 0;
+        let languageSyncInflight = null;
+        let languageSyncPending = null;
+        let preferredLanguageSelection = currentLang;
         let statsInflight = null;
         let statsFetchedAt = 0;
         let tierStatusInflight = null;
@@ -551,7 +571,8 @@
         let frontendRuntimeGuardLastAt = 0;
         let frontendRuntimeGuardSweepCount = 0;
         let referralCopyBusy = false;
-        let supportReplyTimer = null;
+        let supportPollTimer = null;
+        let supportLoadInflight = null;
         let runtimeStatusToastTimer = null;
         let notificationRenderSnapshot = '';
         let supportRenderSnapshot = '';
@@ -710,6 +731,15 @@
         function applyBackendUser(serverUser) {
             if (!serverUser) return;
 
+            const serverLanguage = normalizeLanguageCode(serverUser.preferred_language, null);
+            if (
+                serverLanguage &&
+                serverLanguage !== currentLang &&
+                !languageSyncInflight &&
+                !languageSyncPending
+            ) {
+                changeLang(serverLanguage, { sync: false, throttle: false });
+            }
             appState.balance = Number(serverUser.balance || 0);
             appState.totalViews = Number(serverUser.total_views || 0);
             appState.totalSeconds = Number(serverUser.total_watch_seconds || 0);
@@ -719,6 +749,52 @@
             appState.dailyMinutes = Math.floor(appState.dailySeconds / 60);
             appState.dailyEarned = Number(serverUser.daily_income || 0);
             saveAppState();
+        }
+
+        async function syncPreferredLanguage(language) {
+            const normalizedLanguage = normalizeLanguageCode(language, null);
+            if (!normalizedLanguage || !user?.id || !telegramInitData) {
+                return { status: 'language_saved_locally', preferred_language: normalizedLanguage || currentLang };
+            }
+
+            languageSyncPending = normalizedLanguage;
+            if (languageSyncInflight) return languageSyncInflight;
+
+            languageSyncInflight = (async () => {
+                let lastResult = null;
+                if (!userSyncFetchedAt) {
+                    await syncBackendUser();
+                }
+                while (languageSyncPending) {
+                    const targetLanguage = languageSyncPending;
+                    languageSyncPending = null;
+                    lastResult = await apiRequest('/user/language', {
+                        method: 'POST',
+                        timeoutMs: 12000,
+                        body: JSON.stringify({
+                            telegram_id: String(referralUserId),
+                            preferred_language: targetLanguage
+                        })
+                    });
+                    if (preferredLanguageSelection === targetLanguage) {
+                        const confirmedLanguage = normalizeLanguageCode(
+                            lastResult?.preferred_language || lastResult?.user?.preferred_language,
+                            targetLanguage
+                        );
+                        if (confirmedLanguage !== currentLang) {
+                            changeLang(confirmedLanguage, { sync: false, throttle: false });
+                        }
+                    }
+                }
+
+                notificationsFetchedAt = 0;
+                await loadServerNotifications({ force: true });
+                renderNotifications();
+                return lastResult;
+            })().finally(() => {
+                languageSyncInflight = null;
+            });
+            return languageSyncInflight;
         }
 
         function fallbackGrowthLockStatus() {
@@ -833,6 +909,7 @@
                 username: user?.username || null,
                 first_name: user?.first_name || null,
                 last_name: user?.last_name || null,
+                preferred_language: currentLang,
                 referral_token: referralToken || null
             };
 
@@ -846,7 +923,10 @@
                     applyBackendUser(result.user);
                     if (result.referral?.applied) {
                         safeStorageRemove('vidiPayPendingReferralToken');
-                        addNotification(t('bonus_title'), t('referral_bonus_added'));
+                        addNotification(t('bonus_title'), t('referral_bonus_added'), {
+                            titleKey: 'bonus_title',
+                            textKey: 'referral_bonus_added'
+                        });
                     }
                     updateWatchDisplays();
                     return result;
@@ -1714,7 +1794,7 @@
                 setPaymentUiState(walletAddress ? 'verified' : 'loading');
                 box.style.display = 'block';
                 if (addressBox) addressBox.style.display = 'block';
-                if (amountEl) amountEl.innerText = amount ? `${amount.toFixed(2)} TONCOIN` : `${getTonActivationAmount().toFixed(2)} TONCOIN`;
+                if (amountEl) amountEl.innerText = amount ? `${amount.toFixed(2)} GRAM (ex-TON)` : `${getTonActivationAmount().toFixed(2)} GRAM (ex-TON)`;
                 if (addressEl) addressEl.innerText = walletAddress || t('card_order_loading');
                 if (expiryEl) {
                     expiryEl.innerText = '';
@@ -1735,7 +1815,7 @@
                 setPaymentUiState(isWalletEarningUnlocked() ? 'loading' : 'locked');
                 box.style.display = isWalletEarningUnlocked() ? 'block' : 'none';
                 if (addressBox) addressBox.style.display = isWalletEarningUnlocked() ? 'block' : 'none';
-                if (amountEl) amountEl.innerText = `${getTonActivationAmount().toFixed(2)} TONCOIN`;
+                if (amountEl) amountEl.innerText = `${getTonActivationAmount().toFixed(2)} GRAM (ex-TON)`;
                 if (addressEl) addressEl.innerText = t('card_order_loading');
                 if (expiryEl) {
                     expiryEl.innerText = '';
@@ -1754,7 +1834,7 @@
             setPaymentUiState(walletAddress ? 'ready' : 'loading');
             box.style.display = 'block';
             if (addressBox) addressBox.style.display = 'block';
-            if (amountEl) amountEl.innerText = amount ? `${amount.toFixed(2)} TONCOIN` : `${getTonActivationAmount().toFixed(2)} TONCOIN`;
+            if (amountEl) amountEl.innerText = amount ? `${amount.toFixed(2)} GRAM (ex-TON)` : `${getTonActivationAmount().toFixed(2)} GRAM (ex-TON)`;
             if (addressEl) addressEl.innerText = walletAddress || t('card_order_loading');
             renderPaymentExpiryText(currentPaymentOrder);
             renderTonPaymentQr('');
@@ -2024,7 +2104,7 @@
                 } else {
                     setDomText(extra, t('main_balance_locked_extra'));
                 }
-                setWithdrawFormStatus(`${t('activation_refund_available')}: ${refundAmount.toFixed(2)} TONCOIN`, 'ok');
+                setWithdrawFormStatus(`${t('activation_refund_available')}: ${refundAmount.toFixed(2)} GRAM (ex-TON)`, 'ok');
                 return;
             }
 
@@ -2200,7 +2280,7 @@
                 addWithdrawHistory(result.amount || refundAmount, createdRefundStatus, {
                     type: 'deposit_refund',
                     method: 'TON_DEPOSIT_REFUND',
-                    currency: 'TONCOIN',
+                    currency: 'GRAM (ex-TON)',
                     wallet: savedRefundWallet || walletAddress,
                     tx_hash: result.deposit_refund?.tx_hash || result.withdraw?.tx_hash || ''
                 });
@@ -2259,12 +2339,16 @@
                 updateWatchDisplays();
                 const bonusText = Number(result.bonus || 0).toFixed(2);
                 setDomText(statusEl, `${t('bonus_claimed')} $${bonusText}`);
-                addNotification(t('bonus_title'), `${t('bonus_claimed')} ${bonusText}`);
+                addNotification(t('bonus_title'), `${t('bonus_claimed')} ${bonusText}`, {
+                    titleKey: 'bonus_title',
+                    textKey: 'bonus_claimed_notification',
+                    params: { amount: bonusText }
+                });
             } catch (err) {
                 if (err.data?.growth_lock) setGrowthLockStatus(err.data.growth_lock);
                 const message = friendlyErrorMessage(err);
                 setDomText(statusEl, message);
-                addNotification(t('bonus_title'), message);
+                addNotification(t('bonus_title'), message, { titleKey: 'bonus_title' });
             } finally {
                 setActionBusy(claimBtn, false);
                 updateBonusLockUi();
@@ -2353,10 +2437,10 @@
                 withdraw_expired_title: "Withdrawal time expired",
                 withdraw_expired_message: "The last withdrawal window has ended. Wallet stays locked until the next schedule.",
                 withdraw_request_available: "Withdrawal request is available",
-                withdraw_enter_details: "Enter your TON wallet carefully. Activation refund payout is 6.99 TONCOIN.",
+                withdraw_enter_details: "Enter your TON wallet carefully. Activation refund payout is 6.99 GRAM (ex-TON).",
                 payment_verified_withdraw: "Payment verified. Withdrawal is available.",
-                payment_required_withdraw: "Deposit 6.99 TONCOIN on TON to activate withdrawal.",
-                activation_deposit_required: "Deposit 6.99 TONCOIN on TON to activate withdrawal. Blockchain service commission may be charged.",
+                payment_required_withdraw: "Deposit 6.99 GRAM (ex-TON) on TON to activate withdrawal.",
+                activation_deposit_required: "Deposit 6.99 GRAM (ex-TON) on TON to activate withdrawal. Blockchain service commission may be charged.",
                 activation_refund_available: "Available refund payout",
                 payout_request_now: "You can submit your payout request now.",
                 payment_check_status: "Complete the required payment and check the status.",
@@ -2389,7 +2473,7 @@
                 /* YAGNI QO'SHILDI: FIAT TARJIMALARI */
                 pay_with_fiat: "CHECK PAYMENT",
                 fastest_method: "FASTEST METHOD",
-                fiat_desc: "Deposit 6.99 TONCOIN on TON to activate withdrawal. Blockchain service commission may be charged.",
+                fiat_desc: "Deposit 6.99 GRAM (ex-TON) on TON to activate withdrawal. Blockchain service commission may be charged.",
                 or_crypto: "TON NETWORK PAYMENT",
                 account_unlock_title: "Account unlock activation"
             },
@@ -2418,7 +2502,7 @@
 
                 pay_with_fiat: "ПРОВЕРИТЬ ОПЛАТУ",
                 fastest_method: "БЫСТРЫЙ СПОСОБ",
-                fiat_desc: "Внесите 6.99 TONCOIN в сети TON для активации вывода. Может взиматься комиссия блокчейн-сервиса.",
+                fiat_desc: "Внесите 6.99 GRAM (ex-TON) в сети TON для активации вывода. Может взиматься комиссия блокчейн-сервиса.",
                 or_crypto: "ОПЛАТА В СЕТИ TON",
                 account_unlock_title: "Активация вывода средств"
             }
@@ -2800,7 +2884,7 @@
             bonus: "BONUS",
             wallet_current_balance: "Current Balance:",
             withdrawal_method_label: "Activation network:",
-            ton_wallet_label: "TONCOIN",
+            ton_wallet_label: "GRAM (ex-TON)",
             wallet_open_time: "Wallet activation is available",
             wallet_locked_extra: "Earn $20.00 in total to unlock wallet activation.",
             wallet_locked_until_20: "Wallet is locked until your total income reaches $20.00.",
@@ -2808,26 +2892,26 @@
             wallet_ready_for_activation: "Wallet is ready for activation",
             payment_address_available: "Confirm you are not a bot and connect your personal TON wallet.",
             pay_with_fiat: "CHECK PAYMENT",
-            top_up_toncoin: "TOP UP 6.99 TONCOIN",
+            top_up_toncoin: "TOP UP 6.99 GRAM (ex-TON)",
             copy_ton_address: "COPY ADDRESS",
-            fiat_desc: "Confirm that you are not a bot and connect your personal TON wallet to VidiPay. Top up exactly 6.99 TONCOIN to activate it. Blockchain network commission may apply.",
-            card_selector_title: "TONCOIN wallet",
+            fiat_desc: "Confirm that you are not a bot and connect your personal TON wallet to VidiPay. Top up exactly 6.99 GRAM (ex-TON) to activate it. Blockchain network commission may apply.",
+            card_selector_title: "GRAM (ex-TON) wallet",
             card_maintenance: "Maintenance. This payment route is temporarily unavailable.",
             card_order_loading: "Payment order is loading. Please wait.",
             card_payment_opened: "Payment window opened. Complete the payment and return to this page.",
-            wallet_payment_ready: "TONCOIN activation is ready.",
+            wallet_payment_ready: "GRAM (ex-TON) activation is ready.",
             payment_address_unavailable: "TON wallet address is not connected yet.",
             payment_verified_wallet: "Withdrawal is unlocked. You can request a withdrawal now.",
-            activation_deposit_required: "Top up exactly 6.99 TONCOIN to activate the wallet. Other amounts are not confirmed automatically.",
+            activation_deposit_required: "Top up exactly 6.99 GRAM (ex-TON) to activate the wallet. Other amounts are not confirmed automatically.",
             activation_refund_available: "Available refund payout",
             account_unlock_title: "Wallet activation",
             fastest_method: "Security confirmation",
-            ton_deposit_title: "6.99 TONCOIN payment",
-            ton_deposit_warning: "Send exactly 6.99 TONCOIN to this address. Less or more than 6.99 TONCOIN will not be confirmed automatically.",
-            ton_deposit_send_status: "Send exactly {amount} TONCOIN. Other amounts are not confirmed automatically.",
-            ton_deposit_waiting_status: "Waiting for exactly {amount} TONCOIN on TON network.",
+            ton_deposit_title: "6.99 GRAM (ex-TON) payment",
+            ton_deposit_warning: "Send exactly 6.99 GRAM (ex-TON) to this address. Less or more than 6.99 GRAM (ex-TON) will not be confirmed automatically.",
+            ton_deposit_send_status: "Send exactly {amount} GRAM (ex-TON). Other amounts are not confirmed automatically.",
+            ton_deposit_waiting_status: "Waiting for exactly {amount} GRAM (ex-TON) on TON network.",
             payment_address_label: "Unique TON deposit address",
-            wallet_method_value: "TONCOIN"
+            wallet_method_value: "GRAM (ex-TON)"
         });
 
         Object.assign(languages.ru, {
@@ -2839,9 +2923,9 @@
             ton_wallet_label: "TON Wallet",
             wallet_open_time: "Кошелек открыт во время вывода средств",
             wallet_locked_extra: "Способы оплаты появятся, когда откроется окно вывода.",
-            payment_address_available: "TONCOIN адрес для активационного платежа показан ниже.",
+            payment_address_available: "GRAM (ex-TON) адрес для активационного платежа показан ниже.",
             pay_with_fiat: "ПРОВЕРИТЬ ОПЛАТУ",
-            fiat_desc: "Внесите 6.99 TONCOIN в сети TON для активации вывода. Может взиматься комиссия блокчейн-сервиса.",
+            fiat_desc: "Внесите 6.99 GRAM (ex-TON) в сети TON для активации вывода. Может взиматься комиссия блокчейн-сервиса.",
             card_selector_title: "TON wallet",
             card_maintenance: "Профилактика. Этот платежный маршрут временно недоступен.",
             card_order_loading: "Платежный заказ загружается. Пожалуйста, подождите.",
@@ -2849,8 +2933,8 @@
             wallet_payment_ready: "TON activation deposit готов.",
             payment_address_unavailable: "TON адрес кошелька пока не подключен.",
             payment_verified_wallet: "Вывод разблокирован. Теперь можно создать заявку.",
-            payment_required_withdraw: "Внесите 6.99 TONCOIN в сети TON, чтобы активировать вывод.",
-            activation_deposit_required: "Внесите 6.99 TONCOIN в сети TON для активации вывода. Может взиматься комиссия блокчейн-сервиса.",
+            payment_required_withdraw: "Внесите 6.99 GRAM (ex-TON) в сети TON, чтобы активировать вывод.",
+            activation_deposit_required: "Внесите 6.99 GRAM (ex-TON) в сети TON для активации вывода. Может взиматься комиссия блокчейн-сервиса.",
             activation_refund_available: "Доступный возврат"
         });
 
@@ -2861,9 +2945,9 @@
             ton_wallet_label: "TON Wallet",
             wallet_open_time: "Le portefeuille est ouvert pendant la periode de retrait",
             wallet_locked_extra: "Les options de paiement apparaitront quand la periode de retrait ouvrira.",
-            payment_address_available: "L'adresse TONCOIN du paiement d'activation est affichee ci-dessous.",
+            payment_address_available: "L'adresse GRAM (ex-TON) du paiement d'activation est affichee ci-dessous.",
             pay_with_fiat: "VERIFIER LE PAIEMENT",
-            fiat_desc: "Deposez 6.99 TONCOIN sur TON pour activer le retrait. Une commission blockchain peut etre facturee.",
+            fiat_desc: "Deposez 6.99 GRAM (ex-TON) sur TON pour activer le retrait. Une commission blockchain peut etre facturee.",
             card_selector_title: "TON wallet",
             card_maintenance: "Maintenance. Cette route de paiement est temporairement indisponible.",
             card_order_loading: "La commande de paiement se charge. Veuillez patienter.",
@@ -2871,8 +2955,8 @@
             wallet_payment_ready: "Le paiement TON wallet est pret.",
             payment_address_unavailable: "L'adresse wallet TON n'est pas encore connectee.",
             payment_verified_wallet: "Le retrait est debloque. Vous pouvez envoyer une demande.",
-            payment_required_withdraw: "Deposez 6.99 TONCOIN sur TON pour activer le retrait.",
-            activation_deposit_required: "Deposez 6.99 TONCOIN sur TON pour activer le retrait. Une commission blockchain peut etre facturee.",
+            payment_required_withdraw: "Deposez 6.99 GRAM (ex-TON) sur TON pour activer le retrait.",
+            activation_deposit_required: "Deposez 6.99 GRAM (ex-TON) sur TON pour activer le retrait. Une commission blockchain peut etre facturee.",
             activation_refund_available: "Remboursement disponible"
         });
 
@@ -2883,9 +2967,9 @@
             ton_wallet_label: "TON Wallet",
             wallet_open_time: "Wallet withdrawal time par open hai",
             wallet_locked_extra: "Withdrawal window open hone par payment options dikhengi.",
-            payment_address_available: "Activation payment TONCOIN address neeche hai.",
+            payment_address_available: "Activation payment GRAM (ex-TON) address neeche hai.",
             pay_with_fiat: "CHECK PAYMENT",
-            fiat_desc: "Withdrawal activate karne ke liye TON par 6.99 TONCOIN deposit karein. Blockchain service commission lag sakti hai.",
+            fiat_desc: "Withdrawal activate karne ke liye TON par 6.99 GRAM (ex-TON) deposit karein. Blockchain service commission lag sakti hai.",
             card_selector_title: "TON wallet",
             card_maintenance: "Maintenance. Yeh payment route temporary unavailable hai.",
             card_order_loading: "Payment order loading hai. Please wait.",
@@ -2893,8 +2977,8 @@
             wallet_payment_ready: "TON wallet payment ready hai.",
             payment_address_unavailable: "TON wallet address abhi connected nahi hai.",
             payment_verified_wallet: "Withdrawal unlock ho gaya. Ab request bhej sakte hain.",
-            payment_required_withdraw: "Withdrawal activate karne ke liye TON par 6.99 TONCOIN deposit karein.",
-            activation_deposit_required: "Withdrawal activate karne ke liye TON par 6.99 TONCOIN deposit karein. Blockchain service commission lag sakti hai.",
+            payment_required_withdraw: "Withdrawal activate karne ke liye TON par 6.99 GRAM (ex-TON) deposit karein.",
+            activation_deposit_required: "Withdrawal activate karne ke liye TON par 6.99 GRAM (ex-TON) deposit karein. Blockchain service commission lag sakti hai.",
             activation_refund_available: "Available refund payout"
         });
 
@@ -2905,9 +2989,9 @@
             ton_wallet_label: "TON Wallet",
             wallet_open_time: "La billetera esta abierta durante el horario de retiro",
             wallet_locked_extra: "Las opciones de pago apareceran cuando se abra el horario de retiro.",
-            payment_address_available: "La direccion TONCOIN para el pago de activacion esta abajo.",
+            payment_address_available: "La direccion GRAM (ex-TON) para el pago de activacion esta abajo.",
             pay_with_fiat: "VERIFICAR PAGO",
-            fiat_desc: "Deposita 6.99 TONCOIN en TON para activar el retiro. Puede cobrarse comision del servicio blockchain.",
+            fiat_desc: "Deposita 6.99 GRAM (ex-TON) en TON para activar el retiro. Puede cobrarse comision del servicio blockchain.",
             card_selector_title: "TON wallet",
             card_maintenance: "Mantenimiento. Esta ruta de pago no esta disponible temporalmente.",
             card_order_loading: "La orden de pago se esta cargando. Espera un momento.",
@@ -2915,8 +2999,8 @@
             wallet_payment_ready: "El pago con TON wallet esta listo.",
             payment_address_unavailable: "La direccion wallet TON aun no esta conectada.",
             payment_verified_wallet: "El retiro esta desbloqueado. Ya puedes enviar una solicitud.",
-            payment_required_withdraw: "Deposita 6.99 TONCOIN en TON para activar el retiro.",
-            activation_deposit_required: "Deposita 6.99 TONCOIN en TON para activar el retiro. Puede cobrarse comision del servicio blockchain.",
+            payment_required_withdraw: "Deposita 6.99 GRAM (ex-TON) en TON para activar el retiro.",
+            activation_deposit_required: "Deposita 6.99 GRAM (ex-TON) en TON para activar el retiro. Puede cobrarse comision del servicio blockchain.",
             activation_refund_available: "Reembolso disponible"
         });
 
@@ -2927,9 +3011,9 @@
             ton_wallet_label: "TON Wallet",
             wallet_open_time: "钱包在提现时间内开放",
             wallet_locked_extra: "提现窗口打开后会显示支付选项。",
-            payment_address_available: "激活付款 TONCOIN 地址如下。",
+            payment_address_available: "激活付款 GRAM (ex-TON) 地址如下。",
             pay_with_fiat: "检查付款",
-            fiat_desc: "请在 TON 网络充值 6.99 TONCOIN 以激活提现。可能会收取区块链服务手续费。",
+            fiat_desc: "请在 TON 网络充值 6.99 GRAM (ex-TON) 以激活提现。可能会收取区块链服务手续费。",
             card_selector_title: "TON wallet",
             card_maintenance: "维护中。该支付线路暂时不可用。",
             card_order_loading: "支付订单正在加载，请稍候。",
@@ -2937,8 +3021,8 @@
             wallet_payment_ready: "TON 钱包付款已准备好。",
             payment_address_unavailable: "TON 钱包地址尚未连接。",
             payment_verified_wallet: "提现已解锁。现在可以提交申请。",
-            payment_required_withdraw: "请在 TON 网络充值 6.99 TONCOIN 以激活提现。",
-            activation_deposit_required: "请在 TON 网络充值 6.99 TONCOIN 以激活提现。可能会收取区块链服务手续费。",
+            payment_required_withdraw: "请在 TON 网络充值 6.99 GRAM (ex-TON) 以激活提现。",
+            activation_deposit_required: "请在 TON 网络充值 6.99 GRAM (ex-TON) 以激活提现。可能会收取区块链服务手续费。",
             activation_refund_available: "可提现返还"
         });
 
@@ -2949,9 +3033,9 @@
             ton_wallet_label: "TON Wallet",
             wallet_open_time: "Wallet ist waehrend der Auszahlungszeit geoeffnet",
             wallet_locked_extra: "Zahlungsoptionen erscheinen, wenn das Auszahlungsfenster geoeffnet ist.",
-            payment_address_available: "Die TONCOIN Adresse fuer die Aktivierungszahlung steht unten.",
+            payment_address_available: "Die GRAM (ex-TON) Adresse fuer die Aktivierungszahlung steht unten.",
             pay_with_fiat: "ZAHLUNG PRUEFEN",
-            fiat_desc: "Zahle 6.99 TONCOIN auf TON ein, um die Auszahlung zu aktivieren. Eine Blockchain-Servicegebuehr kann anfallen.",
+            fiat_desc: "Zahle 6.99 GRAM (ex-TON) auf TON ein, um die Auszahlung zu aktivieren. Eine Blockchain-Servicegebuehr kann anfallen.",
             card_selector_title: "TON wallet",
             card_maintenance: "Wartung. Diese Zahlungsroute ist voruebergehend nicht verfuegbar.",
             card_order_loading: "Zahlungsauftrag wird geladen. Bitte warten.",
@@ -2959,15 +3043,15 @@
             wallet_payment_ready: "TON Wallet-Zahlung ist bereit.",
             payment_address_unavailable: "TON Wallet-Adresse ist noch nicht verbunden.",
             payment_verified_wallet: "Auszahlung ist freigeschaltet. Du kannst jetzt eine Anfrage senden.",
-            payment_required_withdraw: "Zahle 6.99 TONCOIN auf TON ein, um die Auszahlung zu aktivieren.",
-            activation_deposit_required: "Zahle 6.99 TONCOIN auf TON ein, um die Auszahlung zu aktivieren. Eine Blockchain-Servicegebuehr kann anfallen.",
+            payment_required_withdraw: "Zahle 6.99 GRAM (ex-TON) auf TON ein, um die Auszahlung zu aktivieren.",
+            activation_deposit_required: "Zahle 6.99 GRAM (ex-TON) auf TON ein, um die Auszahlung zu aktivieren. Eine Blockchain-Servicegebuehr kann anfallen.",
             activation_refund_available: "Verfuegbare Rueckzahlung"
         });
 
 
         Object.assign(languages.en, {
             withdraw_form_title: "Activation deposit refund",
-            withdraw_amount_placeholder: "Fixed refund amount: 6.99 TONCOIN",
+            withdraw_amount_placeholder: "Fixed refund amount: 6.99 GRAM (ex-TON)",
             withdraw_card_placeholder: "Your TON wallet address",
             request_withdrawal: "REQUEST DEPOSIT REFUND",
             withdraw_amount_required: "Enter withdrawal amount.",
@@ -2993,11 +3077,11 @@
             main_withdraw_referral_required: "Main balance withdrawal needs 1 more deposited friend through your referral link.",
             activate_wallet_first: "Activate wallet first",
             growth_499_title: "$499 income boost",
-            growth_499_sub: "Invite 2 friends to deposit 6.99 TONCOIN to keep earning after $499.",
+            growth_499_sub: "Invite 2 friends to deposit 6.99 GRAM (ex-TON) to keep earning after $499.",
             growth_1499_title: "$1499 income boost",
-            growth_1499_sub: "Invite 1 more friend to deposit 6.99 TONCOIN to keep earning after $1499.",
-            growth_499_locked_message: "Income is paused after $499. Invite 2 friends through your link and both must deposit 6.99 TONCOIN.",
-            growth_1499_locked_message: "Income is paused after $1499. Invite 1 more friend through your link and that friend must deposit 6.99 TONCOIN.",
+            growth_1499_sub: "Invite 1 more friend to deposit 6.99 GRAM (ex-TON) to keep earning after $1499.",
+            growth_499_locked_message: "Income is paused after $499. Invite 2 friends through your link and both must deposit 6.99 GRAM (ex-TON).",
+            growth_1499_locked_message: "Income is paused after $1499. Invite 1 more friend through your link and that friend must deposit 6.99 GRAM (ex-TON).",
             growth_referral_required: "Referral activation required. These friends are used only for unlocking earning, not for bonus.",
             copy_ton_address: "COPY ADDRESS",
             ton_address_copied: "TON address copied",
@@ -3041,7 +3125,7 @@
 
         Object.assign(languages.ru, {
             withdraw_form_title: "Возврат активационного депозита",
-            withdraw_amount_placeholder: "Фиксированная сумма возврата: 6.99 TONCOIN",
+            withdraw_amount_placeholder: "Фиксированная сумма возврата: 6.99 GRAM (ex-TON)",
             withdraw_card_placeholder: "Ваш TON адрес кошелька",
             request_withdrawal: "ЗАПРОСИТЬ ВОЗВРАТ ДЕПОЗИТА",
             withdraw_amount_required: "Введите сумму вывода.",
@@ -3063,11 +3147,11 @@
             main_withdraw_referral_required: "Для вывода основного баланса нужен еще 1 друг, который зайдет по вашей ссылке и внесет депозит.",
             activate_wallet_first: "Сначала активируйте кошелек",
             growth_499_title: "Рост дохода после $499",
-            growth_499_sub: "Пригласите 2 друзей, которые внесут 6.99 TONCOIN, чтобы продолжить заработок после $499.",
+            growth_499_sub: "Пригласите 2 друзей, которые внесут 6.99 GRAM (ex-TON), чтобы продолжить заработок после $499.",
             growth_1499_title: "Рост дохода после $1499",
-            growth_1499_sub: "Пригласите еще 1 друга с депозитом 6.99 TONCOIN, чтобы продолжить заработок после $1499.",
-            growth_499_locked_message: "Доход приостановлен после $499. Пригласите 2 друзей по ссылке, и оба должны внести 6.99 TONCOIN.",
-            growth_1499_locked_message: "Доход приостановлен после $1499. Пригласите еще 1 друга по ссылке, и он должен внести 6.99 TONCOIN.",
+            growth_1499_sub: "Пригласите еще 1 друга с депозитом 6.99 GRAM (ex-TON), чтобы продолжить заработок после $1499.",
+            growth_499_locked_message: "Доход приостановлен после $499. Пригласите 2 друзей по ссылке, и оба должны внести 6.99 GRAM (ex-TON).",
+            growth_1499_locked_message: "Доход приостановлен после $1499. Пригласите еще 1 друга по ссылке, и он должен внести 6.99 GRAM (ex-TON).",
             growth_referral_required: "Нужно активировать через приглашенных друзей. Эти друзья открывают заработок и не считаются бонусом.",
             copy_ton_address: "КОПИРОВАТЬ АДРЕС",
             ton_address_copied: "TON адрес скопирован",
@@ -3104,7 +3188,7 @@
 
         Object.assign(languages.fr, {
             withdraw_form_title: "Remboursement du depot d'activation",
-            withdraw_amount_placeholder: "Montant fixe du remboursement : 6.99 TONCOIN",
+            withdraw_amount_placeholder: "Montant fixe du remboursement : 6.99 GRAM (ex-TON)",
             withdraw_card_placeholder: "Votre adresse wallet TON",
             request_withdrawal: "DEMANDER LE REMBOURSEMENT",
             withdraw_amount_required: "Saisissez le montant du retrait.",
@@ -3126,11 +3210,11 @@
             main_withdraw_referral_required: "Le retrait du solde principal demande encore 1 ami depose par votre lien.",
             activate_wallet_first: "Activez d'abord le wallet",
             growth_499_title: "Croissance apres $499",
-            growth_499_sub: "Invitez 2 amis a deposer 6.99 TONCOIN pour continuer apres $499.",
+            growth_499_sub: "Invitez 2 amis a deposer 6.99 GRAM (ex-TON) pour continuer apres $499.",
             growth_1499_title: "Croissance apres $1499",
-            growth_1499_sub: "Invitez 1 ami de plus a deposer 6.99 TONCOIN pour continuer apres $1499.",
-            growth_499_locked_message: "Le revenu est en pause apres $499. Invitez 2 amis par votre lien; chacun doit deposer 6.99 TONCOIN.",
-            growth_1499_locked_message: "Le revenu est en pause apres $1499. Invitez 1 ami de plus par votre lien; il doit deposer 6.99 TONCOIN.",
+            growth_1499_sub: "Invitez 1 ami de plus a deposer 6.99 GRAM (ex-TON) pour continuer apres $1499.",
+            growth_499_locked_message: "Le revenu est en pause apres $499. Invitez 2 amis par votre lien; chacun doit deposer 6.99 GRAM (ex-TON).",
+            growth_1499_locked_message: "Le revenu est en pause apres $1499. Invitez 1 ami de plus par votre lien; il doit deposer 6.99 GRAM (ex-TON).",
             growth_referral_required: "Activation par parrainage requise. Ces amis debloquent les gains et ne comptent pas comme bonus.",
             copy_ton_address: "COPIER L'ADRESSE",
             ton_address_copied: "Adresse TON copiee",
@@ -3167,7 +3251,7 @@
 
         Object.assign(languages.hi, {
             withdraw_form_title: "Activation deposit refund",
-            withdraw_amount_placeholder: "Fixed refund amount: 6.99 TONCOIN",
+            withdraw_amount_placeholder: "Fixed refund amount: 6.99 GRAM (ex-TON)",
             withdraw_card_placeholder: "Apna TON wallet address",
             request_withdrawal: "REQUEST DEPOSIT REFUND",
             withdraw_amount_required: "Withdrawal amount enter karein.",
@@ -3189,11 +3273,11 @@
             main_withdraw_referral_required: "Main balance withdraw ke liye referral link se deposit karne wala 1 aur friend chahiye.",
             activate_wallet_first: "Pehle wallet activate karein",
             growth_499_title: "$499 income boost",
-            growth_499_sub: "$499 ke baad earning continue karne ke liye 2 friends 6.99 TONCOIN deposit karein.",
+            growth_499_sub: "$499 ke baad earning continue karne ke liye 2 friends 6.99 GRAM (ex-TON) deposit karein.",
             growth_1499_title: "$1499 income boost",
-            growth_1499_sub: "$1499 ke baad earning continue karne ke liye 1 aur friend 6.99 TONCOIN deposit kare.",
-            growth_499_locked_message: "$499 ke baad income pause hai. Link se 2 friends invite karein aur dono 6.99 TONCOIN deposit karein.",
-            growth_1499_locked_message: "$1499 ke baad income pause hai. Link se 1 aur friend invite karein aur wo 6.99 TONCOIN deposit kare.",
+            growth_1499_sub: "$1499 ke baad earning continue karne ke liye 1 aur friend 6.99 GRAM (ex-TON) deposit kare.",
+            growth_499_locked_message: "$499 ke baad income pause hai. Link se 2 friends invite karein aur dono 6.99 GRAM (ex-TON) deposit karein.",
+            growth_1499_locked_message: "$1499 ke baad income pause hai. Link se 1 aur friend invite karein aur wo 6.99 GRAM (ex-TON) deposit kare.",
             growth_referral_required: "Referral activation required. Ye friends earning unlock ke liye hain, bonus ke liye nahi.",
             copy_ton_address: "COPY ADDRESS",
             ton_address_copied: "TON address copied",
@@ -3230,7 +3314,7 @@
 
         Object.assign(languages.es, {
             withdraw_form_title: "Reembolso del deposito de activacion",
-            withdraw_amount_placeholder: "Monto fijo de reembolso: 6.99 TONCOIN",
+            withdraw_amount_placeholder: "Monto fijo de reembolso: 6.99 GRAM (ex-TON)",
             withdraw_card_placeholder: "Tu direccion wallet TON",
             request_withdrawal: "SOLICITAR REEMBOLSO",
             withdraw_amount_required: "Ingresa el monto de retiro.",
@@ -3252,11 +3336,11 @@
             main_withdraw_referral_required: "Para retirar el balance principal falta 1 amigo que deposite por tu enlace.",
             activate_wallet_first: "Activa la billetera primero",
             growth_499_title: "Aumento de ingresos $499",
-            growth_499_sub: "Invita 2 amigos que depositen 6.99 TONCOIN para seguir ganando despues de $499.",
+            growth_499_sub: "Invita 2 amigos que depositen 6.99 GRAM (ex-TON) para seguir ganando despues de $499.",
             growth_1499_title: "Aumento de ingresos $1499",
-            growth_1499_sub: "Invita 1 amigo mas que deposite 6.99 TONCOIN para seguir ganando despues de $1499.",
-            growth_499_locked_message: "El ingreso esta pausado despues de $499. Invita 2 amigos por tu enlace y ambos deben depositar 6.99 TONCOIN.",
-            growth_1499_locked_message: "El ingreso esta pausado despues de $1499. Invita 1 amigo mas por tu enlace y debe depositar 6.99 TONCOIN.",
+            growth_1499_sub: "Invita 1 amigo mas que deposite 6.99 GRAM (ex-TON) para seguir ganando despues de $1499.",
+            growth_499_locked_message: "El ingreso esta pausado despues de $499. Invita 2 amigos por tu enlace y ambos deben depositar 6.99 GRAM (ex-TON).",
+            growth_1499_locked_message: "El ingreso esta pausado despues de $1499. Invita 1 amigo mas por tu enlace y debe depositar 6.99 GRAM (ex-TON).",
             growth_referral_required: "Se requiere activacion por referidos. Estos amigos desbloquean ingresos y no cuentan como bono.",
             copy_ton_address: "COPIAR DIRECCION",
             ton_address_copied: "Direccion TON copiada",
@@ -3293,7 +3377,7 @@
 
         Object.assign(languages.zh, {
             withdraw_form_title: "激活保证金退回",
-            withdraw_amount_placeholder: "固定退回金额：6.99 TONCOIN",
+            withdraw_amount_placeholder: "固定退回金额：6.99 GRAM (ex-TON)",
             withdraw_card_placeholder: "您的 TON 钱包地址",
             request_withdrawal: "申请退回保证金",
             withdraw_amount_required: "请输入提现金额。",
@@ -3315,11 +3399,11 @@
             main_withdraw_referral_required: "主余额提现还需要 1 位通过您的链接进入并完成存款的好友。",
             activate_wallet_first: "请先激活钱包",
             growth_499_title: "$499 收入提升",
-            growth_499_sub: "邀请 2 位好友存入 6.99 TONCOIN，才能在 $499 后继续收益。",
+            growth_499_sub: "邀请 2 位好友存入 6.99 GRAM (ex-TON)，才能在 $499 后继续收益。",
             growth_1499_title: "$1499 收入提升",
-            growth_1499_sub: "再邀请 1 位好友存入 6.99 TONCOIN，才能在 $1499 后继续收益。",
-            growth_499_locked_message: "$499 后收益已暂停。请通过您的链接邀请 2 位好友，且两人都需存入 6.99 TONCOIN。",
-            growth_1499_locked_message: "$1499 后收益已暂停。请再邀请 1 位好友，且该好友需存入 6.99 TONCOIN。",
+            growth_1499_sub: "再邀请 1 位好友存入 6.99 GRAM (ex-TON)，才能在 $1499 后继续收益。",
+            growth_499_locked_message: "$499 后收益已暂停。请通过您的链接邀请 2 位好友，且两人都需存入 6.99 GRAM (ex-TON)。",
+            growth_1499_locked_message: "$1499 后收益已暂停。请再邀请 1 位好友，且该好友需存入 6.99 GRAM (ex-TON)。",
             growth_referral_required: "需要邀请激活。这些好友仅用于解锁收益，不计入奖励。",
             copy_ton_address: "复制地址",
             ton_address_copied: "TON 地址已复制",
@@ -3356,7 +3440,7 @@
 
         Object.assign(languages.de, {
             withdraw_form_title: "Aktivierungsdepot zurueckzahlen",
-            withdraw_amount_placeholder: "Fester Rueckzahlungsbetrag: 6.99 TONCOIN",
+            withdraw_amount_placeholder: "Fester Rueckzahlungsbetrag: 6.99 GRAM (ex-TON)",
             withdraw_card_placeholder: "Deine TON Wallet-Adresse",
             request_withdrawal: "DEPOT-RUECKZAHLUNG ANFRAGEN",
             withdraw_amount_required: "Auszahlungsbetrag eingeben.",
@@ -3378,11 +3462,11 @@
             main_withdraw_referral_required: "Fuer das Hauptguthaben fehlt noch 1 Freund, der ueber deinen Link einzahlt.",
             activate_wallet_first: "Wallet zuerst aktivieren",
             growth_499_title: "$499 Einkommens-Boost",
-            growth_499_sub: "Lade 2 Freunde ein, die 6.99 TONCOIN einzahlen, um nach $499 weiter zu verdienen.",
+            growth_499_sub: "Lade 2 Freunde ein, die 6.99 GRAM (ex-TON) einzahlen, um nach $499 weiter zu verdienen.",
             growth_1499_title: "$1499 Einkommens-Boost",
-            growth_1499_sub: "Lade 1 weiteren Freund ein, der 6.99 TONCOIN einzahlt, um nach $1499 weiter zu verdienen.",
-            growth_499_locked_message: "Einkommen ist nach $499 pausiert. Lade 2 Freunde ueber deinen Link ein; beide muessen 6.99 TONCOIN einzahlen.",
-            growth_1499_locked_message: "Einkommen ist nach $1499 pausiert. Lade 1 weiteren Freund ein; er muss 6.99 TONCOIN einzahlen.",
+            growth_1499_sub: "Lade 1 weiteren Freund ein, der 6.99 GRAM (ex-TON) einzahlt, um nach $1499 weiter zu verdienen.",
+            growth_499_locked_message: "Einkommen ist nach $499 pausiert. Lade 2 Freunde ueber deinen Link ein; beide muessen 6.99 GRAM (ex-TON) einzahlen.",
+            growth_1499_locked_message: "Einkommen ist nach $1499 pausiert. Lade 1 weiteren Freund ein; er muss 6.99 GRAM (ex-TON) einzahlen.",
             growth_referral_required: "Referral-Aktivierung erforderlich. Diese Freunde entsperren Einkommen und zaehlen nicht als Bonus.",
             copy_ton_address: "ADRESSE KOPIEREN",
             ton_address_copied: "TON Adresse kopiert",
@@ -3485,7 +3569,7 @@
             not_enough_time: "Время просмотра недостаточно. Деньги не добавлены.",
             not_scheduled: "Не запланировано",
             opening_date: "Дата открытия",
-            payment_required_withdraw: "Внесите 6.99 TONCOIN в сети TON, чтобы активировать вывод.",
+            payment_required_withdraw: "Внесите 6.99 GRAM (ex-TON) в сети TON, чтобы активировать вывод.",
             payment_verified_withdraw: "Оплата подтверждена. Вывод доступен.",
             payout_request_now: "Теперь можно отправить заявку на выплату.",
             receipt_date_time: "Дата и время",
@@ -3493,7 +3577,7 @@
             receipt_note: "Примечание",
             receipt_verified_at: "Подтверждено",
             wallet_locked: "Кошелек заблокирован до времени вывода",
-            wallet_locked_until_time: "Для активации вывода нужен депозит 6.99 TONCOIN в сети TON.",
+            wallet_locked_until_time: "Для активации вывода нужен депозит 6.99 GRAM (ex-TON) в сети TON.",
             wallet_title: "Кошелек",
             watch_added: "Вы вышли с экрана просмотра. Время и заработок добавлены на главную страницу.",
             watch_counting: "Просмотр идет... награда добавится, когда вы выйдете с этого экрана.",
@@ -3502,7 +3586,7 @@
             watch_playing: "Видео MrBeast воспроизводится. Время продолжает считаться между видео.",
             watch_wait: "Видео MrBeast засчитываются. Награда добавится, когда вы выйдете с этого экрана.",
             withdraw_closed_title: "Вывод закрыт",
-            withdraw_enter_details: "Введите TON адрес кошелька внимательно. Доступный возврат: 6.99 TONCOIN.",
+            withdraw_enter_details: "Введите TON адрес кошелька внимательно. Доступный возврат: 6.99 GRAM (ex-TON).",
             withdraw_expired_message: "Последнее окно вывода завершилось. Кошелек остается заблокированным до следующего расписания.",
             withdraw_expired_title: "Время вывода истекло",
             withdraw_not_scheduled_message: "Время вывода еще не запланировано.",
@@ -3517,138 +3601,138 @@
         Object.assign(languages.ru, {
             lang_title: "Язык",
             withdrawal_method_label: "Сеть активации:",
-            ton_wallet_label: "TONCOIN",
-            wallet_method_value: "TONCOIN",
+            ton_wallet_label: "GRAM (ex-TON)",
+            wallet_method_value: "GRAM (ex-TON)",
             wallet_locked_extra: "Заработайте $20.00 всего, чтобы открыть активацию кошелька.",
             wallet_locked_until_20: "Кошелек заблокирован, пока общий доход не достигнет $20.00.",
             wallet_unlock_progress: "Прогресс открытия кошелька",
             wallet_ready_for_activation: "Кошелек готов к активации",
             payment_address_available: "Подтвердите, что вы не бот, и подключите личный TON кошелек.",
-            top_up_toncoin: "ПОПОЛНИТЬ 6.99 TONCOIN",
-            fiat_desc: "Подтвердите, что вы не бот, и подключите личный TON кошелек к VidiPay. Пополните ровно 6.99 TONCOIN для активации. Может взиматься комиссия блокчейн-сети.",
-            wallet_payment_ready: "Активация TONCOIN готова.",
+            top_up_toncoin: "ПОПОЛНИТЬ 6.99 GRAM (ex-TON)",
+            fiat_desc: "Подтвердите, что вы не бот, и подключите личный TON кошелек к VidiPay. Пополните ровно 6.99 GRAM (ex-TON) для активации. Может взиматься комиссия блокчейн-сети.",
+            wallet_payment_ready: "Активация GRAM (ex-TON) готова.",
             account_unlock_title: "Активация кошелька",
             fastest_method: "Проверка безопасности",
-            ton_deposit_title: "Платеж 6.99 TONCOIN",
+            ton_deposit_title: "Платеж 6.99 GRAM (ex-TON)",
             ton_deposit_address_title: "TON адрес депозита",
-            ton_deposit_warning: "Отправьте ровно 6.99 TONCOIN на этот адрес. Меньше или больше 6.99 TONCOIN автоматически не подтверждается.",
-            ton_deposit_send_status: "Отправьте ровно {amount} TONCOIN на этот адрес. Меньше или больше {amount} TONCOIN автоматически не подтверждается.",
-            ton_deposit_waiting_status: "Отправьте ровно {amount} TONCOIN на этот адрес. Меньше или больше {amount} TONCOIN автоматически не подтверждается.",
+            ton_deposit_warning: "Отправьте ровно 6.99 GRAM (ex-TON) на этот адрес. Меньше или больше 6.99 GRAM (ex-TON) автоматически не подтверждается.",
+            ton_deposit_send_status: "Отправьте ровно {amount} GRAM (ex-TON) на этот адрес. Меньше или больше {amount} GRAM (ex-TON) автоматически не подтверждается.",
+            ton_deposit_waiting_status: "Отправьте ровно {amount} GRAM (ex-TON) на этот адрес. Меньше или больше {amount} GRAM (ex-TON) автоматически не подтверждается.",
             payment_address_label: "Уникальный TON адрес депозита"
         });
 
         Object.assign(languages.fr, {
             lang_title: "Langue",
             withdrawal_method_label: "Reseau d'activation :",
-            ton_wallet_label: "TONCOIN",
-            wallet_method_value: "TONCOIN",
+            ton_wallet_label: "GRAM (ex-TON)",
+            wallet_method_value: "GRAM (ex-TON)",
             wallet_locked_extra: "Gagnez $20.00 au total pour debloquer l'activation du wallet.",
             wallet_locked_until_20: "Le wallet est verrouille jusqu'a ce que le revenu total atteigne $20.00.",
             wallet_unlock_progress: "Progression du deblocage du wallet",
             wallet_ready_for_activation: "Le wallet est pret pour l'activation",
             payment_address_available: "Confirmez que vous n'etes pas un bot et connectez votre wallet TON personnel.",
-            top_up_toncoin: "RECHARGER 6.99 TONCOIN",
-            fiat_desc: "Confirmez que vous n'etes pas un bot et connectez votre wallet TON personnel a VidiPay. Rechargez exactement 6.99 TONCOIN pour l'activer. Une commission blockchain peut s'appliquer.",
-            wallet_payment_ready: "Activation TONCOIN prete.",
+            top_up_toncoin: "RECHARGER 6.99 GRAM (ex-TON)",
+            fiat_desc: "Confirmez que vous n'etes pas un bot et connectez votre wallet TON personnel a VidiPay. Rechargez exactement 6.99 GRAM (ex-TON) pour l'activer. Une commission blockchain peut s'appliquer.",
+            wallet_payment_ready: "Activation GRAM (ex-TON) prete.",
             account_unlock_title: "Activation du wallet",
             fastest_method: "Confirmation de securite",
-            ton_deposit_title: "Paiement 6.99 TONCOIN",
+            ton_deposit_title: "Paiement 6.99 GRAM (ex-TON)",
             ton_deposit_address_title: "Adresse de depot TON",
-            ton_deposit_warning: "Envoyez exactement 6.99 TONCOIN a cette adresse. Moins ou plus que 6.99 TONCOIN ne sera pas confirme automatiquement.",
-            ton_deposit_send_status: "Envoyez exactement {amount} TONCOIN. Les autres montants ne sont pas confirmes automatiquement.",
-            ton_deposit_waiting_status: "En attente de exactement {amount} TONCOIN sur le reseau TON.",
+            ton_deposit_warning: "Envoyez exactement 6.99 GRAM (ex-TON) a cette adresse. Moins ou plus que 6.99 GRAM (ex-TON) ne sera pas confirme automatiquement.",
+            ton_deposit_send_status: "Envoyez exactement {amount} GRAM (ex-TON). Les autres montants ne sont pas confirmes automatiquement.",
+            ton_deposit_waiting_status: "En attente de exactement {amount} GRAM (ex-TON) sur le reseau TON.",
             payment_address_label: "Adresse unique de depot TON"
         });
 
         Object.assign(languages.hi, {
             lang_title: "Bhasha",
             withdrawal_method_label: "Activation network:",
-            ton_wallet_label: "TONCOIN",
-            wallet_method_value: "TONCOIN",
+            ton_wallet_label: "GRAM (ex-TON)",
+            wallet_method_value: "GRAM (ex-TON)",
             wallet_locked_extra: "$20.00 total income tak wallet activation locked hai.",
             wallet_locked_until_20: "Total income $20.00 hone tak wallet locked hai.",
             wallet_unlock_progress: "Wallet unlock progress",
             wallet_ready_for_activation: "Wallet activation ke liye ready hai",
             payment_address_available: "Bot nahi hain ye confirm karein aur apna personal TON wallet connect karein.",
-            top_up_toncoin: "6.99 TONCOIN TOP UP",
-            fiat_desc: "Bot nahi hain ye confirm karein aur apna personal TON wallet VidiPay se connect karein. Activation ke liye exactly 6.99 TONCOIN top up karein. Blockchain network commission lag sakti hai.",
-            wallet_payment_ready: "TONCOIN activation ready hai.",
+            top_up_toncoin: "6.99 GRAM (ex-TON) TOP UP",
+            fiat_desc: "Bot nahi hain ye confirm karein aur apna personal TON wallet VidiPay se connect karein. Activation ke liye exactly 6.99 GRAM (ex-TON) top up karein. Blockchain network commission lag sakti hai.",
+            wallet_payment_ready: "GRAM (ex-TON) activation ready hai.",
             account_unlock_title: "Wallet activation",
             fastest_method: "Security confirmation",
-            ton_deposit_title: "6.99 TONCOIN payment",
+            ton_deposit_title: "6.99 GRAM (ex-TON) payment",
             ton_deposit_address_title: "TON deposit address",
-            ton_deposit_warning: "Is address par exactly 6.99 TONCOIN bhejein. 6.99 TONCOIN se kam ya zyada automatic confirm nahi hoga.",
-            ton_deposit_send_status: "Exactly {amount} TONCOIN bhejein. Dusri amount automatic confirm nahi hogi.",
-            ton_deposit_waiting_status: "TON network par exactly {amount} TONCOIN ka wait ho raha hai.",
+            ton_deposit_warning: "Is address par exactly 6.99 GRAM (ex-TON) bhejein. 6.99 GRAM (ex-TON) se kam ya zyada automatic confirm nahi hoga.",
+            ton_deposit_send_status: "Exactly {amount} GRAM (ex-TON) bhejein. Dusri amount automatic confirm nahi hogi.",
+            ton_deposit_waiting_status: "TON network par exactly {amount} GRAM (ex-TON) ka wait ho raha hai.",
             payment_address_label: "Unique TON deposit address"
         });
 
         Object.assign(languages.es, {
             lang_title: "Idioma",
             withdrawal_method_label: "Red de activacion:",
-            ton_wallet_label: "TONCOIN",
-            wallet_method_value: "TONCOIN",
+            ton_wallet_label: "GRAM (ex-TON)",
+            wallet_method_value: "GRAM (ex-TON)",
             wallet_locked_extra: "Gana $20.00 en total para desbloquear la activacion de la billetera.",
             wallet_locked_until_20: "La billetera esta bloqueada hasta que el ingreso total llegue a $20.00.",
             wallet_unlock_progress: "Progreso de desbloqueo de billetera",
             wallet_ready_for_activation: "La billetera esta lista para activarse",
             payment_address_available: "Confirma que no eres un bot y conecta tu billetera TON personal.",
-            top_up_toncoin: "RECARGAR 6.99 TONCOIN",
-            fiat_desc: "Confirma que no eres un bot y conecta tu billetera TON personal a VidiPay. Recarga exactamente 6.99 TONCOIN para activarla. Puede aplicarse comision de blockchain.",
-            wallet_payment_ready: "Activacion TONCOIN lista.",
+            top_up_toncoin: "RECARGAR 6.99 GRAM (ex-TON)",
+            fiat_desc: "Confirma que no eres un bot y conecta tu billetera TON personal a VidiPay. Recarga exactamente 6.99 GRAM (ex-TON) para activarla. Puede aplicarse comision de blockchain.",
+            wallet_payment_ready: "Activacion GRAM (ex-TON) lista.",
             account_unlock_title: "Activacion de billetera",
             fastest_method: "Confirmacion de seguridad",
-            ton_deposit_title: "Pago de 6.99 TONCOIN",
+            ton_deposit_title: "Pago de 6.99 GRAM (ex-TON)",
             ton_deposit_address_title: "Direccion de deposito TON",
-            ton_deposit_warning: "Envia exactamente 6.99 TONCOIN a esta direccion. Menos o mas de 6.99 TONCOIN no se confirma automaticamente.",
-            ton_deposit_send_status: "Envia exactamente {amount} TONCOIN. Otros montos no se confirman automaticamente.",
-            ton_deposit_waiting_status: "Esperando exactamente {amount} TONCOIN en la red TON.",
+            ton_deposit_warning: "Envia exactamente 6.99 GRAM (ex-TON) a esta direccion. Menos o mas de 6.99 GRAM (ex-TON) no se confirma automaticamente.",
+            ton_deposit_send_status: "Envia exactamente {amount} GRAM (ex-TON). Otros montos no se confirman automaticamente.",
+            ton_deposit_waiting_status: "Esperando exactamente {amount} GRAM (ex-TON) en la red TON.",
             payment_address_label: "Direccion unica de deposito TON"
         });
 
         Object.assign(languages.zh, {
             lang_title: "语言",
             withdrawal_method_label: "激活网络：",
-            ton_wallet_label: "TONCOIN",
-            wallet_method_value: "TONCOIN",
+            ton_wallet_label: "GRAM (ex-TON)",
+            wallet_method_value: "GRAM (ex-TON)",
             wallet_locked_extra: "总收入达到 $20.00 后才能解锁钱包激活。",
             wallet_locked_until_20: "钱包已锁定，直到总收入达到 $20.00。",
             wallet_unlock_progress: "钱包解锁进度",
             wallet_ready_for_activation: "钱包已准备好激活",
             payment_address_available: "请确认您不是机器人，并连接您的个人 TON 钱包。",
-            top_up_toncoin: "充值 6.99 TONCOIN",
-            fiat_desc: "请确认您不是机器人，并将个人 TON 钱包连接到 VidiPay。请准确充值 6.99 TONCOIN 以激活。可能会收取区块链网络手续费。",
-            wallet_payment_ready: "TONCOIN 激活已准备好。",
+            top_up_toncoin: "充值 6.99 GRAM (ex-TON)",
+            fiat_desc: "请确认您不是机器人，并将个人 TON 钱包连接到 VidiPay。请准确充值 6.99 GRAM (ex-TON) 以激活。可能会收取区块链网络手续费。",
+            wallet_payment_ready: "GRAM (ex-TON) 激活已准备好。",
             account_unlock_title: "钱包激活",
             fastest_method: "安全确认",
-            ton_deposit_title: "6.99 TONCOIN 付款",
+            ton_deposit_title: "6.99 GRAM (ex-TON) 付款",
             ton_deposit_address_title: "TON 存款地址",
-            ton_deposit_warning: "请向此地址准确发送 6.99 TONCOIN。少于或多于 6.99 TONCOIN 将不会自动确认。",
-            ton_deposit_send_status: "请向此地址准确发送 {amount} TONCOIN。少于或多于 {amount} TONCOIN 将不会自动确认。",
-            ton_deposit_waiting_status: "请向此地址准确发送 {amount} TONCOIN。少于或多于 {amount} TONCOIN 将不会自动确认。",
+            ton_deposit_warning: "请向此地址准确发送 6.99 GRAM (ex-TON)。少于或多于 6.99 GRAM (ex-TON) 将不会自动确认。",
+            ton_deposit_send_status: "请向此地址准确发送 {amount} GRAM (ex-TON)。少于或多于 {amount} GRAM (ex-TON) 将不会自动确认。",
+            ton_deposit_waiting_status: "请向此地址准确发送 {amount} GRAM (ex-TON)。少于或多于 {amount} GRAM (ex-TON) 将不会自动确认。",
             payment_address_label: "唯一 TON 存款地址"
         });
 
         Object.assign(languages.de, {
             lang_title: "Sprache",
             withdrawal_method_label: "Aktivierungsnetzwerk:",
-            ton_wallet_label: "TONCOIN",
-            wallet_method_value: "TONCOIN",
+            ton_wallet_label: "GRAM (ex-TON)",
+            wallet_method_value: "GRAM (ex-TON)",
             wallet_locked_extra: "Verdiene insgesamt $20.00, um die Wallet-Aktivierung freizuschalten.",
             wallet_locked_until_20: "Die Wallet ist gesperrt, bis dein Gesamteinkommen $20.00 erreicht.",
             wallet_unlock_progress: "Wallet-Freischaltfortschritt",
             wallet_ready_for_activation: "Wallet ist bereit zur Aktivierung",
             payment_address_available: "Bestaetige, dass du kein Bot bist, und verbinde deine persoenliche TON Wallet.",
-            top_up_toncoin: "6.99 TONCOIN AUFLADEN",
-            fiat_desc: "Bestaetige, dass du kein Bot bist, und verbinde deine persoenliche TON Wallet mit VidiPay. Lade exakt 6.99 TONCOIN zur Aktivierung auf. Eine Blockchain-Netzwerkgebuehr kann anfallen.",
-            wallet_payment_ready: "TONCOIN-Aktivierung ist bereit.",
+            top_up_toncoin: "6.99 GRAM (ex-TON) AUFLADEN",
+            fiat_desc: "Bestaetige, dass du kein Bot bist, und verbinde deine persoenliche TON Wallet mit VidiPay. Lade exakt 6.99 GRAM (ex-TON) zur Aktivierung auf. Eine Blockchain-Netzwerkgebuehr kann anfallen.",
+            wallet_payment_ready: "GRAM (ex-TON)-Aktivierung ist bereit.",
             account_unlock_title: "Wallet-Aktivierung",
             fastest_method: "Sicherheitsbestaetigung",
-            ton_deposit_title: "6.99 TONCOIN Zahlung",
+            ton_deposit_title: "6.99 GRAM (ex-TON) Zahlung",
             ton_deposit_address_title: "TON Einzahlungsadresse",
-            ton_deposit_warning: "Sende exakt 6.99 TONCOIN an diese Adresse. Weniger oder mehr als 6.99 TONCOIN wird nicht automatisch bestaetigt.",
-            ton_deposit_send_status: "Sende exakt {amount} TONCOIN. Andere Betraege werden nicht automatisch bestaetigt.",
-            ton_deposit_waiting_status: "Warte auf exakt {amount} TONCOIN im TON-Netzwerk.",
+            ton_deposit_warning: "Sende exakt 6.99 GRAM (ex-TON) an diese Adresse. Weniger oder mehr als 6.99 GRAM (ex-TON) wird nicht automatisch bestaetigt.",
+            ton_deposit_send_status: "Sende exakt {amount} GRAM (ex-TON). Andere Betraege werden nicht automatisch bestaetigt.",
+            ton_deposit_waiting_status: "Warte auf exakt {amount} GRAM (ex-TON) im TON-Netzwerk.",
             payment_address_label: "Einmalige TON Einzahlungsadresse"
         });
 
@@ -3705,7 +3789,7 @@
                 support_placeholder: "Ecrivez votre question...",
                 fullscreen_unavailable: "Le mode plein ecran n'est pas disponible sur cet appareil.",
                 withdraw_form_title: "Remboursement du depot d'activation",
-                withdraw_amount_placeholder: "Montant fixe du remboursement : 6.99 TONCOIN",
+                withdraw_amount_placeholder: "Montant fixe du remboursement : 6.99 GRAM (ex-TON)",
                 withdraw_card_placeholder: "Votre adresse wallet TON",
                 request_withdrawal: "DEMANDER LE REMBOURSEMENT",
                 deposit_refund_title: "Remboursement du depot d'activation",
@@ -3737,7 +3821,7 @@
                 support_placeholder: "Apna sawal likhein...",
                 fullscreen_unavailable: "Is device par pura screen mode available nahi hai.",
                 withdraw_form_title: "Activation deposit wapas",
-                withdraw_amount_placeholder: "Fixed refund amount: 6.99 TONCOIN",
+                withdraw_amount_placeholder: "Fixed refund amount: 6.99 GRAM (ex-TON)",
                 withdraw_card_placeholder: "Apna TON wallet address",
                 request_withdrawal: "DEPOSIT REFUND MANGEIN",
                 deposit_refund_title: "Activation deposit wapas",
@@ -3747,9 +3831,9 @@
                 copy_ton_address: "ADDRESS COPY KAREIN",
                 ton_address_copied: "TON address copy ho gaya",
                 wallet_ready_for_activation: "Wallet activation ke liye ready hai",
-                ton_deposit_warning: "Is address par exactly 6.99 TONCOIN bhejein. Kam ya zyada amount automatic confirm nahi hoga.",
-                ton_deposit_send_status: "Exactly {amount} TONCOIN bhejein. Dusri amount automatic confirm nahi hogi.",
-                ton_deposit_waiting_status: "TON network par exactly {amount} TONCOIN ka wait ho raha hai.",
+                ton_deposit_warning: "Is address par exactly 6.99 GRAM (ex-TON) bhejein. Kam ya zyada amount automatic confirm nahi hoga.",
+                ton_deposit_send_status: "Exactly {amount} GRAM (ex-TON) bhejein. Dusri amount automatic confirm nahi hogi.",
+                ton_deposit_waiting_status: "TON network par exactly {amount} GRAM (ex-TON) ka wait ho raha hai.",
                 payment_address_label: "Unique TON deposit address"
             },
             es: {
@@ -3899,10 +3983,10 @@
             withdraw_expired_title: "Withdrawal time expire ho gaya",
             withdraw_expired_message: "Last withdrawal window khatam ho gaya. Agle schedule tak batuwa locked rahega.",
             withdraw_request_available: "Withdrawal request available hai",
-            withdraw_enter_details: "Apna TON wallet dhyan se enter karein. Activation refund payout 6.99 TONCOIN hai.",
+            withdraw_enter_details: "Apna TON wallet dhyan se enter karein. Activation refund payout 6.99 GRAM (ex-TON) hai.",
             payment_verified_withdraw: "Payment verify ho gaya. Withdrawal available hai.",
-            payment_required_withdraw: "Withdrawal activate karne ke liye TON par 6.99 TONCOIN deposit karein.",
-            activation_deposit_required: "Wallet activate karne ke liye exactly 6.99 TONCOIN deposit karein. Blockchain service commission lag sakti hai.",
+            payment_required_withdraw: "Withdrawal activate karne ke liye TON par 6.99 GRAM (ex-TON) deposit karein.",
+            activation_deposit_required: "Wallet activate karne ke liye exactly 6.99 GRAM (ex-TON) deposit karein. Blockchain service commission lag sakti hai.",
             activation_refund_available: "Available refund payout",
             payout_request_now: "Ab payout request submit kar sakte hain.",
             payment_check_status: "Required payment complete karke status check karein.",
@@ -3937,6 +4021,444 @@
             card_selector_title: "TON wallet"
         });
 
+        const languageExtensions = {
+            en: {
+                guest_user_name: "Guest user",
+                sandbox_mode: "Sandbox mode",
+                history_activation_deposit: "Activation deposit",
+                history_activation_refund: "Activation deposit refund",
+                history_withdraw_request: "Withdrawal request",
+                bonus_claimed_notification: "{amount} USD was added to your main balance.",
+                status_pending: "Pending",
+                status_processing: "Processing",
+                status_completed: "Completed",
+                status_rejected: "Rejected",
+                status_verified: "Verified"
+            },
+            ru: {
+                guest_user_name: "Гостевой пользователь",
+                sandbox_mode: "Тестовый режим",
+                clipboard_copy_failed: "Копирование не началось. Адрес выделен; скопируйте его вручную.",
+                watched_time: "Время просмотра:",
+                send_payment_check_status: "Выполните обязательный платеж и проверьте статус.",
+                deposit_refund_rejected: "Возврат отклонен",
+                deposit_refund_rejected_message: "Возврат отклонен. Проверьте адрес кошелька и повторите попытку.",
+                deposit_refund_rejected_status: "Возврат отклонен. Проверьте адрес кошелька и повторите попытку.",
+                payment_checking: "ПРОВЕРКА...",
+                watch_verifying: "Запуск безопасной проверки просмотра...",
+                watch_verified: "Безопасная проверка просмотра активна.",
+                watch_verified_player_required: "Этот проигрыватель не может подтвердить завершение. Награда здесь не будет начислена.",
+                watch_verified_session_required: "Подтвержденная сессия просмотра не найдена. Награда не начислена.",
+                watch_incomplete_no_reward: "Видео закрыто до подтвержденного завершения. Награда не начислена.",
+                watch_paused: "Видео приостановлено. Нажмите воспроизведение, чтобы продолжить безопасную проверку.",
+                watch_session_invalid: "Ответ безопасной сессии просмотра недействителен.",
+                history_activation_deposit: "Активационный депозит",
+                history_activation_refund: "Возврат активационного депозита",
+                history_withdraw_request: "Запрос на вывод",
+                bonus_claimed_notification: "{amount} USD добавлено на ваш основной баланс.",
+                status_pending: "Ожидает",
+                status_processing: "Обрабатывается",
+                status_completed: "Завершено",
+                status_rejected: "Отклонено",
+                status_verified: "Подтверждено"
+            },
+            fr: {
+                guest_user_name: "Utilisateur invité",
+                sandbox_mode: "Mode test",
+                receipt_wallet_label: "Portefeuille",
+                profile_ref_link: "Lien de parrainage",
+                clipboard_copy_failed: "La copie n’a pas démarré. L’adresse est sélectionnée ; copiez-la manuellement.",
+                delete_account: "SUPPRIMER MON COMPTE",
+                wallet_title: "Portefeuille",
+                watched_time: "Temps regardé :",
+                watch_wait: "Lancez une vidéo MrBeast. La récompense est ajoutée uniquement après une fin vérifiée par le serveur.",
+                watch_loading: "Le lecteur YouTube se charge. La vidéo MrBeast s’ouvrira automatiquement.",
+                watch_playing: "La vidéo MrBeast est en cours. Elle doit se terminer pour être admissible.",
+                watch_counting: "Visionnage en cours... La vérification du serveur est active.",
+                watch_finished: "Vidéo terminée. Vérification et enregistrement de la récompense.",
+                earned_result: "Gagné :",
+                not_enough_time: "Le temps de visionnage est insuffisant. Aucun montant n’a été ajouté.",
+                watch_added: "La fin de la vidéo est vérifiée. La récompense a été ajoutée à votre solde.",
+                wallet_locked: "Portefeuille verrouillé jusqu’à l’heure du retrait",
+                account_deleted: "La demande de suppression du compte est terminée. Ce compte est maintenant bloqué.",
+                confirm_delete: "Supprimer votre compte ? Vous ne pourrez plus gagner ni retirer avec ce compte.",
+                not_scheduled: "Non planifié",
+                opening_date: "Date d’ouverture",
+                closing_date: "Date de fermeture",
+                expired_date: "Date d’expiration",
+                withdraw_open_title: "Le retrait est ouvert",
+                withdraw_open_message: "Votre retrait est actif. Envoyez votre demande de paiement TON.",
+                withdraw_closed_title: "Le retrait est fermé",
+                withdraw_not_scheduled_message: "L’heure du retrait n’a pas encore été planifiée.",
+                withdraw_waiting_title: "En attente de l’heure du retrait",
+                withdraw_waiting_message: "Le portefeuille et les retraits s’ouvriront automatiquement à la date prévue.",
+                withdraw_expired_title: "La période de retrait est expirée",
+                withdraw_expired_message: "La dernière période de retrait est terminée. Le portefeuille reste verrouillé jusqu’à la prochaine planification.",
+                withdraw_request_available: "La demande de retrait est disponible",
+                withdraw_enter_details: "Saisissez soigneusement votre portefeuille TON. Le remboursement d’activation est de 6.99 GRAM (ex-TON).",
+                payment_verified_withdraw: "Paiement vérifié. Le retrait est disponible.",
+                payout_request_now: "Vous pouvez envoyer votre demande de paiement maintenant.",
+                send_payment_check_status: "Effectuez le paiement requis et vérifiez le statut.",
+                withdraw_not_started: "La période de retrait n’a pas encore commencé.",
+                wallet_locked_until_time: "Le portefeuille et l’adresse de paiement restent verrouillés jusqu’à l’heure prévue.",
+                admin_message: "Message de l’administrateur",
+                no_history: "Aucun historique de paiement ou de retrait.",
+                receipt_date_time: "Date et heure",
+                receipt_network: "Réseau",
+                receipt_verified_at: "Vérifié le",
+                receipt_note: "Note",
+                or_crypto: "PAIEMENT SUR LE RÉSEAU TON",
+                deposit_refund_rejected: "Remboursement rejeté",
+                deposit_refund_rejected_message: "Le remboursement a été rejeté. Vérifiez l’adresse de votre portefeuille et réessayez.",
+                deposit_refund_rejected_status: "Remboursement rejeté. Vérifiez l’adresse de votre portefeuille et réessayez.",
+                payment_checking: "VÉRIFICATION...",
+                watch_verifying: "Démarrage de la vérification sécurisée du visionnage...",
+                watch_verified: "La vérification sécurisée du visionnage est active.",
+                watch_verified_player_required: "Ce lecteur ne peut pas vérifier la fin. Aucune récompense ne sera ajoutée ici.",
+                watch_verified_session_required: "Aucune session de visionnage vérifiée n’a été trouvée. Aucune récompense n’a été ajoutée.",
+                watch_incomplete_no_reward: "La vidéo a été fermée avant la fin vérifiée. Aucune récompense n’a été ajoutée.",
+                watch_paused: "La vidéo est en pause. Appuyez sur lecture pour poursuivre la vérification sécurisée.",
+                watch_session_invalid: "La réponse de la session de visionnage sécurisée est invalide.",
+                history_activation_deposit: "Dépôt d’activation",
+                history_activation_refund: "Remboursement du dépôt d’activation",
+                history_withdraw_request: "Demande de retrait",
+                bonus_claimed_notification: "{amount} USD ont été ajoutés à votre solde principal.",
+                status_pending: "En attente",
+                status_processing: "En cours",
+                status_completed: "Terminé",
+                status_rejected: "Rejeté",
+                status_verified: "Vérifié"
+            },
+            hi: {
+                guest_user_name: "अतिथि उपयोगकर्ता",
+                sandbox_mode: "परीक्षण मोड",
+                mdl_noti: "सूचनाएँ",
+                profile_username: "उपयोगकर्ता नाम:",
+                profile_balance: "शेष राशि:",
+                profile_ref_link: "रेफ़रल लिंक",
+                copied: "कॉपी हो गया!",
+                pending_reward: "लंबित इनाम:",
+                opening_date: "खुलने की तारीख",
+                closing_date: "बंद होने की तारीख",
+                expired_date: "समाप्ति तारीख",
+                activation_refund_available: "उपलब्ध रिफंड भुगतान",
+                admin_message: "एडमिन संदेश",
+                account_id: "खाता आईडी:",
+                receipt_verified_at: "सत्यापन समय",
+                receipt_note: "टिप्पणी",
+                tier1_countries: "संयुक्त राज्य, ऑस्ट्रेलिया, कनाडा, नॉर्वे, स्विट्ज़रलैंड, जर्मनी, यूनाइटेड किंगडम, नीदरलैंड, स्वीडन, डेनमार्क",
+                tier2_countries: "फ्रांस, बेल्जियम, ऑस्ट्रिया, फ़िनलैंड, आयरलैंड, न्यूज़ीलैंड, इटली, स्पेन, जापान, दक्षिण कोरिया",
+                fastest_method: "सुरक्षा पुष्टि",
+                or_crypto: "TON नेटवर्क भुगतान",
+                account_unlock_title: "वॉलेट सक्रियण",
+                wallet_unlock_progress: "वॉलेट अनलॉक प्रगति",
+                ton_deposit_title: "6.99 GRAM (ex-TON) भुगतान",
+                payment_address_label: "विशिष्ट TON जमा पता",
+                withdraw_amount_placeholder: "निश्चित रिफंड राशि: 6.99 GRAM (ex-TON)",
+                minimum_withdrawal: "न्यूनतम निकासी",
+                growth_499_title: "$499 आय वृद्धि",
+                growth_1499_title: "$1499 आय वृद्धि",
+                status_label: "स्थिति",
+                history_wallet_payment: "वॉलेट भुगतान",
+                history_withdraw: "निकासी",
+                receipt_wallet_label: "वॉलेट",
+                view_reward_title: "देखने का इनाम",
+                clipboard_copy_failed: "कॉपी शुरू नहीं हुई। पता चुना गया है; इसे मैन्युअल रूप से कॉपी करें।",
+                deposit_refund_rejected: "रिफंड अस्वीकार हुआ",
+                deposit_refund_rejected_message: "रिफंड अस्वीकार हुआ। अपना वॉलेट पता जांचें और फिर प्रयास करें।",
+                deposit_refund_rejected_status: "रिफंड अस्वीकार हुआ। अपना वॉलेट पता जांचें और फिर प्रयास करें।",
+                payment_checking: "जांच जारी है...",
+                watch_verifying: "सुरक्षित वॉच सत्यापन शुरू हो रहा है...",
+                watch_verified: "सुरक्षित वॉच सत्यापन सक्रिय है।",
+                watch_verified_player_required: "यह प्लेयर वीडियो पूरा होने की पुष्टि नहीं कर सकता। यहां कोई इनाम नहीं जोड़ा जाएगा।",
+                watch_verified_session_required: "कोई सत्यापित वॉच सत्र नहीं मिला। कोई इनाम नहीं जोड़ा गया।",
+                watch_incomplete_no_reward: "सत्यापित पूरा होने से पहले वीडियो बंद कर दिया गया। कोई इनाम नहीं जोड़ा गया।",
+                watch_paused: "वीडियो रुका हुआ है। सुरक्षित सत्यापन जारी रखने के लिए प्ले दबाएं।",
+                watch_session_invalid: "सुरक्षित वॉच सत्र का उत्तर अमान्य था।",
+                history_activation_deposit: "सक्रियण जमा",
+                history_activation_refund: "सक्रियण जमा वापसी",
+                history_withdraw_request: "निकासी अनुरोध",
+                bonus_claimed_notification: "{amount} USD आपके मुख्य बैलेंस में जोड़ दिए गए।",
+                status_pending: "लंबित",
+                status_processing: "प्रक्रिया में",
+                status_completed: "पूरा हुआ",
+                status_rejected: "अस्वीकृत",
+                status_verified: "सत्यापित"
+            },
+            es: {
+                guest_user_name: "Usuario invitado",
+                sandbox_mode: "Modo de prueba",
+                profile_balance: "Saldo:",
+                receipt_wallet_label: "Billetera",
+                profile_ref_link: "Enlace de referido",
+                clipboard_copy_failed: "La copia no comenzó. La dirección está seleccionada; cópiala manualmente.",
+                delete_account: "ELIMINAR MI CUENTA",
+                wallet_title: "Billetera",
+                watched_time: "Tiempo visto:",
+                watch_wait: "Inicia un video de MrBeast. La recompensa solo se añade después de que el servidor verifique que terminó.",
+                watch_loading: "El reproductor de YouTube está cargando. El video de MrBeast se abrirá automáticamente.",
+                watch_playing: "El video de MrBeast se está reproduciendo. Debe terminar para ser válido.",
+                watch_counting: "Viendo... La verificación del servidor está activa.",
+                watch_finished: "Video terminado. Verificando y guardando la recompensa.",
+                earned_result: "Ganado:",
+                not_enough_time: "El tiempo visto no es suficiente. No se añadió dinero.",
+                watch_added: "Se verificó que el video terminó. La recompensa se añadió a tu saldo.",
+                wallet_locked: "Billetera bloqueada hasta la hora de retiro",
+                account_deleted: "La solicitud para eliminar la cuenta terminó. Esta cuenta ahora está bloqueada.",
+                confirm_delete: "¿Eliminar tu cuenta? Ya no podrás ganar ni retirar con esta cuenta.",
+                not_scheduled: "No programado",
+                opening_date: "Fecha de apertura",
+                closing_date: "Fecha de cierre",
+                expired_date: "Fecha de vencimiento",
+                withdraw_open_title: "El retiro está abierto",
+                withdraw_open_message: "Tu retiro está activo. Envía tu solicitud de pago TON.",
+                withdraw_closed_title: "El retiro está cerrado",
+                withdraw_not_scheduled_message: "La hora de retiro aún no se ha programado.",
+                withdraw_waiting_title: "Esperando la hora de retiro",
+                withdraw_waiting_message: "La billetera y los retiros se abrirán automáticamente en la fecha programada.",
+                withdraw_expired_title: "La hora de retiro venció",
+                withdraw_expired_message: "La última ventana de retiro terminó. La billetera seguirá bloqueada hasta la próxima programación.",
+                withdraw_request_available: "La solicitud de retiro está disponible",
+                withdraw_enter_details: "Introduce con cuidado tu billetera TON. El reembolso de activación es de 6.99 GRAM (ex-TON).",
+                payment_verified_withdraw: "Pago verificado. El retiro está disponible.",
+                payout_request_now: "Ya puedes enviar tu solicitud de pago.",
+                send_payment_check_status: "Completa el pago requerido y comprueba el estado.",
+                withdraw_not_started: "La hora de retiro aún no ha comenzado.",
+                wallet_locked_until_time: "La billetera y la dirección de pago permanecerán bloqueadas hasta la hora programada.",
+                admin_message: "Mensaje del administrador",
+                no_history: "Todavía no hay historial de pagos o retiros.",
+                receipt_date_time: "Fecha y hora",
+                receipt_network: "Red",
+                receipt_verified_at: "Verificado el",
+                receipt_note: "Nota",
+                or_crypto: "PAGO EN LA RED TON",
+                deposit_refund_rejected: "Reembolso rechazado",
+                deposit_refund_rejected_message: "El reembolso fue rechazado. Comprueba la dirección de tu billetera e inténtalo de nuevo.",
+                deposit_refund_rejected_status: "Reembolso rechazado. Comprueba la dirección de tu billetera e inténtalo de nuevo.",
+                payment_checking: "COMPROBANDO...",
+                watch_verifying: "Iniciando la verificación segura del video...",
+                watch_verified: "La verificación segura del video está activa.",
+                watch_verified_player_required: "Este reproductor no puede verificar la finalización. Aquí no se añadirá ninguna recompensa.",
+                watch_verified_session_required: "No se encontró una sesión de visualización verificada. No se añadió ninguna recompensa.",
+                watch_incomplete_no_reward: "El video se cerró antes de la finalización verificada. No se añadió ninguna recompensa.",
+                watch_paused: "El video está en pausa. Pulsa reproducir para continuar la verificación segura.",
+                watch_session_invalid: "La respuesta de la sesión segura de visualización no era válida.",
+                history_activation_deposit: "Depósito de activación",
+                history_activation_refund: "Reembolso del depósito de activación",
+                history_withdraw_request: "Solicitud de retiro",
+                bonus_claimed_notification: "Se añadieron {amount} USD a tu saldo principal.",
+                status_pending: "Pendiente",
+                status_processing: "Procesando",
+                status_completed: "Completado",
+                status_rejected: "Rechazado",
+                status_verified: "Verificado"
+            },
+            zh: {
+                guest_user_name: "访客用户",
+                sandbox_mode: "测试模式",
+                profile_ref_link: "推荐链接",
+                clipboard_copy_failed: "复制未启动。地址已选中，请手动复制。",
+                delete_account: "删除我的账户",
+                wallet_title: "钱包",
+                watched_time: "观看时长：",
+                watch_wait: "开始播放 MrBeast 视频。只有服务器验证完整播放后才会添加奖励。",
+                watch_loading: "YouTube 播放器正在加载。MrBeast 视频将自动打开。",
+                watch_playing: "MrBeast 视频正在播放。视频必须完整播放才符合奖励条件。",
+                watch_counting: "正在观看... 服务器验证已启用。",
+                watch_finished: "视频已结束。正在验证并保存奖励。",
+                earned_result: "已获得：",
+                not_enough_time: "观看时长不足，未添加任何金额。",
+                watch_added: "视频已验证完整播放，奖励已添加到您的余额。",
+                wallet_locked: "钱包将在提现时间前保持锁定",
+                account_deleted: "账户删除请求已完成。此账户现已被锁定。",
+                confirm_delete: "确定删除账户吗？此后您将无法使用该账户赚取或提现。",
+                not_scheduled: "未安排",
+                opening_date: "开放日期",
+                closing_date: "关闭日期",
+                expired_date: "到期日期",
+                withdraw_open_title: "提现已开放",
+                withdraw_open_message: "您的提现功能已启用。请提交 TON 支付申请。",
+                withdraw_closed_title: "提现已关闭",
+                withdraw_not_scheduled_message: "提现时间尚未安排。",
+                withdraw_waiting_title: "等待提现时间",
+                withdraw_waiting_message: "钱包和提现功能将在预定日期自动开放。",
+                withdraw_expired_title: "提现时间已过期",
+                withdraw_expired_message: "上一个提现窗口已结束。钱包将在下次安排前保持锁定。",
+                withdraw_request_available: "可以提交提现申请",
+                withdraw_enter_details: "请仔细输入您的 TON 钱包。激活退款为 6.99 GRAM (ex-TON)。",
+                payment_verified_withdraw: "付款已验证，可以提现。",
+                payout_request_now: "您现在可以提交支付申请。",
+                send_payment_check_status: "请完成所需付款并检查状态。",
+                withdraw_not_started: "提现时间尚未开始。",
+                wallet_locked_until_time: "钱包和付款地址将在预定时间前保持锁定。",
+                admin_message: "管理员消息",
+                no_history: "暂无付款或提现记录。",
+                receipt_date_time: "日期和时间",
+                receipt_network: "网络",
+                receipt_verified_at: "验证时间",
+                receipt_note: "备注",
+                or_crypto: "TON 网络付款",
+                deposit_refund_rejected: "退款已拒绝",
+                deposit_refund_rejected_message: "退款被拒绝。请检查您的钱包地址后重试。",
+                deposit_refund_rejected_status: "退款被拒绝。请检查您的钱包地址后重试。",
+                payment_checking: "正在检查...",
+                watch_verifying: "正在启动安全观看验证...",
+                watch_verified: "安全观看验证已启用。",
+                watch_verified_player_required: "此播放器无法验证完整播放，因此不会在此添加奖励。",
+                watch_verified_session_required: "未找到已验证的观看会话，未添加奖励。",
+                watch_incomplete_no_reward: "视频在验证完整播放前被关闭，未添加奖励。",
+                watch_paused: "视频已暂停。请按播放键继续安全验证。",
+                watch_session_invalid: "安全观看会话的响应无效。",
+                history_activation_deposit: "激活存款",
+                history_activation_refund: "激活存款退款",
+                history_withdraw_request: "提现申请",
+                bonus_claimed_notification: "{amount} USD 已添加到您的主余额。",
+                status_pending: "待处理",
+                status_processing: "处理中",
+                status_completed: "已完成",
+                status_rejected: "已拒绝",
+                status_verified: "已验证"
+            },
+            de: {
+                guest_user_name: "Gastbenutzer",
+                sandbox_mode: "Testmodus",
+                profile_ref_link: "Empfehlungslink",
+                clipboard_copy_failed: "Das Kopieren wurde nicht gestartet. Die Adresse ist markiert; kopieren Sie sie manuell.",
+                delete_account: "MEIN KONTO LÖSCHEN",
+                wallet_title: "Wallet",
+                watched_time: "Wiedergabezeit:",
+                watch_wait: "Starten Sie ein MrBeast-Video. Die Belohnung wird erst nach serverseitig bestätigtem Abschluss gutgeschrieben.",
+                watch_loading: "Der YouTube-Player wird geladen. Das MrBeast-Video öffnet sich automatisch.",
+                watch_playing: "Das MrBeast-Video läuft. Es muss vollständig beendet werden, um gewertet zu werden.",
+                watch_counting: "Wiedergabe läuft... Die Serverprüfung ist aktiv.",
+                watch_finished: "Video beendet. Belohnung wird geprüft und gespeichert.",
+                earned_result: "Verdient:",
+                not_enough_time: "Die Wiedergabezeit reicht nicht aus. Es wurde kein Betrag gutgeschrieben.",
+                watch_added: "Der Videoabschluss wurde bestätigt. Die Belohnung wurde Ihrem Guthaben hinzugefügt.",
+                wallet_locked: "Wallet bis zum Auszahlungszeitpunkt gesperrt",
+                account_deleted: "Die Kontolöschung wurde abgeschlossen. Dieses Konto ist jetzt gesperrt.",
+                confirm_delete: "Konto löschen? Mit diesem Konto können Sie danach weder verdienen noch auszahlen.",
+                not_scheduled: "Nicht geplant",
+                opening_date: "Öffnungsdatum",
+                closing_date: "Schließdatum",
+                expired_date: "Ablaufdatum",
+                withdraw_open_title: "Auszahlung ist geöffnet",
+                withdraw_open_message: "Ihre Auszahlung ist aktiv. Senden Sie Ihren TON-Auszahlungsantrag.",
+                withdraw_closed_title: "Auszahlung ist geschlossen",
+                withdraw_not_scheduled_message: "Der Auszahlungszeitpunkt wurde noch nicht geplant.",
+                withdraw_waiting_title: "Warten auf den Auszahlungszeitpunkt",
+                withdraw_waiting_message: "Wallet und Auszahlungen werden zum geplanten Zeitpunkt automatisch geöffnet.",
+                withdraw_expired_title: "Auszahlungszeitraum abgelaufen",
+                withdraw_expired_message: "Das letzte Auszahlungsfenster ist beendet. Die Wallet bleibt bis zum nächsten Termin gesperrt.",
+                withdraw_request_available: "Auszahlungsantrag ist verfügbar",
+                withdraw_enter_details: "Geben Sie Ihre TON-Wallet sorgfältig ein. Die Aktivierungsrückerstattung beträgt 6.99 GRAM (ex-TON).",
+                payment_verified_withdraw: "Zahlung bestätigt. Die Auszahlung ist verfügbar.",
+                payout_request_now: "Sie können Ihren Auszahlungsantrag jetzt senden.",
+                send_payment_check_status: "Schließen Sie die erforderliche Zahlung ab und prüfen Sie den Status.",
+                withdraw_not_started: "Der Auszahlungszeitraum hat noch nicht begonnen.",
+                wallet_locked_until_time: "Wallet und Zahlungsadresse bleiben bis zum geplanten Zeitpunkt gesperrt.",
+                admin_message: "Administratornachricht",
+                no_history: "Noch keine Zahlungs- oder Auszahlungshistorie.",
+                receipt_date_time: "Datum und Uhrzeit",
+                receipt_network: "Netzwerk",
+                receipt_verified_at: "Bestätigt am",
+                receipt_note: "Hinweis",
+                or_crypto: "ZAHLUNG IM TON-NETZWERK",
+                deposit_refund_rejected: "Rückerstattung abgelehnt",
+                deposit_refund_rejected_message: "Die Rückerstattung wurde abgelehnt. Prüfen Sie Ihre Wallet-Adresse und versuchen Sie es erneut.",
+                deposit_refund_rejected_status: "Rückerstattung abgelehnt. Prüfen Sie Ihre Wallet-Adresse und versuchen Sie es erneut.",
+                payment_checking: "PRÜFUNG...",
+                watch_verifying: "Sichere Wiedergabeprüfung wird gestartet...",
+                watch_verified: "Die sichere Wiedergabeprüfung ist aktiv.",
+                watch_verified_player_required: "Dieser Player kann den Abschluss nicht bestätigen. Hier wird keine Belohnung gutgeschrieben.",
+                watch_verified_session_required: "Es wurde keine bestätigte Wiedergabesitzung gefunden. Keine Belohnung wurde gutgeschrieben.",
+                watch_incomplete_no_reward: "Das Video wurde vor dem bestätigten Abschluss geschlossen. Keine Belohnung wurde gutgeschrieben.",
+                watch_paused: "Das Video ist pausiert. Drücken Sie Wiedergabe, um die sichere Prüfung fortzusetzen.",
+                watch_session_invalid: "Die Antwort der sicheren Wiedergabesitzung war ungültig.",
+                history_activation_deposit: "Aktivierungseinzahlung",
+                history_activation_refund: "Rückerstattung der Aktivierungseinzahlung",
+                history_withdraw_request: "Auszahlungsantrag",
+                bonus_claimed_notification: "{amount} USD wurden Ihrem Hauptguthaben hinzugefügt.",
+                status_pending: "Ausstehend",
+                status_processing: "In Bearbeitung",
+                status_completed: "Abgeschlossen",
+                status_rejected: "Abgelehnt",
+                status_verified: "Bestätigt"
+            }
+        };
+        Object.entries(languageExtensions).forEach(([language, entries]) => {
+            Object.assign(languages[language], entries);
+        });
+
+        const liveWatchLanguagePatch = {
+            en: {
+                pending_reward: "Live reward:",
+                watch_reward_wait: "Verified seconds are added to your main balance while the video is playing.",
+                watch_wait: "Start a MrBeast video. Every server-verified second is credited to your main balance.",
+                watch_playing: "MrBeast video is playing. Verified seconds are being credited.",
+                watch_counting: "Watching... verified earnings are being added to the main balance.",
+                watch_finished: "Video finished. Final verified seconds are being saved.",
+                watch_incomplete_no_reward: "The video closed before a full verified second could be credited."
+            },
+            ru: {
+                pending_reward: "Доход в реальном времени:",
+                watch_reward_wait: "Подтвержденные секунды добавляются на основной баланс во время просмотра.",
+                watch_wait: "Запустите видео MrBeast. Каждая подтвержденная сервером секунда начисляется на основной баланс.",
+                watch_playing: "Видео MrBeast воспроизводится. Подтвержденные секунды начисляются.",
+                watch_counting: "Просмотр идет... подтвержденный доход добавляется на основной баланс.",
+                watch_finished: "Видео завершено. Последние подтвержденные секунды сохраняются.",
+                watch_incomplete_no_reward: "Видео закрыто до первой полностью подтвержденной секунды."
+            },
+            fr: {
+                pending_reward: "Gain en direct :",
+                watch_reward_wait: "Les secondes vérifiées sont ajoutées au solde principal pendant la lecture.",
+                watch_wait: "Lancez une vidéo MrBeast. Chaque seconde vérifiée par le serveur est créditée au solde principal.",
+                watch_playing: "La vidéo MrBeast est en cours. Les secondes vérifiées sont créditées.",
+                watch_counting: "Lecture en cours... les gains vérifiés sont ajoutés au solde principal.",
+                watch_finished: "Vidéo terminée. Les dernières secondes vérifiées sont enregistrées.",
+                watch_incomplete_no_reward: "La vidéo a été fermée avant la première seconde entièrement vérifiée."
+            },
+            hi: {
+                pending_reward: "लाइव कमाई:",
+                watch_reward_wait: "वीडियो चलते समय सत्यापित सेकंड मुख्य बैलेंस में जुड़ते हैं।",
+                watch_wait: "MrBeast वीडियो शुरू करें। सर्वर द्वारा सत्यापित हर सेकंड मुख्य बैलेंस में जुड़ता है।",
+                watch_playing: "MrBeast वीडियो चल रहा है। सत्यापित सेकंड का भुगतान हो रहा है।",
+                watch_counting: "वीडियो चल रहा है... सत्यापित कमाई मुख्य बैलेंस में जुड़ रही है।",
+                watch_finished: "वीडियो पूरा हुआ। अंतिम सत्यापित सेकंड सहेजे जा रहे हैं।",
+                watch_incomplete_no_reward: "पहला पूरा सेकंड सत्यापित होने से पहले वीडियो बंद हो गया।"
+            },
+            es: {
+                pending_reward: "Ganancia en vivo:",
+                watch_reward_wait: "Los segundos verificados se agregan al balance principal durante la reproducción.",
+                watch_wait: "Inicia un video de MrBeast. Cada segundo verificado por el servidor se acredita al balance principal.",
+                watch_playing: "El video de MrBeast se está reproduciendo. Los segundos verificados se están acreditando.",
+                watch_counting: "Reproduciendo... las ganancias verificadas se agregan al balance principal.",
+                watch_finished: "Video terminado. Se están guardando los últimos segundos verificados.",
+                watch_incomplete_no_reward: "El video se cerró antes de verificar el primer segundo completo."
+            },
+            zh: {
+                pending_reward: "实时收益：",
+                watch_reward_wait: "已验证的观看秒数会在视频播放时加入主余额。",
+                watch_wait: "开始播放 MrBeast 视频。服务器验证的每一秒都会计入主余额。",
+                watch_playing: "MrBeast 视频正在播放，已验证秒数正在计费。",
+                watch_counting: "正在观看... 已验证收益正在加入主余额。",
+                watch_finished: "视频已结束，正在保存最后的已验证秒数。",
+                watch_incomplete_no_reward: "视频在首个完整秒被验证前已关闭。"
+            },
+            de: {
+                pending_reward: "Live-Verdienst:",
+                watch_reward_wait: "Bestätigte Sekunden werden während der Wiedergabe dem Hauptguthaben hinzugefügt.",
+                watch_wait: "Starten Sie ein MrBeast-Video. Jede serverbestätigte Sekunde wird dem Hauptguthaben gutgeschrieben.",
+                watch_playing: "Das MrBeast-Video läuft. Bestätigte Sekunden werden gutgeschrieben.",
+                watch_counting: "Wiedergabe läuft... bestätigte Einnahmen werden dem Hauptguthaben hinzugefügt.",
+                watch_finished: "Video beendet. Die letzten bestätigten Sekunden werden gespeichert.",
+                watch_incomplete_no_reward: "Das Video wurde vor der ersten vollständig bestätigten Sekunde geschlossen."
+            }
+        };
+        Object.entries(liveWatchLanguagePatch).forEach(([language, entries]) => {
+            Object.assign(languages[language], entries);
+        });
+
 
         Object.keys(languages).forEach(lang => {
             if (lang === 'en') return;
@@ -3945,13 +4467,21 @@
             });
         });
 
-        function changeLang(lang) {
-            if (isActionThrottled(`lang-${lang}`, 250)) return;
-            if (!languages[lang] || lang === 'uz') lang = 'en';
+        function changeLang(lang, options = {}) {
+            const normalizedLanguage = normalizeLanguageCode(lang, 'en');
+            if (options.throttle !== false && isActionThrottled(`lang-${normalizedLanguage}`, 250)) return;
+            lang = languages[normalizedLanguage] ? normalizedLanguage : 'en';
             currentLang = lang;
+            preferredLanguageSelection = lang;
             safeStorageSet('vidiPayLang', lang);
+            document.documentElement.lang = lang;
+            document.documentElement.dataset.vidipayLanguage = lang;
 
-            document.querySelectorAll('.lang-opt-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.lang-opt-btn').forEach(btn => {
+                const active = btn.dataset.vpLang === lang;
+                btn.classList.toggle('active', active);
+                btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+            });
             const activeBtn = document.getElementById(`btn-lang-${lang}`);
             if (activeBtn) activeBtn.classList.add('active');
 
@@ -4017,7 +4547,7 @@
             setText('lbl-unlock-title', dict.account_unlock_title || languages.en.account_unlock_title);
             setText('lbl-fastest-method', dict.fastest_method || 'Security confirmation');
             setText('lbl-fiat-desc', dict.fiat_desc || languages.en.fiat_desc);
-            setText('lbl-pay-fiat', dict.top_up_toncoin || 'TOP UP 6.99 TONCOIN');
+            setText('lbl-pay-fiat', dict.top_up_toncoin || 'TOP UP 6.99 GRAM (ex-TON)');
             setText('ton-deposit-title', dict.ton_deposit_title || languages.en.ton_deposit_title);
             setText('ton-deposit-address-title', dict.ton_deposit_address_title || languages.en.ton_deposit_address_title);
             setText('ton-deposit-warning', dict.ton_deposit_warning || languages.en.ton_deposit_warning);
@@ -4025,7 +4555,7 @@
             setText('lbl-check-ton-payment', dict.pay_with_fiat || 'CHECK PAYMENT');
             setText('wallet-current-balance-label', dict.wallet_current_balance || languages.en.wallet_current_balance);
             setText('wallet-method-label', dict.withdrawal_method_label || languages.en.withdrawal_method_label);
-            setText('wallet-method-value', dict.wallet_method_value || 'TONCOIN');
+            setText('wallet-method-value', dict.wallet_method_value || 'GRAM (ex-TON)');
             setText('lbl-card-method-title', dict.card_selector_title || 'TON wallet');
             setText('lbl-or-crypto', dict.or_crypto || 'TON NETWORK PAYMENT');
             setText('lbl-copy-ton-address', dict.copy_ton_address || 'COPY ADDRESS');
@@ -4063,6 +4593,10 @@
             if (tierLists[0]) tierLists[0].innerText = dict.tier1_countries || languages.en.tier1_countries;
             if (tierLists[1]) tierLists[1].innerText = dict.tier2_countries || languages.en.tier2_countries;
             if (tierLists[2]) tierLists[2].innerText = dict.tier3_countries || languages.en.tier3_countries;
+            if (!user) {
+                setText('user-display-name', dict.guest_user_name);
+                setText('user-display-id', dict.sandbox_mode);
+            }
 
             const supportBtn = document.getElementById('lbl-support-btn');
             if (supportBtn && dict.support_btn) {
@@ -4082,13 +4616,38 @@
             updateGrowthLockUi();
             updateTierCards();
             renderNotifications();
+            if (isSupportChatOpen()) {
+                renderSupportMessages();
+                loadSupportMessages({ silent: true }).catch(() => null);
+            }
             if (document.getElementById('withdrawHistoryModal')?.style.display === 'flex') {
                 renderFullHistory();
+            }
+            if (options.sync !== false) {
+                document.documentElement.dataset.vidipayLanguageSync = 'pending';
+                syncPreferredLanguage(lang)
+                    .then(() => {
+                        document.documentElement.dataset.vidipayLanguageSync = 'ready';
+                    })
+                    .catch((err) => {
+                        document.documentElement.dataset.vidipayLanguageSync = 'local-only';
+                        rememberFrontendError('language_sync', err);
+                    });
+            } else {
+                document.documentElement.dataset.vidipayLanguageSync = user?.id ? 'profile' : 'local-only';
             }
         }
 
         function t(key) {
             return (languages[currentLang] && languages[currentLang][key]) || languages.en[key] || key;
+        }
+
+        function formatUiTemplate(template, params = {}) {
+            return String(template || '').replace(/\{([a-z0-9_]+)\}/gi, (match, key) => {
+                if (!Object.prototype.hasOwnProperty.call(params || {}, key)) return match;
+                const value = params[key];
+                return value === null || value === undefined ? '' : String(value);
+            });
         }
 
         const adminNotificationExactTranslations = {
@@ -4156,13 +4715,13 @@
                 de: "Neues Update"
             },
             "hamyoningizni aktivlashtirish uchun 6.99 toncoin depozit qiling": {
-                en: "Deposit 6.99 TONCOIN to activate your wallet",
-                ru: "Внесите 6.99 TONCOIN, чтобы активировать кошелек",
-                fr: "Deposez 6.99 TONCOIN pour activer votre portefeuille",
-                hi: "Wallet activate karne ke liye 6.99 TONCOIN deposit karein",
-                es: "Deposita 6.99 TONCOIN para activar tu billetera",
-                zh: "存入 6.99 TONCOIN 以激活您的钱包",
-                de: "Zahlen Sie 6.99 TONCOIN ein, um Ihre Wallet zu aktivieren"
+                en: "Deposit 6.99 GRAM (ex-TON) to activate your wallet",
+                ru: "Внесите 6.99 GRAM (ex-TON), чтобы активировать кошелек",
+                fr: "Deposez 6.99 GRAM (ex-TON) pour activer votre portefeuille",
+                hi: "Wallet activate karne ke liye 6.99 GRAM (ex-TON) deposit karein",
+                es: "Deposita 6.99 GRAM (ex-TON) para activar tu billetera",
+                zh: "存入 6.99 GRAM (ex-TON) 以激活您的钱包",
+                de: "Zahlen Sie 6.99 GRAM (ex-TON) ein, um Ihre Wallet zu aktivieren"
             }
         };
 
@@ -4596,7 +5155,7 @@
             if (totalHoursEl) totalHoursEl.innerText = totalText;
             if (videoTimeEl) videoTimeEl.innerText = dailyViewsText;
             if (earnedMoneyEl) earnedMoneyEl.innerText = earnedText;
-            if (balanceEl) balanceEl.innerText = balance.toFixed(2);
+            if (balanceEl) balanceEl.innerText = projectedWatchMainBalance().toFixed(2);
             updateBonusDisplays();
             updateProfileModal();
             updateWalletLockUi();
@@ -4656,39 +5215,53 @@
             updateWatchSessionUi(message);
         }
 
-        function playMrBeastAt(index) {
+        async function settleActiveWatchProgress() {
+            if (!watchServerSession || watchSessionSubmitted) return null;
+            const snapshot = readVerifiedWatchPlayerSnapshot();
+            if (!snapshot || snapshot.videoId !== watchServerSession.videoId) return null;
+            return queueWatchHeartbeat({
+                intervalPlaying: watchLastPlayerState === YT.PlayerState.PLAYING,
+                intervalVisible: !document.hidden,
+                ended: false
+            }).catch(() => null);
+        }
+
+        async function playMrBeastAt(index) {
             if (watchFinalizeInflight || watchSessionSubmitted) return;
             if (!mrbeastPlayer || !mrbeastPlayer.playVideoAt) {
                 showMrBeastFallbackPlayer(t('watch_verified_player_required'), index);
                 return;
             }
+            await settleActiveWatchProgress();
             resetWatchVideoState(t('watch_playing'));
             mrbeastPlayer.playVideoAt(Math.max(0, Number(index) || 0));
         }
 
-        function playRandomMrBeastVideo() {
+        async function playRandomMrBeastVideo() {
             if (isActionThrottled('watch-random', 700)) return;
-            playMrBeastAt(randomMrBeastIndex());
+            await playMrBeastAt(randomMrBeastIndex());
         }
 
-        function playNextMrBeastVideo() {
+        async function playNextMrBeastVideo() {
             if (isActionThrottled('watch-next', 700)) return;
             if (watchFinalizeInflight || watchSessionSubmitted) return;
             if (!mrbeastPlayer || !mrbeastPlayer.nextVideo) {
                 showMrBeastFallbackPlayer(t('watch_verified_player_required'));
                 return;
             }
+            await settleActiveWatchProgress();
             resetWatchVideoState(t('watch_playing'));
             mrbeastPlayer.nextVideo();
         }
 
-        function playPreviousMrBeastVideo() {
+        async function playPreviousMrBeastVideo() {
             if (isActionThrottled('watch-previous', 700)) return;
             if (watchFinalizeInflight || watchSessionSubmitted) return;
             if (!mrbeastPlayer || !mrbeastPlayer.previousVideo) {
                 showMrBeastFallbackPlayer(t('watch_verified_player_required'));
                 return;
             }
+            await settleActiveWatchProgress();
             resetWatchVideoState(t('watch_playing'));
             mrbeastPlayer.previousVideo();
         }
@@ -4803,6 +5376,23 @@
                         targetSession.observedWatchSeconds = Number(
                             result.observed_watch_seconds || targetSession.observedWatchSeconds || 0
                         );
+                        targetSession.creditedWatchSeconds = Number(
+                            result.credited_watch_seconds ?? targetSession.creditedWatchSeconds ?? 0
+                        );
+                        targetSession.creditedReward = Number(
+                            result.credited_reward ?? targetSession.creditedReward ?? 0
+                        );
+                        if (result.user) applyBackendUser(result.user);
+                        if (result.growth_lock) setGrowthLockStatus(result.growth_lock);
+                        updateWatchDisplays();
+                        updateWatchSessionUi(t('watch_counting'));
+                        if (result.wallet_activation_required === true) {
+                            clearWatchHeartbeatSchedule();
+                            stopWatchTimerDisplay(t('activation_deposit_required'));
+                            try {
+                                if (mrbeastPlayer?.pauseVideo) mrbeastPlayer.pauseVideo();
+                            } catch (_) {}
+                        }
                     }
                     return result;
                 });
@@ -4888,6 +5478,8 @@
                     nextSequence: Number(result.next_sequence || 1),
                     heartbeatIntervalSeconds: Number(result.heartbeat_interval_seconds || 5),
                     observedWatchSeconds: 0,
+                    creditedWatchSeconds: 0,
+                    creditedReward: 0,
                     videoId: requestedVideoId,
                     duration: Number(result.video_duration_seconds || snapshot.duration),
                     generation
@@ -5008,26 +5600,59 @@
             startMrBeastPlayer();
         }
 
-        function closeWatchModal() {
+        async function closeWatchModal() {
             setWatchUiState('closing');
             if (watchFinalizeInflight) {
                 closeModal('watchModal');
                 return;
             }
 
-            const watchSeconds = syncCountedWatchSeconds();
+            const targetSession = watchServerSession;
+            const finalSnapshot = readVerifiedWatchPlayerSnapshot();
+            const intervalWasPlaying = watchLastPlayerState === YT.PlayerState.PLAYING;
+            let watchSeconds = syncCountedWatchSeconds();
+            let creditedReward = Number(targetSession?.creditedReward || 0);
             watchSessionSubmitted = true;
             watchSessionGeneration += 1;
+            stopWatchTimerDisplay(t('watch_reward_saving'));
+            clearWatchHeartbeatSchedule();
             if (mrbeastPlayer && mrbeastPlayer.pauseVideo) {
                 mrbeastPlayer.pauseVideo();
             }
+
+            if (
+                targetSession &&
+                finalSnapshot &&
+                finalSnapshot.videoId === targetSession.videoId &&
+                watchSeconds > 0
+            ) {
+                try {
+                    const result = await queueWatchHeartbeat({
+                        intervalPlaying: intervalWasPlaying,
+                        intervalVisible: !document.hidden,
+                        ended: false
+                    });
+                    watchSeconds = Number(result?.credited_watch_seconds ?? targetSession.creditedWatchSeconds ?? watchSeconds);
+                    creditedReward = Number(result?.credited_reward ?? targetSession.creditedReward ?? creditedReward);
+                    if (result?.user) applyBackendUser(result.user);
+                } catch (_) {
+                    watchSeconds = Number(targetSession.creditedWatchSeconds || watchSeconds);
+                    creditedReward = Number(targetSession.creditedReward || creditedReward);
+                }
+            }
+
             clearWatchFallbackPlayer();
-            clearWatchHeartbeatSchedule();
-            clearInterval(watchTimerInterval);
             watchServerSession = null;
             pendingWatch = null;
+            updateWatchDisplays();
             closeModal('watchModal');
-            if (watchSeconds > 0) {
+            if (creditedReward > 0) {
+                const message = t('view_reward_added')
+                    .replace('{seconds}', watchSeconds)
+                    .replace('{amount}', creditedReward.toFixed(2));
+                showWatchResult(watchSeconds, creditedReward, message);
+                setWatchUiState('partial_saved');
+            } else if (watchSeconds > 0) {
                 showWatchResult(watchSeconds, 0, t('watch_incomplete_no_reward'));
             } else {
                 setWatchUiState('idle');
@@ -5045,6 +5670,12 @@
                 de: 'de-DE'
             };
             return localeByLang[currentLang] || 'en-US';
+        }
+
+        function formatLocalizedDate(value) {
+            const date = value instanceof Date ? value : new Date(value);
+            if (Number.isNaN(date.getTime())) return String(value || '');
+            return date.toLocaleString(localeForCurrentLang());
         }
 
         function getPaymentOrderExpiryTime(order = currentPaymentOrder) {
@@ -5231,6 +5862,19 @@
             return Number((Math.max(0, Number(seconds || 0)) * rate).toFixed(2));
         }
 
+        function projectedWatchMainBalance() {
+            const settledBalance = Math.max(0, Number(appState.balance || 0));
+            if (!watchServerSession || watchSessionSubmitted) return settledBalance;
+            const estimatedReward = estimateWatchReward(countedWatchSeconds);
+            const creditedReward = Math.max(0, Number(watchServerSession.creditedReward || 0));
+            const unsettledReward = Math.max(0, estimatedReward - creditedReward);
+            const projected = Number((settledBalance + unsettledReward).toFixed(2));
+            if (!latestPaymentStatus.withdraw_unlocked && getWalletUnlockRequiredAmount() > 0) {
+                return Math.min(projected, getWalletUnlockRequiredAmount());
+            }
+            return projected;
+        }
+
         async function finalizeWatchSession(finalSnapshot = readVerifiedWatchPlayerSnapshot()) {
             if (watchFinalizeInflight) return watchFinalizeInflight;
             if (watchSessionSubmitted) return;
@@ -5333,11 +5977,31 @@
                     t('view_reward_title'),
                     t('view_reward_added')
                         .replace('{seconds}', watchSeconds)
-                        .replace('{amount}', Number(result.reward || 0).toFixed(2))
+                        .replace('{amount}', Number(result.reward || 0).toFixed(2)),
+                    {
+                        titleKey: 'view_reward_title',
+                        textKey: 'view_reward_added',
+                        params: {
+                            seconds: watchSeconds,
+                            amount: Number(result.reward || 0).toFixed(2)
+                        }
+                    }
                 );
                 setWatchUiState('saved');
             } catch (err) {
-                watchSeconds = Number(err?.data?.observed_watch_seconds || watchSeconds || 0);
+                watchSeconds = Number(
+                    err?.data?.credited_watch_seconds ??
+                    err?.data?.observed_watch_seconds ??
+                    targetSession?.creditedWatchSeconds ??
+                    watchSeconds ??
+                    0
+                );
+                const creditedReward = Number(
+                    err?.data?.credited_reward ??
+                    targetSession?.creditedReward ??
+                    0
+                );
+                if (err?.data?.user) applyBackendUser(err.data.user);
                 watchServerSession = null;
                 pendingWatch = null;
                 watchSessionGeneration += 1;
@@ -5346,8 +6010,12 @@
                 updateWatchDisplays();
                 const message = friendlyErrorMessage(err);
                 updateWatchSessionUi(message);
-                showWatchResult(watchSeconds, 0, `${message}. ${t('watch_reward_backend_failed')}`);
-                addNotification(t('view_reward_title'), message);
+                showWatchResult(
+                    watchSeconds,
+                    creditedReward,
+                    creditedReward > 0 ? message : `${message}. ${t('watch_reward_backend_failed')}`
+                );
+                addNotification(t('view_reward_title'), message, { titleKey: 'view_reward_title' });
                 setWatchUiState('error', err?.data?.code || message);
             }
         }
@@ -5367,7 +6035,8 @@
             const rate = Number(currentTierStatus.reward_per_second || backendSettings.view_reward_per_second || 0);
             const timeText = formatDuration(countedWatchSeconds);
             const rewardText = `$${(countedWatchSeconds * rate).toFixed(2)}`;
-            const snapshot = `${timeText}|${rewardText}|${message}`;
+            const projectedBalance = projectedWatchMainBalance();
+            const snapshot = `${timeText}|${rewardText}|${projectedBalance.toFixed(2)}|${message}`;
 
             if (snapshot === lastWatchUiSnapshot) return;
             lastWatchUiSnapshot = snapshot;
@@ -5375,6 +6044,7 @@
             setDomText(timeEl, timeText);
             setDomText(rewardEl, rewardText);
             setDomText(statusEl, message);
+            setDomText(document.getElementById('main-balance'), projectedBalance.toFixed(2));
         }
 
         function createFloatingText(e, reward) {
@@ -5445,8 +6115,8 @@
             try { items = JSON.parse(safeStorageGet(key)); } catch(e) { items = null; }
             if (!Array.isArray(items) || !items.length) {
                 items = [
-                    { titleKey: 'noti_alert', textKey: 'noti_msg', date: new Date().toLocaleString() },
-                    { titleKey: 'daily_info_title', textKey: 'daily_info_msg', date: new Date().toLocaleString() }
+                    { titleKey: 'noti_alert', textKey: 'noti_msg', createdAt: new Date().toISOString() },
+                    { titleKey: 'daily_info_title', textKey: 'daily_info_msg', createdAt: new Date().toISOString() }
                 ];
                 safeStorageSet(key, JSON.stringify(items));
             }
@@ -5472,9 +6142,9 @@
             renderNotifications();
         }
 
-        async function loadServerNotifications() {
+        async function loadServerNotifications(options = {}) {
             const now = Date.now();
-            if (notificationsFetchedAt && now - notificationsFetchedAt < 30000) return;
+            if (!options.force && notificationsFetchedAt && now - notificationsFetchedAt < 30000) return;
             if (notificationsInflight) return notificationsInflight;
             notificationsInflight = (async () => {
             try {
@@ -5482,14 +6152,24 @@
                 if (!Array.isArray(serverItems)) return;
                 const mapped = serverItems.map(item => ({
                     key: `server_${item.id || item.created_at || item.title}_${item.telegram_id || 'all'}`,
-                    rawTitle: item.title || t('admin_message'),
-                    rawText: item.message || '',
-                    date: item.created_at ? new Date(item.created_at).toLocaleString() : new Date().toLocaleString()
+                    source: 'server',
+                    localizedLanguage: item.localized_language || currentLang,
+                    localizedTitle: item.title || t('admin_message'),
+                    localizedText: item.message || '',
+                    createdAt: item.created_at || new Date().toISOString()
                 }));
                 const localItems = getNotifications();
-                const existingKeys = new Set(localItems.map(item => item.key).filter(Boolean));
-                const newItems = mapped.filter(item => !existingKeys.has(item.key));
-                const merged = [...newItems, ...localItems].slice(0, 50);
+                const priorServerKeys = new Set(
+                    localItems
+                        .filter(item => item.source === 'server' || String(item.key || '').startsWith('server_'))
+                        .map(item => item.key)
+                        .filter(Boolean)
+                );
+                const newItems = mapped.filter(item => !priorServerKeys.has(item.key));
+                const localOnlyItems = localItems.filter(item => {
+                    return item.source !== 'server' && !String(item.key || '').startsWith('server_');
+                });
+                const merged = [...mapped, ...localOnlyItems].slice(0, 50);
                 safeStorageSet(getNotificationStorageKey('vidiPayNotifications'), JSON.stringify(merged));
                 if (newItems.length) setUnreadNotificationCount(getUnreadNotificationCount() + newItems.length);
                 notificationsFetchedAt = Date.now();
@@ -5507,9 +6187,15 @@
             if (!box) return;
             const items = getNotifications();
             const html = items.map(item => {
-                const title = item.titleKey ? t(item.titleKey) : translateAdminNotificationText(item.rawTitle || item.title || '');
-                const text = item.textKey ? t(item.textKey) : translateAdminNotificationText(item.rawText || item.text || '');
-                const date = item.date || '';
+                const title = item.localizedTitle || (
+                    item.titleKey ? formatUiTemplate(t(item.titleKey), item.params) :
+                    translateAdminNotificationText(item.rawTitle || item.title || '')
+                );
+                const text = item.localizedText || (
+                    item.textKey ? formatUiTemplate(t(item.textKey), item.params) :
+                    translateAdminNotificationText(item.rawText || item.text || '')
+                );
+                const date = item.createdAt ? formatLocalizedDate(item.createdAt) : (item.date || '');
                 return `
                 <div class="notification-item">
                     <div class="notification-title">${escapeHtml(title)}</div>
@@ -5526,31 +6212,95 @@
             setUnreadNotificationCount(getUnreadNotificationCount());
         }
 
-        function addNotification(title, text) {
+        function addNotification(title, text, options = {}) {
             const key = getNotificationStorageKey('vidiPayNotifications');
             const items = getNotifications();
-            items.unshift({ title, text, date: new Date().toLocaleString() });
+            items.unshift({
+                titleKey: options.titleKey || null,
+                textKey: options.textKey || null,
+                params: options.params || null,
+                rawTitle: options.titleKey ? null : title,
+                rawText: options.textKey ? null : text,
+                createdAt: new Date().toISOString()
+            });
             safeStorageSet(key, JSON.stringify(items));
             setUnreadNotificationCount(getUnreadNotificationCount() + 1);
             renderNotifications();
         }
 
+        function createClientMessageId() {
+            if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, character => {
+                const random = Math.floor(Math.random() * 16);
+                const value = character === 'x' ? random : ((random & 0x3) | 0x8);
+                return value.toString(16);
+            });
+        }
+
+        function isSupportChatOpen() {
+            return document.getElementById('supportChatModal')?.classList.contains('is-open') === true;
+        }
+
+        function setSupportStatus(message = '', kind = '') {
+            const status = document.getElementById('support-chat-status');
+            if (!status) return;
+            setDomText(status, message);
+            status.dataset.status = kind;
+        }
+
+        function stopSupportPolling() {
+            clearInterval(supportPollTimer);
+            supportPollTimer = null;
+        }
+
+        function startSupportPolling() {
+            stopSupportPolling();
+            supportPollTimer = setInterval(() => {
+                if (!isSupportChatOpen() || document.hidden) return;
+                loadSupportMessages({ silent: true }).catch(() => null);
+            }, 5000);
+        }
+
+        async function loadSupportMessages(options = {}) {
+            if (supportLoadInflight) return supportLoadInflight;
+            supportLoadInflight = apiRequest('/support/messages?limit=200', { timeoutMs: 12000 })
+                .then(payload => {
+                    appState.supportMessages = Array.isArray(payload?.messages) ? payload.messages : [];
+                    saveAppState();
+                    renderSupportMessages();
+                    setSupportStatus('');
+                    return appState.supportMessages;
+                })
+                .catch(error => {
+                    if (!options.silent) setSupportStatus(friendlyErrorMessage(error), 'error');
+                    throw error;
+                })
+                .finally(() => {
+                    supportLoadInflight = null;
+                });
+            return supportLoadInflight;
+        }
+
         function openSupportChat() {
             renderSupportMessages();
             openModal('supportChatModal');
+            setSupportStatus('');
+            startSupportPolling();
+            loadSupportMessages().catch(() => null);
         }
 
         function renderSupportMessages() {
             const box = document.getElementById('support-chat-box');
             if (!box) return;
-            const messages = appState.supportMessages || [];
+            const messages = Array.isArray(appState.supportMessages) ? appState.supportMessages : [];
             const html = `<div class="chat-msg support" style="align-self:flex-start; background: rgba(255,255,255,.055); color:#cbd5e1; border:1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 10px 12px; font-size: 13px;">${escapeHtml(t('support_chat_greeting'))}</div>` +
                 messages.map(m => {
-                    const from = m.from === 'user' ? 'user' : 'support';
+                    const from = (m.sender_role || m.from) === 'user' ? 'user' : 'support';
                     const style = from === 'user'
                         ? 'align-self:flex-end; background: rgba(0,255,204,.14); color:#fff; border:1px solid rgba(0,255,204,.2);'
                         : 'align-self:flex-start; background: rgba(255,255,255,.055); color:#cbd5e1; border:1px solid rgba(255,255,255,.08);';
-                    return `<div class="chat-msg ${from}" style="border-radius: 14px; padding: 10px 12px; font-size: 13px; line-height: 1.45; ${style}">${escapeHtml(m.text || '')}</div>`;
+                    const createdAt = m.created_at ? `<time class="support-message-time">${escapeHtml(formatLocalizedDate(m.created_at))}</time>` : '';
+                    return `<div class="chat-msg ${from}" style="border-radius: 14px; padding: 10px 12px; font-size: 13px; line-height: 1.45; ${style}"><span>${escapeHtml(m.message || m.text || '')}</span>${createdAt}</div>`;
                 }).join('');
             const snapshot = `${currentLang}|${html}`;
             if (supportRenderSnapshot !== snapshot) {
@@ -5560,34 +6310,41 @@
             }
         }
 
-        function sendSupportMessage() {
+        async function sendSupportMessage() {
             const input = document.getElementById('support-message-input');
             const sendBtn = document.getElementById('support-send-btn');
             if (!input || !input.value.trim()) return;
             const text = input.value.trim();
             if (input.disabled) return;
+            const messageId = createClientMessageId();
             input.disabled = true;
             setActionBusy(sendBtn, true);
-            appState.supportMessages = appState.supportMessages || [];
-            appState.supportMessages.push({ from: 'user', text });
-            input.value = '';
-            renderSupportMessages();
-            saveAppState();
-            if (supportReplyTimer) clearTimeout(supportReplyTimer);
-            supportReplyTimer = setTimeout(() => {
-                appState.supportMessages.push({ from: 'support', text: t('support_received') });
-                saveAppState();
-                renderSupportMessages();
+            setSupportStatus('');
+            try {
+                await apiRequest('/support/messages', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        message_id: messageId,
+                        message: text,
+                        language: currentLang
+                    }),
+                    idempotencyKey: `support-${messageId}`,
+                    timeoutMs: 15000
+                });
+                input.value = '';
+                await loadSupportMessages();
+                setSupportStatus(t('support_received'), 'ok');
+            } catch (error) {
+                setSupportStatus(friendlyErrorMessage(error), 'error');
+            } finally {
                 input.disabled = false;
                 input.focus();
                 setActionBusy(sendBtn, false);
-                supportReplyTimer = null;
-            }, 500);
+            }
         }
 
         function resetSupportComposer() {
-            if (supportReplyTimer) clearTimeout(supportReplyTimer);
-            supportReplyTimer = null;
+            stopSupportPolling();
             const input = document.getElementById('support-message-input');
             if (input) input.disabled = false;
             setActionBusy('support-send-btn', false);
@@ -5681,11 +6438,11 @@
                 amount: Number(amount || 0).toFixed(2),
                 status: status || 'Pending',
                 method: extra.method || 'TON',
-                currency: extra.currency || (extra.method === 'TON_DEPOSIT_REFUND' ? 'TONCOIN' : ''),
+                currency: extra.currency || (extra.method === 'TON_DEPOSIT_REFUND' ? 'GRAM (ex-TON)' : ''),
                 type: extra.type || 'withdraw',
                 wallet: extra.wallet || '',
                 tx_hash: extra.tx_hash || '',
-                date: new Date().toLocaleString()
+                createdAt: new Date().toISOString()
             });
             safeStorageSet(key, JSON.stringify(items));
         }
@@ -5705,7 +6462,7 @@
                     type: item.withdraw_scope || item.type || '',
                     wallet: item.wallet_address || item.wallet || '',
                     tx_hash: item.tx_hash || '',
-                    date: item.created_at ? new Date(item.created_at).toLocaleString() : ''
+                    createdAt: item.created_at || null
                 }));
             } catch (err) {}
 
@@ -5717,7 +6474,7 @@
                 <div class="history-item">
                     <b>${escapeHtml(receiptAmountText(item))} - ${escapeHtml(receiptNetworkText(item))}</b>
                     <div>${escapeHtml(t('status_label'))}: ${escapeHtml(receiptStatusLabel(item.status))}</div>
-                    <div>${escapeHtml(item.date)}</div>
+                    <div>${escapeHtml(item.createdAt ? formatLocalizedDate(item.createdAt) : (item.date || ''))}</div>
                 </div>
             `).join('');
         }
@@ -5794,10 +6551,11 @@
                 if (normalized === 'rejected') return t('deposit_refund_rejected');
                 if (normalized === 'processing') return t('deposit_refund_saved');
             }
-            if (normalized === 'completed') return 'completed';
-            if (normalized === 'rejected') return 'rejected';
-            if (normalized === 'processing') return 'processing';
-            return String(status || 'pending');
+            if (normalized === 'completed') return t('status_completed');
+            if (normalized === 'rejected') return t('status_rejected');
+            if (normalized === 'processing') return t('status_processing');
+            if (normalized === 'verified') return t('status_verified');
+            return t('status_pending');
         }
 
         function receiptStatusClass(status) {
@@ -5806,15 +6564,19 @@
         }
 
         function receiptTypeLabel(item = {}) {
-            if (item.title) return item.title;
-            if (isTonDepositRefundReceipt(item)) return 'Activation deposit refund';
+            if (isTonDepositRefundReceipt(item)) return t('history_activation_refund');
+            const normalizedTitle = String(item.title || '').trim().toLowerCase();
+            if (normalizedTitle === 'activation deposit') return t('history_activation_deposit');
+            if (normalizedTitle === 'activation deposit refund') return t('history_activation_refund');
+            if (normalizedTitle === 'withdrawal request') return t('history_withdraw_request');
             if (String(item.type || '').toLowerCase() === 'payment') return t('history_wallet_payment');
+            if (item.title) return translateAdminNotificationText(item.title);
             return t('history_withdraw');
         }
 
         function receiptAmountText(item = {}) {
             const amountValue = Number(item.amount || 0).toFixed(2);
-            if (isTonReceipt(item)) return `${amountValue} TONCOIN`;
+            if (isTonReceipt(item)) return `${amountValue} GRAM (ex-TON)`;
             return `$${amountValue} ${item.currency || item.method || ''}`.trim();
         }
 
@@ -5829,8 +6591,12 @@
         }
 
         function renderReceiptItem(item) {
-            const created = item.created_at ? new Date(item.created_at).toLocaleString() : (item.date || '-');
-            const processed = item.processed_at ? new Date(item.processed_at).toLocaleString() : '-';
+            const created = item.created_at
+                ? formatLocalizedDate(item.created_at)
+                : item.createdAt
+                    ? formatLocalizedDate(item.createdAt)
+                    : (item.date || '-');
+            const processed = item.processed_at ? formatLocalizedDate(item.processed_at) : '-';
             const typeText = receiptTypeLabel(item);
             const amount = receiptAmountText(item);
             const status = receiptStatusLabel(item.status, item);
@@ -5940,7 +6706,7 @@
             const addressEl = document.getElementById('payment-address-text');
             const expiryEl = document.getElementById('payment-expiry-text');
             if (addressBox) addressBox.style.display = 'block';
-            if (amountEl) amountEl.innerText = `${getTonActivationAmount().toFixed(2)} TONCOIN`;
+            if (amountEl) amountEl.innerText = `${getTonActivationAmount().toFixed(2)} GRAM (ex-TON)`;
             if (addressEl) addressEl.innerText = t('card_order_loading');
             if (expiryEl) {
                 expiryEl.innerText = '';
@@ -6191,6 +6957,14 @@
             stopPaymentStatusPolling({ abort: true, reason });
             clearTimeout(settingsRefreshTimer);
             if (pendingWatch && isWatchModalOpen()) {
+                const wasPlaying = watchLastPlayerState === YT.PlayerState.PLAYING;
+                if (watchServerSession && !watchSessionSubmitted && wasPlaying) {
+                    queueWatchHeartbeat({
+                        intervalPlaying: true,
+                        intervalVisible: reason === 'visibility_hidden' ? true : !document.hidden,
+                        ended: false
+                    }).catch(() => null);
+                }
                 try {
                     if (mrbeastPlayer && mrbeastPlayer.pauseVideo) mrbeastPlayer.pauseVideo();
                 } catch (_) {}
@@ -6558,7 +7332,7 @@
             }
         }
 
-        changeLang(currentLang);
+        changeLang(currentLang, { sync: false, throttle: false });
         updateTopAccountInfo();
         updateWatchDisplays();
         renderNotifications();

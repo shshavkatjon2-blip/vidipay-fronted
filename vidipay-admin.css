@@ -38,7 +38,7 @@
       flex-wrap: wrap;
       margin-bottom: 16px;
     }
-    input, select {
+    input, select, textarea {
       background: #05070a;
       color: var(--text);
       border: 1px solid var(--line);
@@ -48,6 +48,7 @@
       font-size: 15px;
       width: 100%;
     }
+    textarea { resize: vertical; font-family: inherit; line-height: 1.45; }
     button {
       min-height: 40px;
       border: 1px solid var(--line);
@@ -189,6 +190,34 @@
       margin-bottom: 10px;
     }
     .timer-field label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+    .notification-language-notice { margin: 12px 0 4px; }
+    .notification-language-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+    .notification-language-entry {
+      display: grid;
+      grid-template-columns: minmax(120px, .55fr) minmax(180px, 1fr) minmax(240px, 1.4fr);
+      gap: 10px;
+      align-items: end;
+      padding: 12px 0;
+      border-top: 1px solid rgba(255,255,255,.08);
+    }
+    .notification-language-entry strong {
+      align-self: center;
+      color: var(--text);
+      font-size: 13px;
+    }
+    .notification-language-entry label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .notification-language-entry input {
+      width: 100%;
+      min-width: 0;
+    }
     .timer-actions {
       display: flex;
       gap: 10px;
@@ -196,6 +225,46 @@
       align-items: center;
     }
     .timer-actions button { min-width: 180px; }
+    .support-admin-layout {
+      display: grid;
+      grid-template-columns: minmax(250px, .8fr) minmax(380px, 1.6fr);
+      gap: 12px;
+      min-height: 430px;
+    }
+    .support-conversation-list,
+    .support-admin-thread {
+      border: 1px solid rgba(255,255,255,.1);
+      background: #10181d;
+      border-radius: 8px;
+      min-width: 0;
+    }
+    .support-conversation-list { max-height: 520px; overflow-y: auto; }
+    .support-conversation-button {
+      width: 100%;
+      min-height: 76px;
+      border: 0;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      border-radius: 0;
+      padding: 11px;
+      text-align: left;
+      display: grid;
+      gap: 5px;
+      color: var(--text);
+      background: transparent;
+    }
+    .support-conversation-button.is-active { background: rgba(0,255,204,.11); }
+    .support-conversation-meta { display:flex; justify-content:space-between; gap:8px; color:var(--muted); font-size:11px; }
+    .support-conversation-preview { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#d7fff7; font-size:12px; }
+    .support-unread-badge { color:#03110f; background:var(--accent); border-radius:999px; padding:2px 7px; font-weight:900; }
+    .support-admin-thread { display:flex; flex-direction:column; padding:12px; }
+    .support-admin-thread-title { color:var(--accent); font-weight:900; }
+    .support-admin-messages { flex:1; min-height:260px; max-height:390px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding:12px 0; }
+    .support-admin-message { max-width:82%; padding:9px 11px; border-radius:8px; white-space:pre-wrap; overflow-wrap:anywhere; font-size:13px; line-height:1.4; }
+    .support-admin-message.user { align-self:flex-start; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.1); }
+    .support-admin-message.admin { align-self:flex-end; background:rgba(0,255,204,.1); border:1px solid rgba(0,255,204,.22); }
+    .support-admin-message time { display:block; margin-top:5px; color:var(--muted); font-size:10px; }
+    .support-admin-reply-row { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:end; }
+    .support-admin-reply-row button { min-width:130px; }
     .window-status {
       margin-top: 10px;
       color: var(--text);
@@ -225,9 +294,13 @@
         min-width: 0;
       }
       .settings-grid,
-      .timer-row {
+      .timer-row,
+      .notification-language-entry,
+      .support-admin-layout,
+      .support-admin-reply-row {
         grid-template-columns: 1fr;
       }
+      .notification-language-entry { align-items: stretch; }
       .grid {
         border-radius: 6px;
         max-width: 100%;
