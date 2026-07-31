@@ -5,10 +5,10 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://vidipay-origin-proxy.shshavkatjon2.workers.dev; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'; upgrade-insecure-requests">
   <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="vidipay-admin-build" content="frontend-origin-proxy-20260729">
+  <meta name="vidipay-admin-build" content="frontend-language-support-gram-live-watch-20260731">
   <title>VidiPay Admin Panel</title>
-  <script src="./config.js?v=frontend-origin-proxy-20260729"></script>
-  <link rel="stylesheet" href="./vidipay-admin.css?v=csp-20260729">
+  <script src="./config.js?v=frontend-language-support-gram-live-watch-20260731"></script>
+  <link rel="stylesheet" href="./vidipay-admin.css?v=language-support-gram-live-watch-20260731">
 </head>
 <body>
   <header>
@@ -67,6 +67,26 @@
       <h2>Users</h2>
       <div class="notice" id="users-count">Users load after the token is saved.</div>
       <div class="grid"><table id="users-table"></table></div>
+    </section>
+
+    <section>
+      <div class="toolbar">
+        <h2 style="margin-right:auto;">Support inbox</h2>
+        <button id="btn-refresh-support" data-admin-action="loadSupportConversations">Refresh support</button>
+      </div>
+      <div class="notice" id="support-inbox-status">User questions appear here after the token is saved.</div>
+      <div class="support-admin-layout">
+        <div class="support-conversation-list" id="support-conversation-list"></div>
+        <div class="support-admin-thread">
+          <div class="support-admin-thread-title" id="support-selected-title">Select a conversation</div>
+          <div class="notice" id="support-selected-language">The user's selected language will be shown here.</div>
+          <div class="support-admin-messages" id="support-admin-messages"></div>
+          <div class="support-admin-reply-row">
+            <textarea id="support-reply-input" maxlength="2000" rows="3" placeholder="Reply in the user's selected language" disabled></textarea>
+            <button class="primary" id="btn-support-reply" data-admin-action="sendSupportReply" disabled>Send reply</button>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section>
@@ -144,19 +164,49 @@
     <section>
       <h2>Send notification / news</h2>
       <div class="timer-panel">
-        <div class="timer-row">
-          <div class="timer-field">
-            <label>Title</label>
-            <input id="notify-title" placeholder="Example: New update">
-          </div>
-          <div class="timer-field">
-            <label>Telegram ID, leave empty for all users</label>
-            <input id="notify-telegram-id" placeholder="77777 or empty">
-          </div>
-        </div>
         <div class="timer-field">
-          <label>Message text</label>
-          <input id="notify-message" placeholder="Message visible to users">
+          <label>Telegram ID, leave empty for all users</label>
+          <input id="notify-telegram-id" placeholder="77777 or empty">
+        </div>
+        <div class="notice notification-language-notice">
+          Every language is required. Each user receives the title and message in the language selected in VidiPay.
+        </div>
+        <div class="notification-language-grid">
+          <div class="notification-language-entry">
+            <strong>English (EN)</strong>
+            <label>Title<input id="notify-title" maxlength="120" placeholder="New update" required></label>
+            <label>Message<input id="notify-message" maxlength="1200" placeholder="Message visible to users" required></label>
+          </div>
+          <div class="notification-language-entry">
+            <strong>Русский (RU)</strong>
+            <label>Заголовок<input id="notify-title-ru" maxlength="120" placeholder="Новое обновление" required></label>
+            <label>Сообщение<input id="notify-message-ru" maxlength="1200" placeholder="Сообщение для пользователей" required></label>
+          </div>
+          <div class="notification-language-entry">
+            <strong>Français (FR)</strong>
+            <label>Titre<input id="notify-title-fr" maxlength="120" placeholder="Nouvelle mise à jour" required></label>
+            <label>Message<input id="notify-message-fr" maxlength="1200" placeholder="Message visible par les utilisateurs" required></label>
+          </div>
+          <div class="notification-language-entry">
+            <strong>हिन्दी (HI)</strong>
+            <label>शीर्षक<input id="notify-title-hi" maxlength="120" placeholder="नया अपडेट" required></label>
+            <label>संदेश<input id="notify-message-hi" maxlength="1200" placeholder="उपयोगकर्ताओं के लिए संदेश" required></label>
+          </div>
+          <div class="notification-language-entry">
+            <strong>Español (ES)</strong>
+            <label>Título<input id="notify-title-es" maxlength="120" placeholder="Nueva actualización" required></label>
+            <label>Mensaje<input id="notify-message-es" maxlength="1200" placeholder="Mensaje visible para los usuarios" required></label>
+          </div>
+          <div class="notification-language-entry">
+            <strong>中文 (ZH)</strong>
+            <label>标题<input id="notify-title-zh" maxlength="120" placeholder="新更新" required></label>
+            <label>消息<input id="notify-message-zh" maxlength="1200" placeholder="用户可见的消息" required></label>
+          </div>
+          <div class="notification-language-entry">
+            <strong>Deutsch (DE)</strong>
+            <label>Titel<input id="notify-title-de" maxlength="120" placeholder="Neues Update" required></label>
+            <label>Nachricht<input id="notify-message-de" maxlength="1200" placeholder="Für Benutzer sichtbare Nachricht" required></label>
+          </div>
         </div>
         <div class="timer-actions" style="margin-top:10px;">
           <button class="primary" id="btn-send-notify" data-admin-action="sendNotification">Send message</button>
@@ -198,6 +248,6 @@
     </section>
   </main>
 
-  <script src="./vidipay-admin.js?v=origin-proxy-20260729"></script>
+  <script src="./vidipay-admin.js?v=language-support-gram-live-watch-20260731"></script>
 </body>
 </html>

@@ -4,7 +4,8 @@ const vm = require("vm");
 const crypto = require("crypto");
 
 const targetDir = path.resolve(process.argv[2] || __dirname);
-const expectedBuild = "frontend-referral-bonus-security-20260731";
+const expectedBuild = "frontend-language-support-gram-live-watch-20260731";
+const supportedLanguages = ["en", "ru", "fr", "hi", "es", "zh", "de"];
 
 const expectedFiles = [
   "admin.html",
@@ -50,6 +51,10 @@ const appRequiredPatterns = [
   { name: "deposit_refund_withdrawal", pattern: /submitWithdrawRequest[\s\S]*withdraw_scope:\s*['"]deposit_refund['"]/ },
   { name: "deposit_refund_status_refresh", pattern: /async function refreshPaymentStatus/ },
   { name: "admin_notification_translation", pattern: /translateAdminNotificationText/ },
+  { name: "language_profile_sync", pattern: /apiRequest\(['"]\/user\/language['"]/ },
+  { name: "language_preference_payload", pattern: /preferred_language:\s*currentLang/ },
+  { name: "html_language_switch", pattern: /document\.documentElement\.lang\s*=\s*lang/ },
+  { name: "server_notification_relocalization", pattern: /loadServerNotifications\(\{\s*force:\s*true\s*\}\)/ },
   { name: "notification_list_layout", pattern: /notification-list/ },
   { name: "growth_lock_status", pattern: /growthLockStatus/ },
   { name: "watch_server_session_start", pattern: /apiRequest\(['"]\/view\/session\/start['"]/ },
@@ -66,6 +71,7 @@ const adminRequiredPatterns = [
   { name: "admin_ton_scanner_panel", pattern: /Automatic TON scanner/ },
   { name: "admin_payment_wallets_endpoint", pattern: /\/admin\/payment-wallets/ },
   { name: "admin_notification_endpoint", pattern: /\/admin\/notification\/send/ },
+  { name: "admin_all_notification_languages", pattern: /NOTIFICATION_LANGUAGE_CODES[\s\S]*translations/ },
   { name: "admin_production_backend_candidates", pattern: /getAdminApiCandidates[\s\S]*ADMIN_PRODUCTION_API_BASE_URL/ },
   { name: "admin_token_header", pattern: /['"]x-admin-token['"]:\s*token\(\)/ },
   { name: "admin_manual_backup_text", pattern: /Manual backup/ }
@@ -167,14 +173,39 @@ function checkExternalScriptSyntax() {
   }
 }
 
+function checkLanguageCompleteness() {
+  const source = readText("vidipay-app.js");
+  const start = source.indexOf("const languages =");
+  const end = source.indexOf("Object.keys(languages).forEach", start);
+  if (start < 0 || end <= start) fail("vidipay-app.js language dictionaries were not found");
+
+  const context = { languages: null, Object };
+  vm.createContext(context);
+  vm.runInContext(
+    source.slice(start, end).replace("const languages =", "languages ="),
+    context
+  );
+  const dictionaries = context.languages;
+  const englishKeys = Object.keys(dictionaries.en);
+  for (const language of supportedLanguages) {
+    if (!dictionaries[language]) fail(`Missing UI dictionary: ${language}`);
+    const missing = englishKeys.filter((key) => dictionaries[language][key] === undefined);
+    if (missing.length) fail(`${language} UI dictionary is incomplete: ${missing.join(", ")}`);
+    const suffix = language === "en" ? "" : `-${language}`;
+    const adminHtml = readText("admin.html");
+    if (!adminHtml.includes(`id="notify-title${suffix}"`)) fail(`Missing ${language} admin notification title`);
+    if (!adminHtml.includes(`id="notify-message${suffix}"`)) fail(`Missing ${language} admin notification message`);
+  }
+}
+
 function checkCspHardening() {
   const appFiles = ["app-v3.html", "app-v4.html", "app-v5.html", "app-v6.html", "index.html"];
   for (const file of appFiles) {
     const html = readText(file);
     if (!html.includes("Content-Security-Policy")) fail(`${file} is missing CSP meta`);
     if (!html.includes("script-src-attr 'none'")) fail(`${file} must block script attributes`);
-    if (!html.includes("./vidipay-app.js?v=referral-bonus-security-20260731")) fail(`${file} must load external app JS`);
-    if (!html.includes("./vidipay-app.css?v=csp-20260729")) fail(`${file} must load external app CSS`);
+    if (!html.includes("./vidipay-app.js?v=language-support-gram-live-watch-20260731")) fail(`${file} must load external app JS`);
+    if (!html.includes("./vidipay-app.css?v=language-support-gram-live-watch-20260731")) fail(`${file} must load external app CSS`);
     if (/<script\b(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/i.test(html)) fail(`${file} contains inline script`);
     if (/<style\b/i.test(html)) fail(`${file} contains inline style block`);
     if (/\son[a-z]+\s*=/i.test(html)) fail(`${file} contains inline event handler`);
@@ -182,8 +213,8 @@ function checkCspHardening() {
 
   const adminHtml = readText("admin.html");
   if (!adminHtml.includes("script-src-attr 'none'")) fail("admin.html must block script attributes");
-  if (!adminHtml.includes("./vidipay-admin.js?v=origin-proxy-20260729")) fail("admin.html must load external admin JS");
-  if (!adminHtml.includes("./vidipay-admin.css?v=csp-20260729")) fail("admin.html must load external admin CSS");
+  if (!adminHtml.includes("./vidipay-admin.js?v=language-support-gram-live-watch-20260731")) fail("admin.html must load external admin JS");
+  if (!adminHtml.includes("./vidipay-admin.css?v=language-support-gram-live-watch-20260731")) fail("admin.html must load external admin CSS");
   if (/\son[a-z]+\s*=/i.test(adminHtml)) fail("admin.html contains inline event handler");
 
   const scripts = `${readText("vidipay-app.js")}\n${readText("vidipay-admin.js")}`;
@@ -228,6 +259,7 @@ function main() {
   checkCorsSafeRequestHeaders();
   checkAppEntryParity();
   checkExternalScriptSyntax();
+  checkLanguageCompleteness();
   checkCspHardening();
   for (const file of ["app-v3.html", "app-v4.html", "app-v5.html", "app-v6.html", "index.html"]) {
     if (!readText(file).includes(expectedBuild)) {

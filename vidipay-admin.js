@@ -1,5 +1,6 @@
     const ADMIN_PRODUCTION_API_BASE_URL = 'https://vidipay-origin-proxy.shshavkatjon2.workers.dev';
     const ADMIN_API_FALLBACKS = [ADMIN_PRODUCTION_API_BASE_URL];
+    const NOTIFICATION_LANGUAGE_CODES = Object.freeze(['en', 'ru', 'fr', 'hi', 'es', 'zh', 'de']);
 
     function normalizeApiBaseUrl(value) {
       const raw = String(value || '').trim().replace(/\/$/, '');
@@ -54,6 +55,8 @@
 
     let adminCommandBusy = false;
     let settingsFormRendered = false;
+    let selectedSupportTelegramId = '';
+    let supportInboxRefreshTimer = null;
 
     function setText(id, text) {
       const el = document.getElementById(id);
@@ -141,6 +144,15 @@
       return `admin-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
     }
 
+    function createAdminMessageId() {
+      if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, character => {
+        const random = Math.floor(Math.random() * 16);
+        const value = character === 'x' ? random : ((random & 0x3) | 0x8);
+        return value.toString(16);
+      });
+    }
+
     async function fetchApi(path, options = {}) {
       const candidates = [...new Set([API_BASE_URL, ...getAdminApiCandidates()].map(normalizeApiBaseUrl).filter(Boolean))];
       let lastError = null;
@@ -215,7 +227,7 @@
     }
 
     function formatTon(value) {
-      return `${Number(value || 0).toFixed(2)} TONCOIN`;
+      return `${Number(value || 0).toFixed(2)} GRAM (ex-TON)`;
     }
 
     function normalizeAdminStatus(value) {
@@ -441,6 +453,102 @@
       `));
     }
 
+    function supportUserLabel(item = {}) {
+      const name = [item.first_name, item.last_name].filter(Boolean).join(' ').trim();
+      return name || (item.username ? `@${item.username}` : String(item.telegram_id || 'Unknown user'));
+    }
+
+    function renderSupportConversations(conversations = []) {
+      const list = document.getElementById('support-conversation-list');
+      if (!list) return;
+      if (!conversations.length) {
+        list.innerHTML = '<div class="notice-box">No support questions yet.</div>';
+        return;
+      }
+      list.innerHTML = conversations.map(item => {
+        const telegramId = String(item.telegram_id || '');
+        const unread = Math.max(0, Number(item.unread_admin_count || 0));
+        return `
+          <button class="support-conversation-button ${telegramId === selectedSupportTelegramId ? 'is-active' : ''}"
+            data-admin-action="open-support-conversation" data-admin-telegram-id="${escapeHtml(telegramId)}">
+            <span class="support-conversation-meta">
+              <strong>${escapeHtml(supportUserLabel(item))}</strong>
+              ${unread ? `<span class="support-unread-badge">${unread}</span>` : ''}
+            </span>
+            <span class="support-conversation-preview">${escapeHtml(item.last_message || '')}</span>
+            <span class="support-conversation-meta">
+              <span>${escapeHtml(String(item.preferred_language || 'en').toUpperCase())}</span>
+              <time>${escapeHtml(formatDateTime(item.last_message_at))}</time>
+            </span>
+          </button>`;
+      }).join('');
+    }
+
+    async function loadSupportConversations(options = {}) {
+      const payload = await api('/admin/support/conversations?limit=200');
+      const conversations = Array.isArray(payload?.conversations) ? payload.conversations : [];
+      renderSupportConversations(conversations);
+      setText('support-inbox-status', `${conversations.length} support conversation(s).`);
+      if (selectedSupportTelegramId && options.refreshSelected !== false) {
+        await loadSupportConversation(selectedSupportTelegramId, { refreshInbox: false });
+      }
+      return conversations;
+    }
+
+    function renderSupportAdminMessages(messages = []) {
+      const box = document.getElementById('support-admin-messages');
+      if (!box) return;
+      box.innerHTML = messages.map(item => {
+        const role = item.sender_role === 'user' ? 'user' : 'admin';
+        return `<div class="support-admin-message ${role}">
+          ${escapeHtml(item.message || '')}
+          <time>${escapeHtml(formatDateTime(item.created_at))}</time>
+        </div>`;
+      }).join('') || '<div class="notice">No messages in this conversation.</div>';
+      box.scrollTop = box.scrollHeight;
+    }
+
+    async function loadSupportConversation(telegramId, options = {}) {
+      const safeTelegramId = String(telegramId || '').trim();
+      if (!safeTelegramId) return;
+      selectedSupportTelegramId = safeTelegramId;
+      const payload = await api(`/admin/support/${encodeURIComponent(safeTelegramId)}/messages?limit=300`);
+      const user = payload?.user || { telegram_id: safeTelegramId, preferred_language: 'en' };
+      setText('support-selected-title', `${supportUserLabel(user)} (${safeTelegramId})`);
+      setText('support-selected-language', `Selected app language: ${String(user.preferred_language || 'en').toUpperCase()}. Reply in this language.`);
+      renderSupportAdminMessages(Array.isArray(payload?.messages) ? payload.messages : []);
+      const input = document.getElementById('support-reply-input');
+      const button = document.getElementById('btn-support-reply');
+      if (input) input.disabled = false;
+      if (button) button.disabled = false;
+      if (options.refreshInbox !== false) await loadSupportConversations({ refreshSelected: false });
+    }
+
+    async function sendSupportReply() {
+      const input = document.getElementById('support-reply-input');
+      const message = String(input?.value || '').trim();
+      if (!selectedSupportTelegramId || !message) {
+        setStatus('Select a support conversation and enter a reply.');
+        return;
+      }
+      const messageId = createAdminMessageId();
+      try {
+        setBusy('btn-support-reply', true, 'Sending...');
+        await api(`/admin/support/${encodeURIComponent(selectedSupportTelegramId)}/reply`, {
+          method: 'POST',
+          headers: { 'Idempotency-Key': `support-reply-${messageId}` },
+          body: JSON.stringify({ message_id: messageId, message })
+        });
+        input.value = '';
+        await loadSupportConversation(selectedSupportTelegramId);
+        setStatus('Support reply sent. The user also received an in-app notification.');
+      } catch (error) {
+        setStatus(`Support reply error: ${error.message}`);
+      } finally {
+        setBusy('btn-support-reply', false);
+      }
+    }
+
     function renderUserControlCells(user) {
       const blocked = Boolean(user.is_blocked || user.deleted_at);
       const label = user.deleted_at ? 'account deleted' : (blocked ? 'blocked' : 'active');
@@ -575,18 +683,41 @@
     async function sendNotification() {
       try {
         setBusy('btn-send-notify', true, 'Sending...');
-        const title = document.getElementById('notify-title').value.trim();
-        const message = document.getElementById('notify-message').value.trim();
+        const translations = {};
+        const missingLanguages = [];
+        NOTIFICATION_LANGUAGE_CODES.forEach(language => {
+          const suffix = language === 'en' ? '' : `-${language}`;
+          const title = document.getElementById(`notify-title${suffix}`)?.value.trim() || '';
+          const message = document.getElementById(`notify-message${suffix}`)?.value.trim() || '';
+          if (!title || !message) {
+            missingLanguages.push(language.toUpperCase());
+          } else {
+            translations[language] = { title, message };
+          }
+        });
+        if (missingLanguages.length) {
+          throw new Error(`Complete title and message for: ${missingLanguages.join(', ')}`);
+        }
+        const title = translations.en.title;
+        const message = translations.en.message;
         const telegram_id = document.getElementById('notify-telegram-id').value.trim();
 
         await api('/admin/notification/send', {
           method: 'POST',
-          body: JSON.stringify({ title, message, telegram_id: telegram_id || null })
+          body: JSON.stringify({
+            title,
+            message,
+            translations,
+            telegram_id: telegram_id || null
+          })
         });
 
-        setStatus('Notification sent.');
-        document.getElementById('notify-title').value = '';
-        document.getElementById('notify-message').value = '';
+        setStatus('Notification sent in all 7 supported languages.');
+        NOTIFICATION_LANGUAGE_CODES.forEach(language => {
+          const suffix = language === 'en' ? '' : `-${language}`;
+          document.getElementById(`notify-title${suffix}`).value = '';
+          document.getElementById(`notify-message${suffix}`).value = '';
+        });
       } catch (err) {
         setStatus(`Notification error: ${err.message}`);
       } finally {
@@ -714,6 +845,7 @@
       const errors = [];
       try { await loadSettings({ renderForm: !settingsFormRendered }); } catch (err) { errors.push(err.message); }
       try { await loadUsers(); } catch (err) { errors.push(`Users: ${err.message}`); }
+      try { await loadSupportConversations(); } catch (err) { errors.push(`Support: ${err.message}`); }
       try { await loadWithdraws(); } catch (err) { errors.push(`Withdrawals: ${err.message}`); }
       try { await loadPaymentOrders(); } catch (err) { errors.push(`To‘lovlar: ${err.message}`); }
       try { await loadPaymentWallets(); } catch (err) { errors.push(`Scanner: ${err.message}`); }
@@ -734,6 +866,8 @@
       addManualEarning: () => addManualEarning(),
       addManualHistory: () => addManualHistory(),
       sendNotification: () => sendNotification(),
+      loadSupportConversations: () => loadSupportConversations(),
+      sendSupportReply: () => sendSupportReply(),
       runPaymentScan: () => runPaymentScan(),
       loadPaymentWallets: () => loadPaymentWallets()
     });
@@ -767,6 +901,9 @@
       if (actionName === 'approve-payment-order') {
         return runAdminUiAction(() => approvePaymentOrder(element.dataset.adminId));
       }
+      if (actionName === 'open-support-conversation') {
+        return runAdminUiAction(() => loadSupportConversation(element.dataset.adminTelegramId));
+      }
       const action = ADMIN_CLICK_ACTIONS[actionName];
       if (action) runAdminUiAction(action);
     });
@@ -777,3 +914,9 @@
       const action = ADMIN_CHANGE_ACTIONS[element.dataset.adminChange];
       if (action) runAdminUiAction(action);
     });
+
+    clearInterval(supportInboxRefreshTimer);
+    supportInboxRefreshTimer = setInterval(() => {
+      if (!token() || document.hidden) return;
+      loadSupportConversations().catch(() => null);
+    }, 10000);

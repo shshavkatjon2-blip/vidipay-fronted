@@ -11,13 +11,13 @@
     <title>Vidi Pay - Cyber Mint Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=2026_v3"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="vidipay-build" content="frontend-referral-bonus-security-20260731">
+    <meta name="vidipay-build" content="frontend-language-support-gram-live-watch-20260731">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="./config.js?v=frontend-referral-bonus-security-20260731"></script>
+    <script src="./config.js?v=frontend-language-support-gram-live-watch-20260731"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="./vidipay-app.css?v=csp-20260729">
+    <link rel="stylesheet" href="./vidipay-app.css?v=language-support-gram-live-watch-20260731">
 </head>
 <body>
 
@@ -210,7 +210,7 @@
                 <div class="withdraw-extra-row" id="withdraw-extra-row">Additional withdrawal information will appear here.</div>
                 <div id="withdraw-form-box" class="withdraw-wallet-card" style="display:none;">
                     <div class="withdraw-wallet-card-title" data-i18n="withdraw_form_title"><i class="fas fa-link"></i> Connect payout wallet</div>
-                    <input id="withdraw-amount-input" class="withdraw-wallet-input" type="number" min="6.99" max="6.99" step="0.01" inputmode="decimal" readonly placeholder="Fixed refund amount: 6.99 TONCOIN" data-i18n-placeholder="withdraw_amount_placeholder">
+                    <input id="withdraw-amount-input" class="withdraw-wallet-input" type="number" min="6.99" max="6.99" step="0.01" inputmode="decimal" readonly placeholder="Fixed refund amount: 6.99 GRAM (ex-TON)" data-i18n-placeholder="withdraw_amount_placeholder">
                     <input id="withdraw-address-input" class="withdraw-wallet-input" type="text" inputmode="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="Your TON wallet address" data-i18n-placeholder="withdraw_card_placeholder" data-vp-input="handleWithdrawAddressInput" data-vp-blur="validateWithdrawWalletInput">
                     <input id="withdraw-method-input" type="hidden" value="TON">
                     <button class="copy-link-btn" id="withdraw-submit-btn" data-vp-click="submitWithdrawRequest">
@@ -272,7 +272,7 @@
                 </div>
                 <div class="profile-data-field">
                     <span class="profile-data-label" id="wallet-method-label">Activation network:</span>
-                    <span class="profile-data-value" id="wallet-method-value" style="color: var(--accent-color);">TONCOIN</span>
+                    <span class="profile-data-value" id="wallet-method-value" style="color: var(--accent-color);">GRAM (ex-TON)</span>
                 </div>
                 <div class="withdraw-locked-row" id="wallet-lock-row"><i class="fas fa-lock" style="margin-right:8px;"></i>Wallet locked</div>
                 <div class="withdraw-extra-row" id="wallet-lock-extra">Earn $20.00 in total to unlock wallet activation.</div>
@@ -284,9 +284,9 @@
                             <span id="lbl-fastest-method"><i class="fas fa-shield-alt"></i> Security confirmation</span>
                             <span class="wallet-network-pill">TON</span>
                         </div>
-                        <div class="wallet-help-text" id="lbl-fiat-desc">Confirm that you are not a bot and connect your personal TON wallet to the VidiPay system. To activate it, top up exactly 6.99 TONCOIN and after confirmation you can request withdrawal to your TON wallet. Blockchain network commission may apply.</div>
+                        <div class="wallet-help-text" id="lbl-fiat-desc">Confirm that you are not a bot and connect your personal TON wallet to the VidiPay system. To activate it, top up exactly 6.99 GRAM (ex-TON) and after confirmation you can request withdrawal to your TON wallet. Blockchain network commission may apply.</div>
                         <div class="ton-payment-actions">
-                            <button type="button" id="fiat-pay-btn" data-vp-click="openTonDepositModal"><i class="fas fa-coins"></i> <span id="lbl-pay-fiat">TOP UP 6.99 TONCOIN</span></button>
+                            <button type="button" id="fiat-pay-btn" data-vp-click="openTonDepositModal"><i class="fas fa-coins"></i> <span id="lbl-pay-fiat">TOP UP 6.99 GRAM (ex-TON)</span></button>
                         </div>
                     </div>
                     <div id="payment-status-text" role="status" aria-live="polite" style="margin-top:8px; color:#a0a5b5; font-size:12px; font-weight:800;"></div>
@@ -298,14 +298,14 @@
     <div id="tonDepositModal" class="modal-overlay">
         <div class="modal-content">
             <button class="modal-close" data-vp-click="closeModal" data-vp-target="tonDepositModal"><i class="fas fa-times"></i></button>
-            <div class="modal-title" id="ton-deposit-title">6.99 TONCOIN payment</div>
+            <div class="modal-title" id="ton-deposit-title">6.99 GRAM (ex-TON) payment</div>
             <div class="info-sub-block">
                 <div class="wallet-pay-card">
                     <div class="wallet-pay-heading">
                         <span id="ton-deposit-address-title"><i class="fas fa-wallet"></i> TON deposit address</span>
                         <span class="wallet-network-pill">TON</span>
                     </div>
-                    <div class="wallet-help-text" id="ton-deposit-warning">Send exactly 6.99 TONCOIN to this address. Less or more than 6.99 TONCOIN will not be confirmed automatically.</div>
+                    <div class="wallet-help-text" id="ton-deposit-warning">Send exactly 6.99 GRAM (ex-TON) to this address. Less or more than 6.99 GRAM (ex-TON) will not be confirmed automatically.</div>
                     <div id="payment-address-box" style="display:none; margin-top:10px; padding:12px; border:1px solid rgba(0,255,204,.24); border-radius:14px; background:rgba(0,255,204,.06);">
                         <div id="payment-amount-text" style="color:#00ffcc; font-size:13px; font-weight:900; margin-bottom:8px;"></div>
                         <div class="wallet-address-label" id="payment-address-label">Unique TON deposit address</div>
@@ -350,11 +350,11 @@
                     <span class="profile-data-value" id="watch-session-time">0s</span>
                 </div>
                 <div class="profile-data-field">
-                    <span class="profile-data-label" data-i18n="pending_reward">Pending reward:</span>
+                    <span class="profile-data-label" data-i18n="pending_reward">Live reward:</span>
                     <span class="profile-data-value" id="watch-session-reward">$0.00</span>
                 </div>
                 <div id="watch-session-status" style="margin-top:10px; color:#a0a5b5; font-size:12px; font-weight:800;">
-                    <span data-i18n="watch_reward_wait">Reward is added only after the current MrBeast video finishes.</span>
+                    <span data-i18n="watch_reward_wait">Verified seconds are added to your main balance while the video is playing.</span>
                 </div>
             </div>
         </div>
@@ -460,11 +460,12 @@
                     <input id="support-message-input" type="text" placeholder="Write your question..." data-i18n-placeholder="support_placeholder" data-vp-keydown="sendSupportMessageOnEnter">
                     <button id="support-send-btn" data-vp-click="sendSupportMessage"><i class="fas fa-paper-plane"></i></button>
                 </div>
+                <div class="support-chat-status" id="support-chat-status" aria-live="polite"></div>
             </div>
         </div>
     </div>
 
 
-    <script src="./vidipay-app.js?v=referral-bonus-security-20260731"></script>
+    <script src="./vidipay-app.js?v=language-support-gram-live-watch-20260731"></script>
 </body>
 </html>
