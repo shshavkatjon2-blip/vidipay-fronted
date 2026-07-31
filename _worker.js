@@ -16,7 +16,7 @@ function applySecurityHeaders(response, pathname) {
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("Referrer-Policy", isAdmin ? "no-referrer" : "strict-origin-when-cross-origin");
   headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-  headers.set("X-VidiPay-Frontend-Build", "frontend-origin-proxy-20260729-csp");
+  headers.set("X-VidiPay-Frontend-Build", "frontend-referral-bonus-security-20260731-csp");
   if (isAdmin) headers.set("X-Frame-Options", "DENY");
   else headers.delete("X-Frame-Options");
 

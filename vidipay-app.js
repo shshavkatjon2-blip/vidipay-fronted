@@ -418,7 +418,7 @@
         const TARGET_URL = "https://www.youtube.com/@MrBeast";
         const PRODUCTION_API_BASE_URL = 'https://vidipay-origin-proxy.shshavkatjon2.workers.dev';
         const FALLBACK_API_BASE_URLS = [PRODUCTION_API_BASE_URL];
-        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-origin-proxy-20260729';
+        const VIDIPAY_FRONTEND_BUILD = window.VIDIPAY_FRONTEND_BUILD || 'frontend-referral-bonus-security-20260731';
         document.documentElement.dataset.vidipayFrontendBuild = VIDIPAY_FRONTEND_BUILD;
 
         function normalizeApiBaseUrl(value) {
@@ -488,6 +488,9 @@
             dailyEarned: 0,
             invitedShares: 0,
             joinedFriends: 0,
+            depositedFriends: 0,
+            bonusEligibleFriends: 0,
+            claimableReferralBonus: 0,
             lastDailyReset: Date.now(),
             supportMessages: []
         };
@@ -1050,6 +1053,9 @@
                     appState.dailyMinutes = Math.floor(appState.dailySeconds / 60);
                     appState.dailyEarned = Number(stats.daily_income || 0);
                     appState.joinedFriends = Number(stats.referrals || appState.joinedFriends || 0);
+                    appState.depositedFriends = Number(stats.deposited_referrals || 0);
+                    appState.bonusEligibleFriends = Number(stats.bonus_eligible_referrals || 0);
+                    appState.claimableReferralBonus = Number(stats.claimable_referral_bonus || 0);
                     if (stats.growth_lock) setGrowthLockStatus(stats.growth_lock);
                     statsFetchedAt = Date.now();
                     saveAppState();
@@ -2246,6 +2252,10 @@
                     body: JSON.stringify({ telegram_id: String(referralUserId) })
                 });
                 applyBackendUser(result.user);
+                appState.bonusEligibleFriends = 0;
+                appState.claimableReferralBonus = 0;
+                statsFetchedAt = 0;
+                await refreshStatsFromBackend({ force: true });
                 updateWatchDisplays();
                 const bonusText = Number(result.bonus || 0).toFixed(2);
                 setDomText(statusEl, `${t('bonus_claimed')} $${bonusText}`);
@@ -2305,9 +2315,9 @@
                 claim_bonus_locked: "CLAIM BONUS LOCKED",
                 claim_bonus_open: "CLAIM BONUS",
                 bonus_claimed: "Bonus added to your main balance:",
-                bonus_per_friend: "Bonus per joined friend:",
-                total_bonus: "Total Bonus",
-                friends_joined: "Friends Joined",
+                bonus_per_friend: "Bonus per eligible deposited friend:",
+                total_bonus: "Claimable Referral Bonus",
+                friends_joined: "Eligible Deposited Friends",
                 referral_link_title: "Your Referral Link",
                 wallet: "WALLET",
                 history: "HISTORY",
@@ -2544,9 +2554,9 @@
             claim_bonus_locked: "БОНУС ЗАБЛОКИРОВАН",
             claim_bonus_open: "ЗАБРАТЬ БОНУС",
             bonus_claimed: "Бонус добавлен к основному балансу:",
-            bonus_per_friend: "Бонус за друга:",
-            total_bonus: "Всего бонусов",
-            friends_joined: "Друзей",
+            bonus_per_friend: "Бонус за подходящего друга с депозитом:",
+            total_bonus: "Доступный реферальный бонус",
+            friends_joined: "Подходящие друзья с депозитом",
             referral_link_title: "Ваша реферальная ссылка",
             wallet: "КОШЕЛЕК",
             history: "ИСТОРИЯ",
@@ -2591,9 +2601,9 @@
             claim_bonus_locked: "BONUS VERROUILLE",
             claim_bonus_open: "RECLAMER LE BONUS",
             bonus_claimed: "Bonus ajoute au solde principal :",
-            bonus_per_friend: "Bonus par ami :",
-            total_bonus: "Bonus total",
-            friends_joined: "Amis inscrits",
+            bonus_per_friend: "Bonus par ami eligible avec depot :",
+            total_bonus: "Bonus de parrainage disponible",
+            friends_joined: "Amis eligibles avec depot",
             referral_link_title: "Votre lien de parrainage",
             wallet: "PORTEFEUILLE",
             history: "HISTORIQUE",
@@ -2632,9 +2642,9 @@
             claim_bonus_locked: "BONUS LOCKED",
             claim_bonus_open: "CLAIM BONUS",
             bonus_claimed: "Bonus main balance me add hua:",
-            bonus_per_friend: "Friend bonus:",
-            total_bonus: "Total bonus",
-            friends_joined: "Friends joined",
+            bonus_per_friend: "Eligible deposited friend bonus:",
+            total_bonus: "Claimable referral bonus",
+            friends_joined: "Eligible deposited friends",
             referral_link_title: "Referral link",
             wallet: "WALLET",
             history: "HISTORY",
@@ -2673,9 +2683,9 @@
             claim_bonus_locked: "BONO BLOQUEADO",
             claim_bonus_open: "RECLAMER BONO",
             bonus_claimed: "Bono agregado al balance principal:",
-            bonus_per_friend: "Bono por amigo:",
-            total_bonus: "Bono total",
-            friends_joined: "Amigos unidos",
+            bonus_per_friend: "Bono por amigo elegible con deposito:",
+            total_bonus: "Bono de referido disponible",
+            friends_joined: "Amigos elegibles con deposito",
             referral_link_title: "Tu enlace de referido",
             wallet: "BILLETERA",
             history: "HISTORIAL",
@@ -2714,9 +2724,9 @@
             claim_bonus_locked: "奖励已锁定",
             claim_bonus_open: "领取奖励",
             bonus_claimed: "奖励已加入主余额：",
-            bonus_per_friend: "每位好友奖励：",
-            total_bonus: "总奖励",
-            friends_joined: "好友数量",
+            bonus_per_friend: "每位符合条件且已充值好友的奖励：",
+            total_bonus: "可领取的邀请奖励",
+            friends_joined: "符合条件且已充值的好友",
             referral_link_title: "您的邀请链接",
             wallet: "钱包",
             history: "历史",
@@ -2755,9 +2765,9 @@
             claim_bonus_locked: "BONUS GESPERRT",
             claim_bonus_open: "BONUS HOLEN",
             bonus_claimed: "Bonus zum Hauptguthaben hinzugefuegt:",
-            bonus_per_friend: "Bonus pro Freund:",
-            total_bonus: "Bonus gesamt",
-            friends_joined: "Freunde",
+            bonus_per_friend: "Bonus pro berechtigtem Freund mit Einzahlung:",
+            total_bonus: "Auszahlbarer Empfehlungsbonus",
+            friends_joined: "Berechtigte Freunde mit Einzahlung",
             referral_link_title: "Dein Empfehlungslink",
             wallet: "WALLET",
             history: "VERLAUF",
@@ -3025,7 +3035,7 @@
             watch_reward_backend_failed: "Reward was not saved to the backend.",
             view_reward_title: "View reward",
             view_reward_added: "Reward added after {seconds}s: ${amount}",
-            referral_bonus_added: "Your friend joined successfully. Referral bonus was added."
+            referral_bonus_added: "Your friend joined. The referral reward stays pending until the deposit and bonus conditions are complete."
 
         });
 
@@ -3088,7 +3098,7 @@
             watch_reward_backend_failed: "Награда не сохранена на сервере.",
             view_reward_title: "Награда за просмотр",
             view_reward_added: "Награда добавлена после {seconds}с: ${amount}",
-            referral_bonus_added: "Ваш друг успешно присоединился. Реферальный бонус добавлен."
+            referral_bonus_added: "Друг присоединился. Реферальная награда ожидает депозит и выполнение условий бонуса."
 
         });
 
@@ -3151,7 +3161,7 @@
             watch_reward_backend_failed: "La recompense n'a pas ete enregistree sur le serveur.",
             view_reward_title: "Recompense de visionnage",
             view_reward_added: "Recompense ajoutee apres {seconds}s : ${amount}",
-            referral_bonus_added: "Votre ami a rejoint avec succes. Le bonus de parrainage a ete ajoute."
+            referral_bonus_added: "Votre ami a rejoint. La recompense reste en attente du depot et des conditions du bonus."
 
         });
 
@@ -3214,7 +3224,7 @@
             watch_reward_backend_failed: "Reward backend par save nahi hua.",
             view_reward_title: "View reward",
             view_reward_added: "{seconds}s ke baad reward add hua: ${amount}",
-            referral_bonus_added: "Aapka friend successfully join hua. Referral bonus add ho gaya."
+            referral_bonus_added: "Friend join hua. Deposit aur bonus conditions complete hone tak reward pending rahega."
 
         });
 
@@ -3277,7 +3287,7 @@
             watch_reward_backend_failed: "La recompensa no se guardo en el servidor.",
             view_reward_title: "Recompensa de vista",
             view_reward_added: "Recompensa agregada despues de {seconds}s: ${amount}",
-            referral_bonus_added: "Tu amigo se unio correctamente. El bono de referido fue agregado."
+            referral_bonus_added: "Tu amigo se unio. La recompensa queda pendiente hasta completar el deposito y las condiciones."
 
         });
 
@@ -3340,7 +3350,7 @@
             watch_reward_backend_failed: "奖励未保存到服务器。",
             view_reward_title: "观看奖励",
             view_reward_added: "观看 {seconds}s 后已添加奖励：${amount}",
-            referral_bonus_added: "您的好友已成功加入。邀请奖励已添加。"
+            referral_bonus_added: "您的好友已加入。完成充值和奖励条件前，邀请奖励将保持待领取状态。"
 
         });
 
@@ -3403,7 +3413,7 @@
             watch_reward_backend_failed: "Belohnung wurde nicht auf dem Server gespeichert.",
             view_reward_title: "View-Belohnung",
             view_reward_added: "Belohnung nach {seconds}s hinzugefuegt: ${amount}",
-            referral_bonus_added: "Dein Freund ist erfolgreich beigetreten. Referral-Bonus wurde hinzugefuegt."
+            referral_bonus_added: "Dein Freund ist beigetreten. Die Belohnung bleibt bis zur Einzahlung und Erfuellung der Bedingungen ausstehend."
 
         });
 
@@ -3854,9 +3864,9 @@
             claim_bonus_locked: "INAAM LOCKED",
             claim_bonus_open: "INAAM CLAIM KAREIN",
             bonus_claimed: "Inaam main balance me add hua:",
-            bonus_per_friend: "Har joined dost ka inaam:",
-            total_bonus: "Kul inaam",
-            friends_joined: "Joined dost",
+            bonus_per_friend: "Bonusga mos depozit qilgan dost uchun:",
+            total_bonus: "Olish mumkin bolgan referral bonus",
+            friends_joined: "Bonusga mos depozit qilgan dostlar",
             referral_link_title: "Aapka referral link",
             wallet: "Batuwa",
             history: "Itihaas",
@@ -4039,10 +4049,10 @@
             const bonusTitle = document.querySelector('#bonusModal .modal-title');
             if (bonusTitle) bonusTitle.innerText = dict.bonus_title || 'Referral Bonus';
             const bonusRateBox = document.querySelector('.bonus-rate-box');
-            if (bonusRateBox) bonusRateBox.innerHTML = `${dict.bonus_per_friend || 'Bonus per joined friend:'} <span id="bonus-rate">${BONUS_PER_FRIEND.toFixed(2)} $</span>`;
+            if (bonusRateBox) bonusRateBox.innerHTML = `${dict.bonus_per_friend || 'Bonus per eligible deposited friend:'} <span id="bonus-rate">${BONUS_PER_FRIEND.toFixed(2)} $</span>`;
             const bonusLabels = document.querySelectorAll('.bonus-stat-card .lbl');
-            if (bonusLabels[0]) bonusLabels[0].innerText = dict.total_bonus || 'Total Bonus';
-            if (bonusLabels[1]) bonusLabels[1].innerText = dict.friends_joined || 'Friends Joined';
+            if (bonusLabels[0]) bonusLabels[0].innerText = dict.total_bonus || 'Claimable Referral Bonus';
+            if (bonusLabels[1]) bonusLabels[1].innerText = dict.friends_joined || 'Eligible Deposited Friends';
             const bonusReferralTitle = document.getElementById('bonus-ref-title');
             if (bonusReferralTitle) bonusReferralTitle.innerText = dict.referral_link_title || 'Your Referral Link';
             const tierTitles = document.querySelectorAll('.tier-title');
@@ -4550,10 +4560,11 @@
             const rateEl = document.getElementById('bonus-rate');
             const bonusRefEl = document.getElementById('bonus-ref-link');
             const bonusRate = currentReferralBonusRate();
-            const totalBonus = Number(((appState.joinedFriends || 0) * bonusRate).toFixed(2));
+            const eligibleFriends = Math.max(0, Number(appState.bonusEligibleFriends || 0));
+            const totalBonus = Math.max(0, Number(appState.claimableReferralBonus || 0));
 
             if (totalBonusEl) totalBonusEl.innerText = `${totalBonus.toFixed(2)} $`;
-            if (friendsJoinedEl) friendsJoinedEl.innerText = appState.joinedFriends || 0;
+            if (friendsJoinedEl) friendsJoinedEl.innerText = eligibleFriends;
             if (rateEl) rateEl.innerText = `${bonusRate.toFixed(2)} $`;
             if (bonusRefEl) bonusRefEl.innerText = referralLink;
             updateBonusLockUi();
